@@ -3,9 +3,9 @@
 import { useAppContext } from '@/context/AppContext';
 import PageContent from '@/components/ui/PageContent';
 
-export default function SchedulePage() {
+export default function PhotosPage() {
   const { state } = useAppContext();
-  const page = state.pages.find(p => p.slug === '/schedule') || state.pages[0];
+  const page = state.pages.find(p => p.slug === '/photos') || state.pages[0];
   
   return <PageContent page={page} />;
 }
