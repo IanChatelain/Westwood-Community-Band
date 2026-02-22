@@ -1,4 +1,11 @@
-import { SiteSettings, PageConfig, User, UserRole } from './types';
+import { SiteSettings, PageConfig, User, UserRole, SidebarBlock } from './types';
+
+/** Default sidebar blocks used when a page has sidebar layout but no custom sidebarBlocks. */
+export const DEFAULT_SIDEBAR_BLOCKS: SidebarBlock[] = [
+  { id: 'sb-rehearsals', type: 'rehearsals', order: 0 },
+  { id: 'sb-fees', type: 'fees', order: 1 },
+  { id: 'sb-contact', type: 'contact', order: 2 },
+];
 
 export const DEFAULT_SETTINGS: SiteSettings = {
   bandName: "Westwood Community Band",
@@ -123,6 +130,7 @@ export const INITIAL_PAGES: PageConfig[] = [
     slug: '/join',
     layout: 'sidebar-right',
     sidebarWidth: 35,
+    sidebarBlocks: [...DEFAULT_SIDEBAR_BLOCKS],
     sections: [
       {
         id: 'j1',
@@ -157,6 +165,7 @@ export const INITIAL_PAGES: PageConfig[] = [
     slug: '/contact',
     layout: 'sidebar-right',
     sidebarWidth: 40,
+    sidebarBlocks: [...DEFAULT_SIDEBAR_BLOCKS],
     sections: [
       {
         id: 'c1',
@@ -178,3 +187,23 @@ export const INITIAL_USERS: User[] = [
   { id: 'admin-1', username: 'admin', role: UserRole.ADMIN, email: 'admin@westwoodcommunityband.ca' },
   { id: 'editor-1', username: 'editor', role: UserRole.EDITOR, email: 'editor@westwoodcommunityband.ca' }
 ];
+
+/** Create a new empty page for "Add page". Slug should be like "/about" (leading slash). */
+export function createEmptyPage(title: string, slug: string): PageConfig {
+  const id = Math.random().toString(36).substring(2, 11);
+  return {
+    id,
+    title,
+    slug: slug.startsWith('/') ? slug : `/${slug}`,
+    layout: 'full',
+    sidebarWidth: 25,
+    sections: [
+      {
+        id: Math.random().toString(36).substring(2, 11),
+        type: 'text',
+        title: 'New Section',
+        content: 'Click here to edit content...',
+      },
+    ],
+  };
+}

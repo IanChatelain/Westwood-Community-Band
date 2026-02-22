@@ -1,9 +1,77 @@
 'use client';
 
 import React from 'react';
-import { PageConfig } from '@/types';
+import { PageConfig, SidebarBlock, PageSection, SectionStyle } from '@/types';
+import { DEFAULT_SIDEBAR_BLOCKS } from '@/constants';
 import { Calendar, ArrowRight, Mail, MapPin, Clock, Send } from 'lucide-react';
 import Link from 'next/link';
+
+function sectionWrapperClasses(style?: SectionStyle): string {
+  if (!style) return '';
+  const p = style.padding === 'none' ? 'p-0' : style.padding === 'small' ? 'p-4' : style.padding === 'large' ? 'p-8' : 'p-6';
+  const b = style.border === 'none' ? '' : style.border === 'thin' ? 'border border-slate-200' : style.border === 'thick' ? 'border-2 border-slate-300' : 'border border-slate-300';
+  const r = style.borderRadius === 'none' ? 'rounded-none' : style.borderRadius === 'small' ? 'rounded-lg' : style.borderRadius === 'round' ? 'rounded-2xl' : 'rounded-xl';
+  return [p, b, r].filter(Boolean).join(' ');
+}
+
+function imageLayoutClasses(style?: SectionStyle): { wrapper: string; image: string } {
+  const pos = style?.imagePosition ?? 'left';
+  const size = style?.imageSize === 'small' ? 'max-w-xs' : style?.imageSize === 'large' ? 'max-w-2xl' : 'max-w-lg';
+  if (pos === 'top') return { wrapper: 'grid grid-cols-1 gap-6', image: `w-full ${size} mx-auto aspect-[4/3]` };
+  if (pos === 'full') return { wrapper: 'grid grid-cols-1 gap-6', image: 'w-full aspect-[21/9]' };
+  if (pos === 'right') return { wrapper: 'grid grid-cols-1 md:grid-cols-2 gap-12 items-start', image: `md:order-2 ${size}` };
+  return { wrapper: 'grid grid-cols-1 md:grid-cols-2 gap-12 items-start', image: size };
+}
+
+function SidebarBlockContent({ block }: { block: SidebarBlock }) {
+  if (block.type === 'rehearsals') {
+    return (
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm ring-1 ring-slate-900/5">
+        <h4 className="text-base font-bold mb-3 flex items-center gap-2 text-slate-900" style={{ color: 'var(--westwood-red)' }}>
+          <Clock size={16} className="opacity-90"/> Rehearsals
+        </h4>
+        <div className="space-y-2 text-sm text-slate-700">
+          <p>Thursday Evenings</p>
+          <p className="font-semibold text-slate-900">7:15 to 9:15 p.m.</p>
+          <div className="pt-2 border-t border-slate-200">
+            <p className="text-slate-700 flex items-start gap-2"><MapPin size={14} className="mt-0.5 flex-shrink-0 text-slate-500"/> The Band Room<br/>John Taylor Collegiate<br/>470 Hamilton Avenue<br/>Winnipeg, Manitoba</p>
+          </div>
+        </div>
+        <a href="https://maps.google.ca/maps?q=470+Hamilton+Avenue,+Winnipeg,+MB" target="_blank" rel="noopener noreferrer" className="mt-4 block w-full py-2.5 rounded-lg font-medium text-sm transition-colors text-center border-2 border-[var(--westwood-red)] text-[var(--westwood-red)] hover:bg-[var(--westwood-red)] hover:text-white focus:outline-none focus:ring-2 focus:ring-[var(--westwood-red)] focus:ring-offset-2">Get Directions</a>
+      </div>
+    );
+  }
+  if (block.type === 'fees') {
+    return (
+      <div className="bg-white p-5 rounded-xl shadow-sm ring-1 ring-slate-900/5">
+        <h4 className="text-base font-bold mb-4 text-slate-900">{block.title || 'Membership Fees'}</h4>
+        <ul className="space-y-3 text-sm">
+          <li className="flex justify-between text-slate-700"><span>Annual Fee</span><span className="font-bold text-slate-900">$100.00</span></li>
+          <li className="flex justify-between text-slate-700"><span>Students</span><span className="font-bold text-slate-900">$50.00</span></li>
+          <li className="flex justify-between text-slate-700"><span>Polo Shirt</span><span className="font-bold text-slate-900">$15.00</span></li>
+        </ul>
+        <p className="text-xs text-slate-500 mt-4">Band Season: September to June</p>
+      </div>
+    );
+  }
+  if (block.type === 'contact') {
+    return (
+      <div className="bg-white p-5 rounded-xl shadow-sm ring-1 ring-slate-900/5">
+        <h4 className="text-base font-bold mb-4 text-slate-900 flex items-center gap-2"><Mail size={16}/> {block.title || 'Contact'}</h4>
+        <Link href="/contact" className="block w-full border-2 border-red-800 text-red-800 hover:bg-red-800 hover:text-white py-2.5 rounded-lg font-medium text-sm transition-colors text-center">Get in Touch</Link>
+      </div>
+    );
+  }
+  if (block.type === 'custom') {
+    return (
+      <div className="bg-white p-5 rounded-xl shadow-sm ring-1 ring-slate-900/5">
+        {block.title && <h4 className="text-base font-bold mb-3 text-slate-900">{block.title}</h4>}
+        <div className="text-sm text-slate-700 whitespace-pre-line">{block.content || ''}</div>
+      </div>
+    );
+  }
+  return null;
+}
 
 interface PageContentProps {
   page: PageConfig;
@@ -19,6 +87,7 @@ export default function PageContent({ page }: PageContentProps) {
       >
         {page.sections.map((section) => (
           <section key={section.id} className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className={sectionWrapperClasses(section.style)}>
             {section.type === 'hero' && (
               <div className="relative h-[260px] md:h-[320px] rounded-2xl overflow-hidden shadow-lg ring-1 ring-slate-200/80 bg-gradient-to-br from-red-800 to-red-700">
                 {section.imageUrl && (
@@ -46,19 +115,22 @@ export default function PageContent({ page }: PageContentProps) {
               </div>
             )}
 
-            {section.type === 'image-text' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
-                {section.imageUrl && (
-                  <div className="rounded-2xl overflow-hidden shadow-xl ring-1 ring-slate-900/10 transform hover:scale-[1.02] transition-transform duration-500 bg-slate-100 aspect-[4/3]">
-                    <img src={section.imageUrl} className="w-full h-full object-cover" alt={section.title} />
+            {section.type === 'image-text' && (() => {
+              const { wrapper, image } = imageLayoutClasses(section.style);
+              return (
+                <div className={wrapper}>
+                  {section.imageUrl && (
+                    <div className={`rounded-2xl overflow-hidden shadow-xl ring-1 ring-slate-900/10 bg-slate-100 aspect-[4/3] ${image}`}>
+                      <img src={section.imageUrl} className="w-full h-full object-cover" alt={section.title} />
+                    </div>
+                  )}
+                  <div className="space-y-5">
+                    <h3 className="text-2xl md:text-3xl font-bold text-slate-900">{section.title}</h3>
+                    <div className="text-base text-slate-600 leading-relaxed whitespace-pre-line">{section.content}</div>
                   </div>
-                )}
-                <div className="space-y-5">
-                  <h3 className="text-2xl md:text-3xl font-bold text-slate-900">{section.title}</h3>
-                  <div className="text-base text-slate-600 leading-relaxed whitespace-pre-line">{section.content}</div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {section.type === 'gallery' && (
               <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm ring-1 ring-slate-900/5">
@@ -145,67 +217,59 @@ export default function PageContent({ page }: PageContentProps) {
                 </div>
               </div>
             )}
+
+            {section.type === 'table' && section.tableData && (
+              <div className="overflow-x-auto">
+                {section.title && <h3 className="text-2xl font-bold text-slate-900 mb-4 border-l-4 border-red-800 pl-6">{section.title}</h3>}
+                <table className="w-full border border-slate-300 text-left">
+                  <thead>
+                    <tr className="bg-slate-100">
+                      {(section.tableData.headers || []).map((h, i) => (
+                        <th key={i} className="border border-slate-300 px-4 py-3 font-bold text-slate-900">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(section.tableData.rows || []).map((row, ri) => (
+                      <tr key={ri} className="hover:bg-slate-50">
+                        {row.map((cell, ci) => (
+                          <td key={ci} className="border border-slate-300 px-4 py-3 text-slate-700">{cell}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {section.type === 'separator' && (() => {
+              const spacing = section.separatorSpacing === 'small' ? 'py-4' : section.separatorSpacing === 'large' ? 'py-12' : 'py-8';
+              const style = section.separatorStyle ?? 'line';
+              if (style === 'space') return <div className={spacing} aria-hidden="true" />;
+              if (style === 'dotted') return <hr className={`border-0 border-t-2 border-dotted border-slate-300 ${spacing}`} />;
+              return <hr className={`border-0 border-t border-slate-200 ${spacing}`} />;
+            })()}
+            </div>
           </section>
         ))}
       </div>
 
       {/* Sidebar Area */}
-      {page.layout !== 'full' && (
-        <aside 
-          className={`space-y-6 ${page.layout === 'sidebar-left' ? '-order-1' : ''}`}
-          style={{ width: `${page.sidebarWidth}%`, minWidth: '280px' }}
-        >
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm ring-1 ring-slate-900/5">
-            <h4 className="text-base font-bold mb-3 flex items-center gap-2 text-slate-900" style={{ color: 'var(--westwood-red)' }}>
-              <Clock size={16} className="opacity-90"/> Rehearsals
-            </h4>
-            <div className="space-y-2 text-sm text-slate-700">
-              <p>Thursday Evenings</p>
-              <p className="font-semibold text-slate-900">7:15 to 9:15 p.m.</p>
-              <div className="pt-2 border-t border-slate-200">
-                <p className="text-slate-700 flex items-start gap-2"><MapPin size={14} className="mt-0.5 flex-shrink-0 text-slate-500"/> The Band Room<br/>John Taylor Collegiate<br/>470 Hamilton Avenue<br/>Winnipeg, Manitoba</p>
-              </div>
-            </div>
-            <a 
-              href="https://maps.google.ca/maps?q=470+Hamilton+Avenue,+Winnipeg,+MB"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 block w-full py-2.5 rounded-lg font-medium text-sm transition-colors text-center border-2 border-[var(--westwood-red)] text-[var(--westwood-red)] hover:bg-[var(--westwood-red)] hover:text-white focus:outline-none focus:ring-2 focus:ring-[var(--westwood-red)] focus:ring-offset-2"
-            >
-              Get Directions
-            </a>
-          </div>
-          
-          <div className="bg-white p-5 rounded-xl shadow-sm ring-1 ring-slate-900/5">
-            <h4 className="text-base font-bold mb-4 text-slate-900">Membership Fees</h4>
-            <ul className="space-y-3 text-sm">
-              <li className="flex justify-between text-slate-700">
-                <span>Annual Fee</span>
-                <span className="font-bold text-slate-900">$100.00</span>
-              </li>
-              <li className="flex justify-between text-slate-700">
-                <span>Students</span>
-                <span className="font-bold text-slate-900">$50.00</span>
-              </li>
-              <li className="flex justify-between text-slate-700">
-                <span>Polo Shirt</span>
-                <span className="font-bold text-slate-900">$15.00</span>
-              </li>
-            </ul>
-            <p className="text-xs text-slate-500 mt-4">Band Season: September to June</p>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl shadow-sm ring-1 ring-slate-900/5">
-            <h4 className="text-base font-bold mb-4 text-slate-900 flex items-center gap-2"><Mail size={16}/> Contact</h4>
-            <Link 
-              href="/contact"
-              className="block w-full border-2 border-red-800 text-red-800 hover:bg-red-800 hover:text-white py-2.5 rounded-lg font-medium text-sm transition-colors text-center"
-            >
-              Get in Touch
-            </Link>
-          </div>
-        </aside>
-      )}
+      {page.layout !== 'full' && (() => {
+        const blocks = (page.sidebarBlocks && page.sidebarBlocks.length > 0)
+          ? [...page.sidebarBlocks].sort((a, b) => a.order - b.order)
+          : DEFAULT_SIDEBAR_BLOCKS;
+        return (
+          <aside
+            className={`space-y-6 ${page.layout === 'sidebar-left' ? '-order-1' : ''}`}
+            style={{ width: `${page.sidebarWidth}%`, minWidth: '280px' }}
+          >
+            {blocks.map((block) => (
+              <SidebarBlockContent key={block.id} block={block} />
+            ))}
+          </aside>
+        );
+      })()}
     </div>
   );
 }

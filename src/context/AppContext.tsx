@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AppState, UserRole, PageConfig, SiteSettings, User } from '@/types';
 import { db } from '@/services/db';
+import { createEmptyPage } from '@/constants';
 
 interface AppContextType {
   state: AppState;
@@ -11,6 +12,8 @@ interface AppContextType {
   logout: () => void;
   updatePage: (updatedPage: PageConfig) => void;
   updateNav: (links: SiteSettings['navLinks']) => void;
+  addPage: (title: string, slug: string, addToNav?: boolean) => PageConfig;
+  removePage: (pageId: string, removeFromNav?: boolean) => void;
   isAdminMode: boolean;
   setIsAdminMode: React.Dispatch<React.SetStateAction<boolean>>;
   adminTab: string;
@@ -66,6 +69,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const addPage = (title: string, slug: string, addToNav = true): PageConfig => {
+    const normalizedSlug = slug.startsWith('/') ? slug : `/${slug}`;
+    const newPage = createEmptyPage(title, normalizedSlug);
+    setState(prev => {
+      const exists = prev.pages.some(p => p.slug === normalizedSlug);
+      if (exists) return prev;
+      const nextPages = [...prev.pages, newPage];
+      let nextNav = prev.settings.navLinks;
+      if (addToNav) {
+        const navId = Math.random().toString(36).substring(2, 11);
+        nextNav = [...nextNav, { id: navId, label: title, path: normalizedSlug, order: nextNav.length }];
+      }
+      return {
+        ...prev,
+        pages: nextPages,
+        settings: { ...prev.settings, navLinks: nextNav },
+      };
+    });
+    return newPage;
+  };
+
+  const removePage = (pageId: string, removeFromNav = true) => {
+    setState(prev => {
+      const page = prev.pages.find(p => p.id === pageId);
+      if (!page) return prev;
+      if (prev.pages.length <= 1) return prev;
+      if (page.slug === '/') return prev; // do not remove home
+      const nextPages = prev.pages.filter(p => p.id !== pageId);
+      let nextNav = prev.settings.navLinks;
+      if (removeFromNav) {
+        nextNav = nextNav.filter(link => link.path !== page.slug);
+      }
+      return {
+        ...prev,
+        pages: nextPages,
+        settings: { ...prev.settings, navLinks: nextNav },
+      };
+    });
+  };
+
   if (!mounted) {
     return null;
   }
@@ -78,6 +121,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       logout,
       updatePage,
       updateNav,
+      addPage,
+      removePage,
       isAdminMode,
       setIsAdminMode,
       adminTab,

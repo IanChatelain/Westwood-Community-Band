@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import AdminSidebar from '@/components/cms/AdminSidebar';
 import PageEditor from '@/components/cms/PageEditor';
@@ -11,7 +11,8 @@ import {
   Lock,
   ArrowRight,
   Plus,
-  Trash2
+  Trash2,
+  X
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -21,10 +22,16 @@ export default function AdminDashboard() {
     logout, 
     updatePage, 
     updateNav,
+    addPage,
+    removePage,
     setIsAdminMode,
     adminTab,
     setAdminTab
   } = useAppContext();
+  const [showAddPage, setShowAddPage] = useState(false);
+  const [newPageTitle, setNewPageTitle] = useState('');
+  const [newPageSlug, setNewPageSlug] = useState('');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   if (!state.currentUser) return null;
 
@@ -71,20 +78,102 @@ export default function AdminDashboard() {
 
         {adminTab === 'pages' && (
           <div className="space-y-4">
-            <div className="flex gap-2 p-1 bg-slate-200 rounded-xl w-fit">
-              {state.pages.map(p => (
-                <button 
-                  key={p.id}
-                  onClick={() => setAdminTab(`edit-page-${p.id}`)}
-                  className="px-4 py-2 rounded-lg text-sm font-bold text-slate-700 bg-white shadow-sm ring-1 ring-slate-900/5 hover:ring-red-400 transition-all flex items-center gap-2"
-                >
-                  {p.title} <ArrowRight size={14}/>
-                </button>
-              ))}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => { setNewPageTitle(''); setNewPageSlug(''); setShowAddPage(true); }}
+                className="px-4 py-2 rounded-lg text-sm font-bold text-white bg-red-600 hover:bg-red-700 shadow-sm flex items-center gap-2"
+              >
+                <Plus size={18}/> Add page
+              </button>
+              <div className="flex flex-wrap gap-2 p-1 bg-slate-200 rounded-xl w-fit">
+                {state.pages.map(p => (
+                  <div key={p.id} className="flex items-center gap-1 bg-white rounded-lg shadow-sm ring-1 ring-slate-900/5 overflow-hidden">
+                    <button 
+                      onClick={() => setAdminTab(`edit-page-${p.id}`)}
+                      className="px-4 py-2 text-sm font-bold text-slate-700 hover:ring-red-400 transition-all flex items-center gap-2"
+                    >
+                      {p.title} <ArrowRight size={14}/>
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirmId(p.id)}
+                      disabled={state.pages.length <= 1 || p.slug === '/'}
+                      className="p-2 text-slate-500 hover:text-red-800 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-red-500 rounded-r-lg"
+                      aria-label={`Delete ${p.title}`}
+                    >
+                      <Trash2 size={16}/>
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
+            {showAddPage && (
+              <div className="bg-white rounded-xl shadow-sm ring-1 ring-slate-900/5 p-6 max-w-md space-y-4">
+                <div className="flex justify-between items-center">
+                  <h4 className="font-bold text-slate-900">Add new page</h4>
+                  <button onClick={() => setShowAddPage(false)} className="p-1 text-slate-500 hover:text-slate-700" aria-label="Close"><X size={20}/></button>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Page title</label>
+                  <input
+                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-slate-900"
+                    value={newPageTitle}
+                    onChange={(e) => setNewPageTitle(e.target.value)}
+                    placeholder="e.g. About Us"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">URL path</label>
+                  <input
+                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-slate-900"
+                    value={newPageSlug}
+                    onChange={(e) => setNewPageSlug(e.target.value.replace(/\s/g, '').toLowerCase())}
+                    placeholder="e.g. about (becomes /about)"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Letters and numbers only. Page URL will be /{newPageSlug || '…'}.</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const title = newPageTitle.trim() || 'New Page';
+                      const slug = newPageSlug.trim() ? `/${newPageSlug.replace(/^\//, '')}` : `/${Math.random().toString(36).slice(2, 8)}`;
+                      if (state.pages.some(p => p.slug === slug)) {
+                        alert('A page with this URL already exists. Choose a different path.');
+                        return;
+                      }
+                      const newPage = addPage(title, slug, true);
+                      setShowAddPage(false);
+                      setAdminTab(`edit-page-${newPage.id}`);
+                    }}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg"
+                  >
+                    Add page
+                  </button>
+                  <button onClick={() => setShowAddPage(false)} className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg font-bold">Cancel</button>
+                </div>
+              </div>
+            )}
+            {deleteConfirmId && (
+              <div className="bg-white rounded-xl shadow-sm ring-1 ring-slate-900/5 p-6 max-w-md">
+                <h4 className="font-bold text-slate-900 mb-2">Delete this page?</h4>
+                <p className="text-sm text-slate-600 mb-4">This will remove the page and its content. You can also remove it from the menu.</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      removePage(deleteConfirmId, true);
+                      setDeleteConfirmId(null);
+                      setAdminTab('pages');
+                    }}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg"
+                  >
+                    Delete and remove from menu
+                  </button>
+                  <button onClick={() => setDeleteConfirmId(null)} className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg font-bold">Cancel</button>
+                </div>
+              </div>
+            )}
             <div className="bg-red-50 p-6 rounded-xl ring-1 ring-red-100 text-red-900">
               <h4 className="font-bold mb-1">Editing Mode</h4>
-              <p className="text-sm text-red-700">Select a page above to modify its specific content blocks and layout configuration.</p>
+              <p className="text-sm text-red-700">Select a page above to modify its content blocks and layout. Add or delete pages with the buttons above.</p>
             </div>
           </div>
         )}
