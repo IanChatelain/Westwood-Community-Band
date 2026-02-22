@@ -3,8 +3,8 @@ import { SiteSettings, PageConfig, User, UserRole } from './types';
 export const DEFAULT_SETTINGS: SiteSettings = {
   bandName: "Westwood Community Band",
   logoUrl: "/treble-clef.svg",
-  primaryColor: "#1e3a8a",
-  secondaryColor: "#dc2626",
+  primaryColor: "#991b1b",  /* Westwood red */
+  secondaryColor: "#1e3a8a",
   footerText: "© 2026 Westwood Community Band. Forty-five Years of Making Music.",
   navLinks: [
     { id: '1', label: 'Home', path: '/', order: 0 },

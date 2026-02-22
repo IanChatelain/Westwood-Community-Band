@@ -78,8 +78,8 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
                 onClick={() => setEditedPage(prev => ({ ...prev, layout }))}
                 className={`p-3 border rounded-lg flex flex-col items-center gap-1 transition-all ${
                   editedPage.layout === layout 
-                    ? 'border-indigo-600 bg-indigo-50 text-indigo-700' 
-                    : 'border-slate-300 hover:border-indigo-400 text-slate-600'
+                    ? 'border-red-600 bg-red-50 text-red-700' 
+                    : 'border-slate-300 hover:border-red-400 text-slate-600'
                 }`}
               >
                 <LayoutIcon size={20} />
@@ -100,14 +100,14 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
               max="40" 
               value={editedPage.sidebarWidth}
               onChange={(e) => setEditedPage(prev => ({ ...prev, sidebarWidth: parseInt(e.target.value) }))}
-              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-red-600"
             />
           </div>
         )}
 
         <button
           onClick={() => onSave(editedPage)}
-          className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-indigo-500/25 transition-all"
+          className="bg-gradient-to-r from-red-600 to-red-600 hover:from-red-700 hover:to-red-700 text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-red-500/25 transition-all"
         >
           <Save size={18} />
           Save Changes
@@ -117,18 +117,18 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
       {/* Sections List */}
       <div className="space-y-6">
         {editedPage.sections.map((section, idx) => (
-          <div key={section.id} className="group relative bg-white rounded-xl shadow-sm ring-1 ring-slate-900/5 hover:ring-indigo-300 transition-all">
+          <div key={section.id} className="group relative bg-white rounded-xl shadow-sm ring-1 ring-slate-900/5 hover:ring-red-300 transition-all">
             <div className="p-1.5 flex items-center justify-between bg-slate-50 border-b border-slate-200 rounded-t-xl">
               <div className="flex items-center gap-2 px-3">
-                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded uppercase tracking-wider">
                   {section.type} Section
                 </span>
               </div>
               <div className="flex items-center gap-1">
-                <button onClick={() => moveSection(idx, 'up')} className="p-2 hover:bg-slate-200 rounded-md text-slate-500 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Move section up"><ChevronUp size={16}/></button>
-                <button onClick={() => moveSection(idx, 'down')} className="p-2 hover:bg-slate-200 rounded-md text-slate-500 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Move section down"><ChevronDown size={16}/></button>
+                <button onClick={() => moveSection(idx, 'up')} className="p-2 hover:bg-slate-200 rounded-md text-slate-500 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-500" aria-label="Move section up"><ChevronUp size={16}/></button>
+                <button onClick={() => moveSection(idx, 'down')} className="p-2 hover:bg-slate-200 rounded-md text-slate-500 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-500" aria-label="Move section down"><ChevronDown size={16}/></button>
                 <div className="w-px h-4 bg-slate-300 mx-1" aria-hidden="true"></div>
-                <button onClick={() => deleteSection(section.id)} className="p-2 hover:bg-rose-100 rounded-md text-slate-500 hover:text-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-500" aria-label="Delete section"><Trash2 size={16}/></button>
+                <button onClick={() => deleteSection(section.id)} className="p-2 hover:bg-red-50 rounded-md text-slate-500 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-800" aria-label="Delete section"><Trash2 size={16}/></button>
               </div>
             </div>
 
@@ -137,7 +137,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Title</label>
                   <input 
-                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none text-slate-900 placeholder:text-slate-400"
+                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all outline-none text-slate-900 placeholder:text-slate-400"
                     value={section.title}
                     onChange={(e) => handleUpdateSection(section.id, { title: e.target.value })}
                   />
@@ -149,7 +149,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
                       <div className="relative flex-grow">
                         <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                         <input 
-                          className="w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none text-slate-900 placeholder:text-slate-400"
+                          className="w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all outline-none text-slate-900 placeholder:text-slate-400"
                           value={section.imageUrl}
                           onChange={(e) => handleUpdateSection(section.id, { imageUrl: e.target.value })}
                         />
@@ -165,15 +165,15 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
                   <button 
                     onClick={() => handleAiAssist(section.id, section.title)}
                     disabled={isGenerating === section.id}
-                    className="text-[10px] font-bold text-indigo-600 flex items-center gap-1 hover:text-indigo-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded"
+                    className="text-[10px] font-bold text-red-600 flex items-center gap-1 hover:text-red-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded"
                   >
-                    {isGenerating === section.id ? <div className="animate-spin h-3 w-3 border-2 border-indigo-600 border-t-transparent rounded-full" /> : <Sparkles size={12}/>}
+                    {isGenerating === section.id ? <div className="animate-spin h-3 w-3 border-2 border-red-600 border-t-transparent rounded-full" /> : <Sparkles size={12}/>}
                     {isGenerating === section.id ? 'Generating...' : 'AI Assist'}
                   </button>
                 </div>
                 <textarea 
                   rows={4}
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none resize-none text-slate-900 placeholder:text-slate-400"
+                  className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all outline-none resize-none text-slate-900 placeholder:text-slate-400"
                   value={section.content}
                   onChange={(e) => handleUpdateSection(section.id, { content: e.target.value })}
                 />
@@ -184,9 +184,9 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
 
         <button
           onClick={addSection}
-          className="w-full py-6 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center gap-2 text-slate-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          className="w-full py-6 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center gap-2 text-slate-500 hover:border-red-400 hover:text-red-600 hover:bg-red-50 transition-all focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
         >
-          <div className="p-2 bg-slate-100 rounded-full group-hover:bg-indigo-100 transition-colors" aria-hidden="true">
+          <div className="p-2 bg-slate-100 rounded-full group-hover:bg-red-100 transition-colors" aria-hidden="true">
             <Plus size={24} />
           </div>
           <span className="font-bold text-sm">Add New Section</span>

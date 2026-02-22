@@ -54,8 +54,8 @@ export default function AdminDashboard() {
         {adminTab === 'overview' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { label: 'Total Pages', val: state.pages.length, icon: <Lock className="text-indigo-500"/> },
-              { label: 'Team Members', val: state.users.length, icon: <Users className="text-violet-500"/> },
+              { label: 'Total Pages', val: state.pages.length, icon: <Lock className="text-red-500"/> },
+              { label: 'Team Members', val: state.users.length, icon: <Users className="text-red-500"/> },
               { label: 'Performance', val: 'Excellent', icon: <ShieldCheck className="text-emerald-500"/> },
             ].map((stat, i) => (
               <div key={i} className="bg-white p-6 rounded-xl shadow-sm ring-1 ring-slate-900/5 flex items-center justify-between">
@@ -76,15 +76,15 @@ export default function AdminDashboard() {
                 <button 
                   key={p.id}
                   onClick={() => setAdminTab(`edit-page-${p.id}`)}
-                  className="px-4 py-2 rounded-lg text-sm font-bold text-slate-700 bg-white shadow-sm ring-1 ring-slate-900/5 hover:ring-indigo-400 transition-all flex items-center gap-2"
+                  className="px-4 py-2 rounded-lg text-sm font-bold text-slate-700 bg-white shadow-sm ring-1 ring-slate-900/5 hover:ring-red-400 transition-all flex items-center gap-2"
                 >
                   {p.title} <ArrowRight size={14}/>
                 </button>
               ))}
             </div>
-            <div className="bg-indigo-50 p-6 rounded-xl ring-1 ring-indigo-100 text-indigo-900">
+            <div className="bg-red-50 p-6 rounded-xl ring-1 ring-red-100 text-red-900">
               <h4 className="font-bold mb-1">Editing Mode</h4>
-              <p className="text-sm text-indigo-700">Select a page above to modify its specific content blocks and layout configuration.</p>
+              <p className="text-sm text-red-700">Select a page above to modify its specific content blocks and layout configuration.</p>
             </div>
           </div>
         )}
@@ -105,7 +105,7 @@ export default function AdminDashboard() {
                     const id = Math.random().toString(36).substr(2, 9);
                     updateNav([...state.settings.navLinks, { id, label: 'New Link', path: '/new', order: state.settings.navLinks.length }]);
                   }}
-                  className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors"
+                  className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
                 >
                  <Plus size={20}/>
                </button>
@@ -115,7 +115,7 @@ export default function AdminDashboard() {
                  <div key={link.id} className="p-4 flex items-center gap-4 hover:bg-slate-50 transition-colors">
                    <div className="font-bold text-slate-600">#{idx + 1}</div>
                    <input 
-                    className="p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none flex-grow text-slate-900 placeholder:text-slate-400"
+                    className="p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none flex-grow text-slate-900 placeholder:text-slate-400"
                     value={link.label}
                     onChange={(e) => {
                       const newLinks = [...state.settings.navLinks];
@@ -124,7 +124,7 @@ export default function AdminDashboard() {
                     }}
                    />
                    <input 
-                    className="p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none w-48 text-slate-900 placeholder:text-slate-400"
+                    className="p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none w-48 text-slate-900 placeholder:text-slate-400"
                     value={link.path}
                     onChange={(e) => {
                       const newLinks = [...state.settings.navLinks];
@@ -134,7 +134,7 @@ export default function AdminDashboard() {
                    />
                    <button 
                     onClick={() => updateNav(state.settings.navLinks.filter(l => l.id !== link.id))}
-                    className="p-2 text-slate-500 hover:text-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 rounded-lg"
+                    className="p-2 text-slate-500 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-800 focus:ring-offset-2 rounded-lg"
                     aria-label="Delete navigation link"
                   >
                     <Trash2 size={18}/>
@@ -150,7 +150,7 @@ export default function AdminDashboard() {
             <div className="space-y-4">
               <label className="block text-sm font-bold text-slate-900">Band Identity Name</label>
               <input 
-                className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 placeholder:text-slate-400"
+                className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-slate-900 placeholder:text-slate-400"
                 value={state.settings.bandName}
                 onChange={(e) => setState(prev => ({ ...prev, settings: { ...prev.settings, bandName: e.target.value } }))}
               />
@@ -158,13 +158,13 @@ export default function AdminDashboard() {
             <div className="space-y-4">
               <label className="block text-sm font-bold text-slate-900">Footer Attribution</label>
               <textarea 
-                className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none text-slate-900 placeholder:text-slate-400"
+                className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none text-slate-900 placeholder:text-slate-400"
                 rows={3}
                 value={state.settings.footerText}
                 onChange={(e) => setState(prev => ({ ...prev, settings: { ...prev.settings, footerText: e.target.value } }))}
               />
             </div>
-            <button onClick={() => alert('Global settings saved!')} className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold py-3 rounded-xl hover:from-indigo-700 hover:to-violet-700 transition-colors shadow-lg shadow-indigo-500/25">
+            <button onClick={() => alert('Global settings saved!')} className="w-full bg-gradient-to-r from-red-600 to-red-600 text-white font-bold py-3 rounded-xl hover:from-red-700 hover:to-red-700 transition-colors shadow-lg shadow-red-500/25">
               Apply Global Changes
             </button>
           </div>
@@ -186,7 +186,7 @@ export default function AdminDashboard() {
                    <tr key={user.id} className="hover:bg-slate-50 transition-colors">
                      <td className="px-6 py-4">
                        <div className="flex items-center gap-3">
-                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 text-indigo-600 flex items-center justify-center font-bold" aria-hidden="true">
+                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-100 to-red-100 text-red-600 flex items-center justify-center font-bold" aria-hidden="true">
                            {user.username[0].toUpperCase()}
                          </div>
                          <span className="font-bold text-slate-900">{user.username}</span>
@@ -194,14 +194,14 @@ export default function AdminDashboard() {
                      </td>
                      <td className="px-6 py-4">
                        <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase ${
-                         user.role === UserRole.ADMIN ? 'bg-violet-100 text-violet-700' : 'bg-indigo-100 text-indigo-700'
+                         user.role === UserRole.ADMIN ? 'bg-red-100 text-red-700' : 'bg-red-100 text-red-700'
                        }`}>
                          {user.role}
                        </span>
                      </td>
                      <td className="px-6 py-4 text-sm text-slate-600">{user.email}</td>
                      <td className="px-6 py-4">
-                       <button className="text-indigo-600 hover:underline text-sm font-bold">Edit Rights</button>
+                       <button className="text-red-600 hover:underline text-sm font-bold">Edit Rights</button>
                      </td>
                    </tr>
                  ))}

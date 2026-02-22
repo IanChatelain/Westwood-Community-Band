@@ -3,6 +3,9 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* Westwood red: warm, deep red (not pink, not stop-sign) */
+  --westwood-red: #991b1b;
+  --westwood-red-light: #b91c1c;
 }
 
 @theme inline {
