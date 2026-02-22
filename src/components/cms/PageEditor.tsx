@@ -3,17 +3,18 @@
 import React from 'react';
 import { PageConfig, PageSection, SidebarBlock, SidebarBlockType, SectionStyle } from '@/types';
 
-const SECTION_TYPES: { value: PageSection['type']; label: string }[] = [
-  { value: 'text', label: 'Text' },
-  { value: 'hero', label: 'Hero' },
-  { value: 'image-text', label: 'Image + Text' },
-  { value: 'gallery', label: 'Gallery' },
-  { value: 'table', label: 'Table' },
-  { value: 'separator', label: 'Separator' },
-  { value: 'contact', label: 'Contact' },
-  { value: 'schedule', label: 'Schedule' },
+const SECTION_TYPES: { value: PageSection['type']; label: string; description: string }[] = [
+  { value: 'text', label: 'Text', description: 'A heading and body text.' },
+  { value: 'hero', label: 'Hero', description: 'Large banner with title, short text, and optional image.' },
+  { value: 'image-text', label: 'Image + Text', description: 'Image beside text; position and size are configurable.' },
+  { value: 'gallery', label: 'Gallery', description: 'Grid of images.' },
+  { value: 'table', label: 'Table', description: 'Headers and rows; good for schedules or fees.' },
+  { value: 'separator', label: 'Separator', description: 'Visual break: line, space, or dotted divider.' },
+  { value: 'contact', label: 'Contact', description: 'Contact form or contact details block.' },
+  { value: 'schedule', label: 'Schedule', description: 'Event or rehearsal schedule.' },
 ];
 import { DEFAULT_SIDEBAR_BLOCKS } from '@/constants';
+import PageContent from '@/components/ui/PageContent';
 import { 
   Plus, 
   Trash2, 
@@ -23,12 +24,16 @@ import {
   Layout as LayoutIcon,
   Sparkles,
   Image as ImageIcon,
+  Monitor,
+  PanelRightClose,
 } from 'lucide-react';
 import { gemini } from '@/services/gemini';
 
 interface PageEditorProps {
   page: PageConfig;
   onSave: (updatedPage: PageConfig) => void;
+  showPreview?: boolean;
+  onTogglePreview?: () => void;
 }
 
 const SIDEBAR_BLOCK_TYPES: { value: SidebarBlockType; label: string }[] = [
@@ -38,7 +43,11 @@ const SIDEBAR_BLOCK_TYPES: { value: SidebarBlockType; label: string }[] = [
   { value: 'custom', label: 'Custom Text' },
 ];
 
-const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
+function pageConfigEqual(a: PageConfig, b: PageConfig): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, showPreview = false, onTogglePreview }) => {
   const [editedPage, setEditedPage] = React.useState<PageConfig>(() => {
     const p = { ...page };
     if (p.layout !== 'full' && (!p.sidebarBlocks || p.sidebarBlocks.length === 0)) {
@@ -47,6 +56,24 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
     return p;
   });
   const [isGenerating, setIsGenerating] = React.useState<string | null>(null);
+  const [showSavedFeedback, setShowSavedFeedback] = React.useState(false);
+
+  // Reset draft when switching to a different page
+  React.useEffect(() => {
+    const p = { ...page };
+    if (p.layout !== 'full' && (!p.sidebarBlocks || p.sidebarBlocks.length === 0)) {
+      p.sidebarBlocks = [...DEFAULT_SIDEBAR_BLOCKS];
+    }
+    setEditedPage(p);
+  }, [page.id]);
+
+  const hasUnsavedChanges = !pageConfigEqual(editedPage, page);
+
+  const handleSave = () => {
+    onSave(editedPage);
+    setShowSavedFeedback(true);
+    window.setTimeout(() => setShowSavedFeedback(false), 3000);
+  };
 
   const handleUpdateSection = (id: string, updates: Partial<PageSection>) => {
     setEditedPage(prev => ({
@@ -121,65 +148,96 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      {/* Page Controls */}
-      <div className="bg-white p-6 rounded-xl shadow-sm ring-1 ring-slate-900/5 flex flex-wrap gap-6 items-center justify-between">
-        <div className="space-y-4 flex-grow max-w-md">
-          <label className="block text-sm font-bold text-slate-700">Layout Engine</label>
-          <div className="grid grid-cols-3 gap-2">
-            {(['full', 'sidebar-left', 'sidebar-right'] as const).map(layout => (
+    <div className={`animate-in fade-in slide-in-from-bottom-2 duration-300 ${showPreview ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : ''}`}>
+      {/* Editor column */}
+      <div className="space-y-8 min-w-0">
+        <p className="text-sm text-slate-600">
+          Edit layout, sections, and sidebar below. Use <strong>Save Changes</strong> to publish. Toggle <strong>Live preview</strong> to see the page as you edit.
+        </p>
+        {/* Page Controls */}
+        <div className="bg-white p-6 rounded-xl shadow-sm ring-1 ring-slate-900/5 flex flex-wrap gap-6 items-center justify-between">
+          <div className="space-y-4 flex-grow max-w-md">
+            <label className="block text-sm font-bold text-slate-700">Layout Engine</label>
+            <p className="text-xs text-slate-500 mb-1">Full width or with a left/right sidebar.</p>
+            <div className="grid grid-cols-3 gap-2">
+              {(['full', 'sidebar-left', 'sidebar-right'] as const).map(layout => (
+                <button
+                  key={layout}
+                  onClick={() => setEditedPage(prev => {
+                    const next = { ...prev, layout };
+                    if (layout !== 'full' && (!next.sidebarBlocks || next.sidebarBlocks.length === 0)) {
+                      next.sidebarBlocks = [...DEFAULT_SIDEBAR_BLOCKS];
+                    }
+                    return next;
+                  })}
+                  className={`p-3 border rounded-lg flex flex-col items-center gap-1 transition-all ${
+                    editedPage.layout === layout 
+                      ? 'border-red-600 bg-red-50 text-red-700' 
+                      : 'border-slate-300 hover:border-red-400 text-slate-600'
+                  }`}
+                >
+                  <LayoutIcon size={20} />
+                  <span className="text-[10px] uppercase font-bold">{layout.replace('-', ' ')}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {editedPage.layout !== 'full' && (
+            <div className="space-y-4 w-48">
+              <label className="block text-sm font-bold text-slate-700">
+                Sidebar Width: {editedPage.sidebarWidth}%
+              </label>
+              <input 
+                type="range" 
+                min="15" 
+                max="40" 
+                value={editedPage.sidebarWidth}
+                onChange={(e) => setEditedPage(prev => ({ ...prev, sidebarWidth: parseInt(e.target.value) }))}
+                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-red-600"
+              />
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {onTogglePreview && (
               <button
-                key={layout}
-                onClick={() => setEditedPage(prev => {
-                  const next = { ...prev, layout };
-                  if (layout !== 'full' && (!next.sidebarBlocks || next.sidebarBlocks.length === 0)) {
-                    next.sidebarBlocks = [...DEFAULT_SIDEBAR_BLOCKS];
-                  }
-                  return next;
-                })}
-                className={`p-3 border rounded-lg flex flex-col items-center gap-1 transition-all ${
-                  editedPage.layout === layout 
+                type="button"
+                onClick={onTogglePreview}
+                className={`px-4 py-3 rounded-lg font-bold flex items-center gap-2 border transition-all ${
+                  showPreview 
                     ? 'border-red-600 bg-red-50 text-red-700' 
-                    : 'border-slate-300 hover:border-red-400 text-slate-600'
+                    : 'border-slate-300 text-slate-700 hover:border-red-400 hover:bg-red-50/50'
                 }`}
               >
-                <LayoutIcon size={20} />
-                <span className="text-[10px] uppercase font-bold">{layout.replace('-', ' ')}</span>
+                {showPreview ? <PanelRightClose size={18} /> : <Monitor size={18} />}
+                {showPreview ? 'Hide preview' : 'Live preview'}
               </button>
-            ))}
+            )}
+            <div className="flex items-center gap-3">
+              {hasUnsavedChanges && (
+                <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-1 rounded">Unsaved changes</span>
+              )}
+              {showSavedFeedback && (
+                <span className="text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-1 rounded animate-in fade-in duration-200">Saved</span>
+              )}
+              <button
+                onClick={handleSave}
+                disabled={!hasUnsavedChanges}
+                className="bg-gradient-to-r from-red-600 to-red-600 hover:from-red-700 hover:to-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-red-500/25 transition-all"
+              >
+                <Save size={18} />
+                Save Changes
+              </button>
+            </div>
           </div>
         </div>
 
+        {/* Sidebar content (when layout has sidebar) */}
         {editedPage.layout !== 'full' && (
-          <div className="space-y-4 w-48">
-            <label className="block text-sm font-bold text-slate-700">
-              Sidebar Width: {editedPage.sidebarWidth}%
-            </label>
-            <input 
-              type="range" 
-              min="15" 
-              max="40" 
-              value={editedPage.sidebarWidth}
-              onChange={(e) => setEditedPage(prev => ({ ...prev, sidebarWidth: parseInt(e.target.value) }))}
-              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-red-600"
-            />
-          </div>
-        )}
-
-        <button
-          onClick={() => onSave(editedPage)}
-          className="bg-gradient-to-r from-red-600 to-red-600 hover:from-red-700 hover:to-red-700 text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-red-500/25 transition-all"
-        >
-          <Save size={18} />
-          Save Changes
-        </button>
-      </div>
-
-      {/* Sidebar content (when layout has sidebar) */}
-      {editedPage.layout !== 'full' && (
-        <div className="bg-white p-6 rounded-xl shadow-sm ring-1 ring-slate-900/5">
-          <h3 className="text-sm font-bold text-slate-800 mb-4">Sidebar content</h3>
-          <p className="text-xs text-slate-500 mb-4">Add, remove, or reorder the blocks that appear in the sidebar on this page.</p>
+          <div className="bg-white p-6 rounded-xl shadow-sm ring-1 ring-slate-900/5">
+            <h3 className="text-sm font-bold text-slate-800 mb-4">Sidebar content</h3>
+            <p className="text-xs text-slate-500 mb-4">Blocks shown next to the main content on this page. Add, remove, or reorder them below.</p>
           <div className="space-y-3">
             {[...sidebarBlocks].sort((a, b) => a.order - b.order).map((block, idx) => (
               <div key={block.id} className="flex flex-wrap items-center gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
@@ -215,15 +273,15 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
               ))}
             </div>
           </div>
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* Sections List */}
-      <div className="space-y-6">
+        {/* Sections List */}
+        <div className="space-y-6">
         {editedPage.sections.map((section, idx) => (
           <div key={section.id} className="group relative bg-white rounded-xl shadow-sm ring-1 ring-slate-900/5 hover:ring-red-300 transition-all">
             <div className="p-1.5 flex items-center justify-between bg-slate-50 border-b border-slate-200 rounded-t-xl">
-              <div className="flex items-center gap-2 px-3">
+              <div className="flex items-center gap-2 px-3 flex-wrap">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Block type</label>
                 <select
                   value={section.type}
@@ -238,11 +296,15 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
                     handleUpdateSection(section.id, updates);
                   }}
                   className="text-[10px] font-bold text-red-600 bg-red-100 px-2 py-1 rounded border-0 focus:ring-2 focus:ring-red-500"
+                  title={SECTION_TYPES.find(t => t.value === section.type)?.description}
                 >
                   {SECTION_TYPES.map(({ value, label }) => (
                     <option key={value} value={value}>{label}</option>
                   ))}
                 </select>
+                <span className="text-xs text-slate-500 hidden sm:inline">
+                  {SECTION_TYPES.find(t => t.value === section.type)?.description}
+                </span>
               </div>
               <div className="flex items-center gap-1">
                 <button onClick={() => moveSection(idx, 'up')} className="p-2 hover:bg-slate-200 rounded-md text-slate-500 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-500" aria-label="Move section up"><ChevronUp size={16}/></button>
@@ -477,7 +539,22 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
             </button>
           ))}
         </div>
+        </div>
       </div>
+
+      {/* Live preview pane */}
+      {showPreview && (
+        <div className="lg:sticky lg:top-8 h-[calc(100vh-8rem)] flex flex-col rounded-xl border-2 border-slate-300 bg-slate-50 overflow-hidden">
+          <div className="px-4 py-2 border-b border-slate-200 bg-slate-100 text-xs font-bold text-slate-600 uppercase tracking-widest">
+            Live preview
+          </div>
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="max-w-7xl mx-auto">
+              <PageContent page={editedPage} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

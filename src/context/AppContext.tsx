@@ -59,7 +59,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ...prev,
       pages: prev.pages.map(p => p.id === updatedPage.id ? updatedPage : p)
     }));
-    alert('Changes saved successfully!');
   };
 
   const updateNav = (links: SiteSettings['navLinks']) => {

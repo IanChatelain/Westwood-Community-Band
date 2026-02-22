@@ -12,7 +12,8 @@ import {
   ArrowRight,
   Plus,
   Trash2,
-  X
+  X,
+  HelpCircle
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -32,8 +33,13 @@ export default function AdminDashboard() {
   const [newPageTitle, setNewPageTitle] = useState('');
   const [newPageSlug, setNewPageSlug] = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [settingsSavedFeedback, setSettingsSavedFeedback] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   if (!state.currentUser) return null;
+
+  const isEditingPage = adminTab.startsWith('edit-page-');
 
   return (
     <div className="flex min-h-screen bg-slate-100">
@@ -42,7 +48,9 @@ export default function AdminDashboard() {
         setTab={setAdminTab} 
         user={state.currentUser}
         onLogout={logout}
-        onViewSite={() => setIsAdminMode(false)}
+        onTogglePreview={() => setPreviewOpen(p => !p)}
+        previewOpen={previewOpen}
+        isEditingPage={isEditingPage}
       />
       
       <main className="flex-grow p-8 max-h-screen overflow-y-auto">
@@ -51,33 +59,92 @@ export default function AdminDashboard() {
             <h2 className="text-3xl font-extrabold text-slate-900 capitalize">{adminTab.replace('-', ' ')}</h2>
             <p className="text-slate-600 mt-1">Manage your website content and structure with ease.</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <button
+              type="button"
+              onClick={() => setHelpOpen(true)}
+              className="p-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+              title="Help"
+              aria-label="Open help"
+            >
+              <HelpCircle size={20} />
+            </button>
             <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-1">
               <ShieldCheck size={12}/> {state.currentUser.role} ACCESS
             </span>
           </div>
         </header>
 
-        {adminTab === 'overview' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { label: 'Total Pages', val: state.pages.length, icon: <Lock className="text-red-500"/> },
-              { label: 'Team Members', val: state.users.length, icon: <Users className="text-red-500"/> },
-              { label: 'Performance', val: 'Excellent', icon: <ShieldCheck className="text-emerald-500"/> },
-            ].map((stat, i) => (
-              <div key={i} className="bg-white p-6 rounded-xl shadow-sm ring-1 ring-slate-900/5 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">{stat.label}</p>
-                  <p className="text-3xl font-black text-slate-900 mt-1">{stat.val}</p>
-                </div>
-                <div className="p-4 bg-slate-50 rounded-xl">{stat.icon}</div>
+        {helpOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50" aria-modal="true" role="dialog">
+            <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col">
+              <div className="p-6 border-b border-slate-200 flex justify-between items-center">
+                <h3 className="text-lg font-bold text-slate-900">How to use the CMS</h3>
+                <button type="button" onClick={() => setHelpOpen(false)} className="p-2 text-slate-500 hover:text-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" aria-label="Close help">
+                  <X size={20} />
+                </button>
               </div>
-            ))}
+              <div className="p-6 overflow-y-auto space-y-6 text-sm text-slate-700">
+                <section>
+                  <h4 className="font-bold text-slate-900 mb-1">Dashboard</h4>
+                  <p>Overview and quick stats. Use the sidebar to go to Page Content, Nav Structure, or Site Settings.</p>
+                </section>
+                <section>
+                  <h4 className="font-bold text-slate-900 mb-1">Page Content</h4>
+                  <p>Click a page to edit its content and layout. Use <strong>Add page</strong> for new pages. Use the live preview toggle to see how the page will look as you edit.</p>
+                </section>
+                <section>
+                  <h4 className="font-bold text-slate-900 mb-1">Editing a page</h4>
+                  <p>Choose full-width or sidebar layout. Add sections (text, hero, image+text, gallery, table, etc.) and use the block-type dropdown to change a section. Use <strong>Save Changes</strong> to publish. Turn on <strong>Live preview</strong> to see the page as visitors will.</p>
+                </section>
+                <section>
+                  <h4 className="font-bold text-slate-900 mb-1">Navigation</h4>
+                  <p>These links appear in the site header. Edit label and path (URL); order follows the list. Changes apply immediately.</p>
+                </section>
+                <section>
+                  <h4 className="font-bold text-slate-900 mb-1">Site Settings</h4>
+                  <p>Band name and footer text are used across the site. Click <strong>Apply Global Changes</strong> to confirm.</p>
+                </section>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {adminTab === 'overview' && (
+          <div className="space-y-6">
+            <div className="bg-slate-100 border border-slate-200 rounded-xl p-6 text-slate-700">
+              <h3 className="font-bold text-slate-900 mb-2">Getting started</h3>
+              <p className="text-sm mb-2">
+                Use <strong>Page Content</strong> to add or select a page to edit. In the editor you can change layout, sections, and sidebar. Click <strong>Save Changes</strong> to publish. Use <strong>Live preview</strong> (sidebar or toolbar) to see the page as visitors will. Use <strong>View site (new tab)</strong> to open the public site without leaving admin.
+              </p>
+              <ul className="text-sm list-disc list-inside space-y-1">
+                <li>Dashboard: overview and quick stats</li>
+                <li>Page Content: edit pages and add new ones</li>
+                <li>Nav Structure: menu links in the site header</li>
+                <li>Site Settings: band name and footer text</li>
+              </ul>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                { label: 'Total Pages', val: state.pages.length, icon: <Lock className="text-red-500"/> },
+                { label: 'Team Members', val: state.users.length, icon: <Users className="text-red-500"/> },
+                { label: 'Performance', val: 'Excellent', icon: <ShieldCheck className="text-emerald-500"/> },
+              ].map((stat, i) => (
+                <div key={i} className="bg-white p-6 rounded-xl shadow-sm ring-1 ring-slate-900/5 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">{stat.label}</p>
+                    <p className="text-3xl font-black text-slate-900 mt-1">{stat.val}</p>
+                  </div>
+                  <div className="p-4 bg-slate-50 rounded-xl">{stat.icon}</div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
         {adminTab === 'pages' && (
           <div className="space-y-4">
+            <p className="text-sm text-slate-600">Click a page to edit; use the preview toggle to see how it will look.</p>
             <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => { setNewPageTitle(''); setNewPageSlug(''); setShowAddPage(true); }}
@@ -172,8 +239,8 @@ export default function AdminDashboard() {
               </div>
             )}
             <div className="bg-red-50 p-6 rounded-xl ring-1 ring-red-100 text-red-900">
-              <h4 className="font-bold mb-1">Editing Mode</h4>
-              <p className="text-sm text-red-700">Select a page above to modify its content blocks and layout. Add or delete pages with the buttons above.</p>
+              <h4 className="font-bold mb-1">Editing pages</h4>
+              <p className="text-sm text-red-700">Select a page above to edit its content blocks and layout. Use <strong>Add page</strong> for new pages. Changes are shown in the live preview when you turn it on.</p>
             </div>
           </div>
         )}
@@ -182,10 +249,14 @@ export default function AdminDashboard() {
           <PageEditor 
             page={state.pages.find(p => `edit-page-${p.id}` === adminTab)!} 
             onSave={updatePage}
+            showPreview={previewOpen}
+            onTogglePreview={() => setPreviewOpen(p => !p)}
           />
         )}
 
         {adminTab === 'navigation' && (
+          <div className="space-y-4">
+            <p className="text-sm text-slate-600">These links appear in the site header. Order follows the list; edit label and path (URL) as needed. Changes apply immediately.</p>
           <div className="bg-white rounded-xl shadow-sm ring-1 ring-slate-900/5 overflow-hidden">
              <div className="p-6 border-b border-slate-200 flex justify-between items-center">
                <h3 className="font-bold text-lg text-slate-900">Main Menu Structure</h3>
@@ -232,10 +303,12 @@ export default function AdminDashboard() {
                ))}
              </div>
           </div>
+          </div>
         )}
 
         {adminTab === 'settings' && (
           <div className="max-w-2xl bg-white rounded-xl shadow-sm ring-1 ring-slate-900/5 p-8 space-y-6">
+            <p className="text-sm text-slate-600">Band name and footer text are used across the site.</p>
             <div className="space-y-4">
               <label className="block text-sm font-bold text-slate-900">Band Identity Name</label>
               <input 
@@ -253,9 +326,20 @@ export default function AdminDashboard() {
                 onChange={(e) => setState(prev => ({ ...prev, settings: { ...prev.settings, footerText: e.target.value } }))}
               />
             </div>
-            <button onClick={() => alert('Global settings saved!')} className="w-full bg-gradient-to-r from-red-600 to-red-600 text-white font-bold py-3 rounded-xl hover:from-red-700 hover:to-red-700 transition-colors shadow-lg shadow-red-500/25">
-              Apply Global Changes
-            </button>
+            <div className="flex items-center gap-3">
+              {settingsSavedFeedback && (
+                <span className="text-sm font-medium text-emerald-700 bg-emerald-100 px-3 py-1.5 rounded-lg">Settings saved</span>
+              )}
+              <button
+                onClick={() => {
+                  setSettingsSavedFeedback(true);
+                  window.setTimeout(() => setSettingsSavedFeedback(false), 3000);
+                }}
+                className="bg-gradient-to-r from-red-600 to-red-600 text-white font-bold py-3 px-6 rounded-xl hover:from-red-700 hover:to-red-700 transition-colors shadow-lg shadow-red-500/25"
+              >
+                Apply Global Changes
+              </button>
+            </div>
           </div>
         )}
 
