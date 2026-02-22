@@ -1,21 +1,24 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
 import { getNavFromPages } from '@/lib/getNavFromPages';
 import Layout from '@/components/ui/Layout';
 import LoginModal from '@/components/ui/LoginModal';
-import AdminDashboard from '@/components/cms/AdminDashboard';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  const {
-    state,
-    isAdminMode,
-    setIsLoginModalOpen,
-  } = useAppContext();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { state, setIsLoginModalOpen } = useAppContext();
+  const isAdminRoute = pathname?.startsWith('/admin');
 
-  if (isAdminMode && state.currentUser) {
-    return <AdminDashboard />;
+  useEffect(() => {
+    if (searchParams?.get('login') === '1') setIsLoginModalOpen(true);
+  }, [searchParams, setIsLoginModalOpen]);
+
+  if (isAdminRoute) {
+    return <>{children}</>;
   }
 
   return (

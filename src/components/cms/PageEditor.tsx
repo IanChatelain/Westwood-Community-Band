@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { PageConfig, PageSection, SidebarBlock, SidebarBlockType, SectionStyle } from '@/types';
+import { uploadImage } from '@/app/actions/upload';
 
 const SECTION_TYPES: { value: PageSection['type']; label: string; description: string }[] = [
   { value: 'text', label: 'Text', description: 'A heading and body text.' },
@@ -57,6 +58,11 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, showPreview = fal
   });
   const [isGenerating, setIsGenerating] = React.useState<string | null>(null);
   const [showSavedFeedback, setShowSavedFeedback] = React.useState(false);
+  const [uploadingSection, setUploadingSection] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadErrorSectionId, setUploadErrorSectionId] = useState<string | null>(null);
+  const [pendingUploadSectionId, setPendingUploadSectionId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Reset draft when switching to a different page
   React.useEffect(() => {
@@ -428,14 +434,46 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, showPreview = fal
                     {(section.type === 'hero' || section.type === 'image-text') && (
                       <div>
                         <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Image URL</label>
-                        <div className="relative">
-                          <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                          <input 
-                            className="w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-slate-900 placeholder:text-slate-400"
-                            value={section.imageUrl ?? ''}
-                            onChange={(e) => handleUpdateSection(section.id, { imageUrl: e.target.value })}
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                            <input
+                              className="w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-slate-900 placeholder:text-slate-400"
+                              value={section.imageUrl ?? ''}
+                              onChange={(e) => { handleUpdateSection(section.id, { imageUrl: e.target.value }); setUploadError(null); setUploadErrorSectionId(null); }}
+                            />
+                          </div>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/gif,image/webp"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const f = e.target.files?.[0];
+                              const sid = pendingUploadSectionId;
+                              setPendingUploadSectionId(null);
+                              if (!f || !sid) return;
+                              setUploadingSection(sid);
+                              setUploadError(null);
+                              const form = new FormData();
+                              form.set('file', f);
+                              const { url, error: err } = await uploadImage(form);
+                              setUploadingSection(null);
+                              e.target.value = '';
+                              if (err) { setUploadError(err); setUploadErrorSectionId(sid); return; }
+                              if (url) handleUpdateSection(sid, { imageUrl: url });
+                            }}
                           />
+                          <button
+                            type="button"
+                            onClick={() => { setPendingUploadSectionId(section.id); setUploadError(null); setUploadErrorSectionId(null); fileInputRef.current?.click(); }}
+                            disabled={uploadingSection === section.id}
+                            className="shrink-0 px-4 py-3 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-red-500"
+                          >
+                            {uploadingSection === section.id ? 'Uploading…' : 'Upload'}
+                          </button>
                         </div>
+                        {uploadError && uploadErrorSectionId === section.id && <p className="mt-1 text-xs text-red-600">{uploadError}</p>}
                       </div>
                     )}
                   </div>

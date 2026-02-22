@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Westwood Community Band
+
+A Next.js CMS for the Westwood Community Band website, with Supabase for auth, storage, and data, and optional deployment on Vercel with a custom domain.
+
+## Stack
+
+- **Next.js** (App Router)
+- **Supabase** – Auth, PostgreSQL (site settings, pages, profiles), Storage (image uploads)
+- **Vercel** – Hosting and custom domain
 
 ## Getting Started
 
-First, run the development server:
+### 1. Supabase
+
+1. Create a project at [supabase.com](https://supabase.com).
+2. In the SQL Editor, run the migrations in order:
+   - `supabase/migrations/20250222000001_initial_schema.sql`
+   - `supabase/migrations/20250222000002_seed.sql`
+3. Create a storage bucket in **Storage**:
+   - Name: `cms-uploads`
+   - Public: **Yes**
+   - File size limit: 5 MB
+   - Allowed MIME types: `image/jpeg`, `image/png`, `image/gif`, `image/webp`
+   - Add policies: **Public read**; **Authenticated** insert/update/delete.
+4. In **Authentication** → **Users**, create your first user (email + password).
+5. In the SQL Editor or Table Editor, insert a row in `profiles` for that user:
+   - `id`: the user’s UUID (from Authentication → Users)
+   - `username`: display name
+   - `role`: `ADMIN`
+   - `email`: same as auth user
+
+### 2. Environment variables
+
+Copy `.env.example` to `.env.local` and set:
+
+- `NEXT_PUBLIC_SUPABASE_URL` – Project URL from Supabase → Settings → API
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` – anon/public key from the same page
+
+Optional:
+
+- `NEXT_PUBLIC_GEMINI_API_KEY` – for AI Assist in the page editor
+
+### 3. Run locally
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Open [http://localhost:3000](http://localhost:3000). Use **Member Login** and sign in with your Supabase user, then open **Admin Dashboard** (or go to `/admin`) to manage content.
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Push the repo to GitHub and import it in [Vercel](https://vercel.com).
+2. In the Vercel project, go to **Settings** → **Environment Variables** and add:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - (Optional) `NEXT_PUBLIC_GEMINI_API_KEY`
+3. Deploy. The build command is `next build` (default).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Custom domain
+
+1. In the Vercel project, go to **Settings** → **Domains**.
+2. Add your domain (e.g. `westwoodcommunityband.ca`).
+3. Vercel will show the required DNS records (e.g. A record or CNAME). Add them at your domain registrar/DNS provider.
+4. Use **Redirect** if you want `www` to point to the root (or the other way around).
+
+After DNS propagates, the site will be served on your domain over HTTPS.
+
+## Scripts
+
+- `npm run dev` – Development server
+- `npm run build` – Production build
+- `npm run start` – Run production build locally
+- `npm run lint` – Run ESLint

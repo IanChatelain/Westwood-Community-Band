@@ -30,13 +30,23 @@ const Layout: React.FC<LayoutProps> = ({
     <div className="min-h-screen flex flex-col bg-slate-50">
       {/* Top Banner */}
       <div className="bg-[var(--westwood-red)] text-white text-xs py-2 px-4 flex justify-between items-center">
-        <button 
-          onClick={onLoginClick}
-          className="ml-auto text-red-100 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 focus:ring-offset-[var(--westwood-red)] rounded px-2 py-0.5"
-          aria-label={isAuthenticated ? 'Open admin dashboard' : 'Open member login'}
-        >
-          {isAuthenticated ? 'Admin Dashboard' : 'Member Login'}
-        </button>
+        {isAuthenticated ? (
+          <Link
+            href="/admin"
+            className="ml-auto text-red-100 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 focus:ring-offset-[var(--westwood-red)] rounded px-2 py-0.5"
+            aria-label="Open admin dashboard"
+          >
+            Admin Dashboard
+          </Link>
+        ) : (
+          <button
+            onClick={onLoginClick}
+            className="ml-auto text-red-100 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 focus:ring-offset-[var(--westwood-red)] rounded px-2 py-0.5"
+            aria-label="Open member login"
+          >
+            Member Login
+          </button>
+        )}
       </div>
 
       {/* Header */}

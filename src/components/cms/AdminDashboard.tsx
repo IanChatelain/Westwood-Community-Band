@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
 import AdminSidebar from '@/components/cms/AdminSidebar';
 import PageEditor from '@/components/cms/PageEditor';
@@ -11,9 +12,15 @@ import UsersTab from '@/components/cms/admin/UsersTab';
 import { ShieldCheck, HelpCircle, X } from 'lucide-react';
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const { state, setState, logout, updatePage, addPage, removePage, adminTab, setAdminTab } = useAppContext();
   const [previewOpen, setPreviewOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/');
+  };
 
   if (!state.currentUser) return null;
 
@@ -25,7 +32,7 @@ export default function AdminDashboard() {
         currentTab={adminTab}
         setTab={setAdminTab}
         user={state.currentUser}
-        onLogout={logout}
+        onLogout={handleLogout}
         onTogglePreview={() => setPreviewOpen((p) => !p)}
         previewOpen={previewOpen}
         isEditingPage={isEditingPage}
@@ -124,7 +131,7 @@ export default function AdminDashboard() {
           />
         )}
 
-        {adminTab === 'users' && <UsersTab users={state.users} />}
+        {adminTab === 'users' && <UsersTab />}
       </main>
     </div>
   );
