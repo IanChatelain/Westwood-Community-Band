@@ -2,14 +2,13 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { 
-  LayoutDashboard, 
-  FileText, 
-  Settings, 
-  Users, 
-  LogOut, 
+import {
+  LayoutDashboard,
+  FileText,
+  Settings,
+  Users,
+  LogOut,
   Monitor,
-  Menu as NavMenu,
   Music,
   ExternalLink
 } from 'lucide-react';
@@ -37,7 +36,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const menuItems = [
     { id: 'overview', label: 'Dashboard', icon: <LayoutDashboard size={20}/>, roles: ['ADMIN', 'EDITOR'] },
     { id: 'pages', label: 'Page Content', icon: <FileText size={20}/>, roles: ['ADMIN', 'EDITOR'] },
-    { id: 'navigation', label: 'Nav Structure', icon: <NavMenu size={20}/>, roles: ['ADMIN'] },
     { id: 'users', label: 'Team & RBAC', icon: <Users size={20}/>, roles: ['ADMIN'] },
     { id: 'settings', label: 'Site Settings', icon: <Settings size={20}/>, roles: ['ADMIN'] },
   ];
@@ -45,7 +43,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const filteredItems = menuItems.filter(item => item.roles.includes(user.role));
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col h-screen sticky top-0 border-r border-slate-800">
+    <aside className="w-64 min-w-64 flex-shrink-0 bg-slate-900 text-slate-300 flex flex-col h-screen sticky top-0 border-r border-slate-800">
       <div className="p-6 border-b border-slate-800 flex items-center justify-between">
         <div className="flex items-center gap-2 text-white font-bold">
           <div className="bg-gradient-to-br from-red-500 to-red-600 p-1.5 rounded-lg shadow-lg shadow-red-500/25"><Music size={18}/></div>

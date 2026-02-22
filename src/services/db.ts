@@ -1,11 +1,11 @@
 'use client';
 
-import { AppState, PageConfig } from '../types';
+import { AppState, PageConfig, SiteSettings } from '../types';
 import { DEFAULT_SETTINGS, INITIAL_PAGES, INITIAL_USERS, DEFAULT_SIDEBAR_BLOCKS } from '../constants';
 
 const STORAGE_KEY = 'westwood_band_cms_data';
 const VERSION_KEY = 'westwood_band_cms_version';
-const CURRENT_VERSION = '3.0.0'; // CMS customization: sidebarBlocks, section styles, table/separator
+const CURRENT_VERSION = '3.1.0'; // Nav derived from pages: showInNav, navOrder, navLabel; settings.navLinks removed
 
 export class DbService {
   private static instance: DbService;
@@ -46,6 +46,34 @@ export class DbService {
     });
   }
 
+  /** Migrate legacy navLinks from settings onto pages, then strip navLinks from settings. */
+  private migrateNavFromSettings(state: AppState): AppState {
+    const rawSettings = state.settings as SiteSettings & { navLinks?: { id: string; label: string; path: string; order: number }[] };
+    const legacyNav = rawSettings.navLinks;
+    let pages = state.pages;
+    if (legacyNav?.length) {
+      const linksByPath = new Map(legacyNav.map((l) => [l.path, l]));
+      pages = state.pages.map((p) => {
+        const link = linksByPath.get(p.slug);
+        if (!link) return { ...p, showInNav: p.showInNav ?? false, navOrder: p.navOrder ?? 999 };
+        return {
+          ...p,
+          showInNav: true,
+          navOrder: link.order,
+          navLabel: link.label !== p.title ? link.label : undefined,
+        };
+      });
+    }
+    const settings: SiteSettings = {
+      bandName: rawSettings.bandName,
+      logoUrl: rawSettings.logoUrl,
+      primaryColor: rawSettings.primaryColor,
+      secondaryColor: rawSettings.secondaryColor,
+      footerText: rawSettings.footerText,
+    };
+    return { ...state, pages, settings };
+  }
+
   public load(): AppState {
     if (typeof window === 'undefined') {
       return {
@@ -68,7 +96,7 @@ export class DbService {
     }
     const state = JSON.parse(data) as AppState;
     state.pages = this.migratePages(state.pages);
-    return state;
+    return this.migrateNavFromSettings(state);
   }
 
   public reset(): void {

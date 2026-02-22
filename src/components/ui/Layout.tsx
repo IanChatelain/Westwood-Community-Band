@@ -1,40 +1,38 @@
 'use client';
 
 import React from 'react';
-import { SiteSettings } from '@/types';
+import { SiteSettings, NavLink } from '@/types';
 import { Menu, X, Music, Mail, Phone, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 interface LayoutProps {
   settings: SiteSettings;
+  navLinks: NavLink[];
   children: React.ReactNode;
   onLoginClick: () => void;
   isAuthenticated: boolean;
 }
 
-const Layout: React.FC<LayoutProps> = ({ 
-  settings, 
-  children, 
+const Layout: React.FC<LayoutProps> = ({
+  settings,
+  navLinks,
+  children,
   onLoginClick,
   isAuthenticated
 }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const pathname = usePathname();
 
-  const sortedLinks = [...settings.navLinks].sort((a, b) => a.order - b.order);
+  const sortedLinks = [...navLinks].sort((a, b) => a.order - b.order);
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       {/* Top Banner */}
       <div className="bg-[var(--westwood-red)] text-white text-xs py-2 px-4 flex justify-between items-center">
-        <div className="flex gap-6">
-          <span className="flex items-center gap-1.5 text-red-100"><Phone size={12} className="text-red-200"/> (555) WESTWOOD</span>
-          <span className="flex items-center gap-1.5 text-red-100 hidden sm:flex"><Mail size={12} className="text-red-200"/> info@westwoodcommunityband.ca</span>
-        </div>
         <button 
           onClick={onLoginClick}
-          className="text-red-100 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 focus:ring-offset-[var(--westwood-red)] rounded px-2 py-0.5"
+          className="ml-auto text-red-100 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 focus:ring-offset-[var(--westwood-red)] rounded px-2 py-0.5"
           aria-label={isAuthenticated ? 'Open admin dashboard' : 'Open member login'}
         >
           {isAuthenticated ? 'Admin Dashboard' : 'Member Login'}
@@ -46,8 +44,8 @@ const Layout: React.FC<LayoutProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             <Link href="/" className="flex items-center gap-3 cursor-pointer group">
-              <div className="bg-[var(--westwood-red)] p-2 rounded-lg text-white shadow-sm group-hover:opacity-90 transition-opacity">
-                <Music size={22} />
+              <div className="w-35 h-10">
+                <img src="/BannerLogo.png" alt="Westwood Community Band Logo" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-slate-900 tracking-tight leading-none">

@@ -62,6 +62,12 @@ export interface PageConfig {
   sections: PageSection[];
   /** Editable sidebar blocks; when absent, default blocks are used. */
   sidebarBlocks?: SidebarBlock[];
+  /** Show this page in header/footer nav. Default true. */
+  showInNav?: boolean;
+  /** Order in nav (lower first). */
+  navOrder?: number;
+  /** Menu label; if absent, use title. */
+  navLabel?: string;
 }
 
 export interface SiteSettings {
@@ -70,7 +76,6 @@ export interface SiteSettings {
   primaryColor: string;
   secondaryColor: string;
   footerText: string;
-  navLinks: NavLink[];
 }
 
 export interface AppState {

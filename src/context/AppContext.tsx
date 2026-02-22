@@ -11,9 +11,8 @@ interface AppContextType {
   login: (role: UserRole) => void;
   logout: () => void;
   updatePage: (updatedPage: PageConfig) => void;
-  updateNav: (links: SiteSettings['navLinks']) => void;
   addPage: (title: string, slug: string, addToNav?: boolean) => PageConfig;
-  removePage: (pageId: string, removeFromNav?: boolean) => void;
+  removePage: (pageId: string) => void;
   isAdminMode: boolean;
   setIsAdminMode: React.Dispatch<React.SetStateAction<boolean>>;
   adminTab: string;
@@ -61,50 +60,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   };
 
-  const updateNav = (links: SiteSettings['navLinks']) => {
-    setState(prev => ({
-      ...prev,
-      settings: { ...prev.settings, navLinks: links }
-    }));
-  };
-
   const addPage = (title: string, slug: string, addToNav = true): PageConfig => {
     const normalizedSlug = slug.startsWith('/') ? slug : `/${slug}`;
-    const newPage = createEmptyPage(title, normalizedSlug);
+    const newPage = createEmptyPage(title, normalizedSlug, 0);
+    if (!addToNav) {
+      (newPage as PageConfig & { showInNav: boolean }).showInNav = false;
+    }
     setState(prev => {
       const exists = prev.pages.some(p => p.slug === normalizedSlug);
       if (exists) return prev;
-      const nextPages = [...prev.pages, newPage];
-      let nextNav = prev.settings.navLinks;
-      if (addToNav) {
-        const navId = Math.random().toString(36).substring(2, 11);
-        nextNav = [...nextNav, { id: navId, label: title, path: normalizedSlug, order: nextNav.length }];
-      }
-      return {
-        ...prev,
-        pages: nextPages,
-        settings: { ...prev.settings, navLinks: nextNav },
-      };
+      const maxOrder = Math.max(-1, ...prev.pages.map(p => p.navOrder ?? 999)) + 1;
+      newPage.navOrder = addToNav ? maxOrder : 999;
+      return { ...prev, pages: [...prev.pages, newPage] };
     });
     return newPage;
   };
 
-  const removePage = (pageId: string, removeFromNav = true) => {
+  const removePage = (pageId: string) => {
     setState(prev => {
       const page = prev.pages.find(p => p.id === pageId);
       if (!page) return prev;
       if (prev.pages.length <= 1) return prev;
       if (page.slug === '/') return prev; // do not remove home
-      const nextPages = prev.pages.filter(p => p.id !== pageId);
-      let nextNav = prev.settings.navLinks;
-      if (removeFromNav) {
-        nextNav = nextNav.filter(link => link.path !== page.slug);
-      }
-      return {
-        ...prev,
-        pages: nextPages,
-        settings: { ...prev.settings, navLinks: nextNav },
-      };
+      return { ...prev, pages: prev.pages.filter(p => p.id !== pageId) };
     });
   };
 
@@ -119,7 +97,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       updatePage,
-      updateNav,
       addPage,
       removePage,
       isAdminMode,

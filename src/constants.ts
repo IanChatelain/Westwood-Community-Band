@@ -13,14 +13,6 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   primaryColor: "#991b1b",  /* Westwood red */
   secondaryColor: "#1e3a8a",
   footerText: "© 2026 Westwood Community Band. Forty-five Years of Making Music.",
-  navLinks: [
-    { id: '1', label: 'Home', path: '/', order: 0 },
-    { id: '2', label: 'Performances', path: '/performances', order: 1 },
-    { id: '3', label: 'Media', path: '/media', order: 2 },
-    { id: '4', label: 'Photos', path: '/photos', order: 3 },
-    { id: '5', label: 'Join Us', path: '/join', order: 4 },
-    { id: '6', label: 'Contact', path: '/contact', order: 5 },
-  ]
 };
 
 export const INITIAL_PAGES: PageConfig[] = [
@@ -30,6 +22,8 @@ export const INITIAL_PAGES: PageConfig[] = [
     slug: '/',
     layout: 'full',
     sidebarWidth: 25,
+    showInNav: true,
+    navOrder: 0,
     sections: [
       {
         id: 'h1',
@@ -64,6 +58,9 @@ export const INITIAL_PAGES: PageConfig[] = [
     slug: '/performances',
     layout: 'full',
     sidebarWidth: 25,
+    showInNav: true,
+    navOrder: 1,
+    navLabel: 'Performances',
     sections: [
       {
         id: 'p1',
@@ -86,6 +83,8 @@ export const INITIAL_PAGES: PageConfig[] = [
     slug: '/media',
     layout: 'full',
     sidebarWidth: 25,
+    showInNav: true,
+    navOrder: 2,
     sections: [
       {
         id: 'm1',
@@ -108,6 +107,8 @@ export const INITIAL_PAGES: PageConfig[] = [
     slug: '/photos',
     layout: 'full',
     sidebarWidth: 25,
+    showInNav: true,
+    navOrder: 3,
     sections: [
       {
         id: 'ph1',
@@ -130,6 +131,8 @@ export const INITIAL_PAGES: PageConfig[] = [
     slug: '/join',
     layout: 'sidebar-right',
     sidebarWidth: 35,
+    showInNav: true,
+    navOrder: 4,
     sidebarBlocks: [...DEFAULT_SIDEBAR_BLOCKS],
     sections: [
       {
@@ -165,6 +168,8 @@ export const INITIAL_PAGES: PageConfig[] = [
     slug: '/contact',
     layout: 'sidebar-right',
     sidebarWidth: 40,
+    showInNav: true,
+    navOrder: 5,
     sidebarBlocks: [...DEFAULT_SIDEBAR_BLOCKS],
     sections: [
       {
@@ -189,7 +194,7 @@ export const INITIAL_USERS: User[] = [
 ];
 
 /** Create a new empty page for "Add page". Slug should be like "/about" (leading slash). */
-export function createEmptyPage(title: string, slug: string): PageConfig {
+export function createEmptyPage(title: string, slug: string, navOrder: number = 0): PageConfig {
   const id = Math.random().toString(36).substring(2, 11);
   return {
     id,
@@ -197,6 +202,8 @@ export function createEmptyPage(title: string, slug: string): PageConfig {
     slug: slug.startsWith('/') ? slug : `/${slug}`,
     layout: 'full',
     sidebarWidth: 25,
+    showInNav: true,
+    navOrder,
     sections: [
       {
         id: Math.random().toString(36).substring(2, 11),
