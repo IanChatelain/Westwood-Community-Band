@@ -106,6 +106,13 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, showPreview = fal
       content: type === 'table' ? '' : (type === 'separator' ? '' : 'Click here to edit content...'),
       ...(type === 'table' && { tableData: { headers: ['Column 1', 'Column 2'], rows: [['Row 1', 'Row 2']] } }),
       ...(type === 'separator' && { separatorStyle: 'line', separatorSpacing: 'medium' }),
+      ...(type === 'contact' && {
+        contactRecipients: [
+          { id: 'president', label: 'President' },
+          { id: 'music-director', label: 'Music Director' },
+          { id: 'booking', label: 'Booking' },
+        ],
+      }),
     };
     setEditedPage(prev => ({
       ...prev,
@@ -497,6 +504,64 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, showPreview = fal
                       value={section.content}
                       onChange={(e) => handleUpdateSection(section.id, { content: e.target.value })}
                     />
+                    {section.type === 'contact' && (
+                      <div className="mt-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                            Dropdown options (who to contact)
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const current = section.contactRecipients ?? [];
+                              const next = [
+                                ...current,
+                                { id: Math.random().toString(36).substring(2, 11), label: 'New option' },
+                              ];
+                              handleUpdateSection(section.id, { contactRecipients: next });
+                            }}
+                            className="text-[10px] font-bold text-red-600 hover:text-red-700"
+                          >
+                            + Add option
+                          </button>
+                        </div>
+                        <div className="space-y-2">
+                          {(section.contactRecipients ?? []).map((recipient, index) => (
+                            <div
+                              key={recipient.id}
+                              className="flex items-center gap-2"
+                            >
+                              <input
+                                className="flex-1 p-2 border border-slate-300 rounded text-slate-900 text-sm"
+                                value={recipient.label}
+                                onChange={(e) => {
+                                  const next = [...(section.contactRecipients ?? [])];
+                                  next[index] = { ...next[index], label: e.target.value };
+                                  handleUpdateSection(section.id, { contactRecipients: next });
+                                }}
+                                placeholder="Option label (e.g. President)"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const next = (section.contactRecipients ?? []).filter((r) => r.id !== recipient.id);
+                                  handleUpdateSection(section.id, { contactRecipients: next });
+                                }}
+                                className="p-1.5 hover:bg-red-50 rounded text-slate-500 hover:text-red-700"
+                                aria-label="Remove option"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          ))}
+                          {(section.contactRecipients ?? []).length === 0 && (
+                            <p className="text-[11px] text-slate-500">
+                              No dropdown options yet. Add at least one so visitors can choose who to contact.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

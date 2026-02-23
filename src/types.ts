@@ -19,6 +19,11 @@ export interface NavLink {
   order: number;
 }
 
+export interface ContactRecipient {
+  id: string;
+  label: string;
+}
+
 /** Preset styling for sections – applied via Tailwind, no raw CSS. */
 export interface SectionStyle {
   padding?: 'none' | 'small' | 'medium' | 'large';
@@ -41,6 +46,8 @@ export interface PageSection {
   /** For type === 'separator'. */
   separatorStyle?: 'line' | 'space' | 'dotted';
   separatorSpacing?: 'small' | 'medium' | 'large';
+  /** For type === 'contact': options for the \"Send to\" dropdown. */
+  contactRecipients?: ContactRecipient[];
 }
 
 export type SidebarBlockType = 'rehearsals' | 'fees' | 'contact' | 'custom';

@@ -176,7 +176,12 @@ export const INITIAL_PAGES: PageConfig[] = [
         id: 'c1',
         type: 'contact',
         title: 'Contact the Band',
-        content: 'If you have questions about the band, use the form to contact us!'
+        content: 'If you have questions about the band, use the form to contact us!',
+        contactRecipients: [
+          { id: 'president', label: 'President' },
+          { id: 'music-director', label: 'Music Director' },
+          { id: 'booking', label: 'Booking' },
+        ],
       },
       {
         id: 'c2',

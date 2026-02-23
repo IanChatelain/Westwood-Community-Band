@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { PageConfig, SidebarBlock, PageSection, SectionStyle } from '@/types';
 import { DEFAULT_SIDEBAR_BLOCKS } from '@/constants';
 import { Calendar, ArrowRight, Mail, MapPin, Clock, Send } from 'lucide-react';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
 
 function sectionWrapperClasses(style?: SectionStyle): string {
   if (!style) return '';
@@ -71,6 +72,173 @@ function SidebarBlockContent({ block }: { block: SidebarBlock }) {
     );
   }
   return null;
+}
+
+function ContactSection({ section }: { section: PageSection }) {
+  const recipients = section.contactRecipients ?? [];
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [recipientId, setRecipientId] = useState(recipients[0]?.id ?? '');
+  const [mathAnswer, setMathAnswer] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (event) => {
+    event.preventDefault();
+    setSubmitError(null);
+    setSubmitSuccess(false);
+
+    const parsed = parseInt(mathAnswer.trim(), 10);
+    if (Number.isNaN(parsed) || parsed !== 20) {
+      setSubmitError('Please answer the anti-spam question correctly.');
+      return;
+    }
+    if (!recipientId) {
+      setSubmitError('Please select who you would like to contact.');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const supabase = createClient();
+      const selected = recipients.find((r) => r.id === recipientId);
+      await supabase.from('contact_messages').insert({
+        sender_name: name.trim(),
+        sender_email: email.trim(),
+        subject: subject.trim() || null,
+        message: message.trim(),
+        recipient_label: selected?.label ?? recipientId,
+        recipient_id: recipientId,
+        user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+      });
+
+      setName('');
+      setEmail('');
+      setSubject('');
+      setMessage('');
+      setMathAnswer('');
+      setSubmitSuccess(true);
+    } catch (error) {
+      console.error('Error submitting contact form', error);
+      setSubmitError('Something went wrong while sending your message. Please try again later.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm ring-1 ring-slate-900/5">
+      <h3 className="text-2xl font-bold text-slate-900 text-center mb-4">{section.title}</h3>
+      <p className="text-slate-600 text-center mb-10">{section.content}</p>
+      <form className="max-w-xl mx-auto space-y-5" onSubmit={handleSubmit}>
+        {recipients.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Send to <span className="text-red-800">*</span>
+            </label>
+            <select
+              value={recipientId}
+              onChange={(e) => setRecipientId(e.target.value)}
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none text-slate-900 bg-white"
+              required
+            >
+              <option value="" disabled>
+                Select who you would like to contact
+              </option>
+              {recipients.map((recipient) => (
+                <option key={recipient.id} value={recipient.id}>
+                  {recipient.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Your Name <span className="text-red-800">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400 text-slate-900 transition-colors"
+              placeholder="John Doe"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Your Email <span className="text-red-800">*</span>
+            </label>
+            <input
+              type="email"
+              required
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400 text-slate-900 transition-colors"
+              placeholder="john@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">Subject</label>
+          <input
+            type="text"
+            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400 text-slate-900 transition-colors"
+            placeholder="How can we help?"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">Your Message</label>
+          <textarea
+            rows={5}
+            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400 text-slate-900 resize-none transition-colors"
+            placeholder="Write your message here..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">
+            What is four times five? <span className="text-red-800">*</span>
+          </label>
+          <input
+            type="text"
+            required
+            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400 text-slate-900 transition-colors"
+            placeholder="Answer"
+            value={mathAnswer}
+            onChange={(e) => setMathAnswer(e.target.value)}
+          />
+        </div>
+        {submitError && (
+          <p className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-md px-3 py-2">
+            {submitError}
+          </p>
+        )}
+        {submitSuccess && (
+          <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-md px-3 py-2">
+            Thank you for your message. We will get back to you soon.
+          </p>
+        )}
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full bg-red-800 hover:bg-red-900 disabled:opacity-60 disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 shadow-sm transition-all"
+        >
+          <Send size={18} />
+          {isSubmitting ? 'Sending...' : 'Send Message'}
+        </button>
+      </form>
+    </div>
+  );
 }
 
 interface PageContentProps {
@@ -145,40 +313,7 @@ export default function PageContent({ page }: PageContentProps) {
               </div>
             )}
 
-            {section.type === 'contact' && (
-              <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm ring-1 ring-slate-900/5">
-                <h3 className="text-2xl font-bold text-slate-900 text-center mb-4">{section.title}</h3>
-                <p className="text-slate-600 text-center mb-10">{section.content}</p>
-                <form className="max-w-xl mx-auto space-y-5">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Your Name <span className="text-red-800">*</span></label>
-                      <input type="text" required className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400 text-slate-900 transition-colors" placeholder="John Doe" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Your Email <span className="text-red-800">*</span></label>
-                      <input type="email" required className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400 text-slate-900 transition-colors" placeholder="john@example.com" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Subject</label>
-                    <input type="text" className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400 text-slate-900 transition-colors" placeholder="How can we help?" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Your Message</label>
-                    <textarea rows={5} className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400 text-slate-900 resize-none transition-colors" placeholder="Write your message here..." />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">What is four times five? <span className="text-red-800">*</span></label>
-                    <input type="text" required className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400 text-slate-900 transition-colors" placeholder="Answer" />
-                  </div>
-                  <button type="submit" className="w-full bg-red-800 hover:bg-red-900 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 shadow-sm transition-all">
-                    <Send size={18} />
-                    Send Message
-                  </button>
-                </form>
-              </div>
-            )}
+            {section.type === 'contact' && <ContactSection section={section} />}
 
             {section.type === 'schedule' && (
               <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm ring-1 ring-slate-900/5">

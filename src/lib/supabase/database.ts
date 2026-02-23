@@ -47,6 +47,25 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['profiles']['Row'], 'updated_at'> & { updated_at?: string };
         Update: Partial<Database['public']['Tables']['profiles']['Insert']>;
       };
+      contact_messages: {
+        Row: {
+          id: string;
+          created_at: string;
+          sender_name: string;
+          sender_email: string;
+          subject: string | null;
+          message: string;
+          recipient_label: string;
+          recipient_id: string;
+          user_agent: string | null;
+          remote_ip: string | null;
+        };
+        Insert: Omit<Database['public']['Tables']['contact_messages']['Row'], 'id' | 'created_at'> & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['contact_messages']['Insert']>;
+      };
     };
   };
 }
