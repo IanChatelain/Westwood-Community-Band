@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   DndContext,
   KeyboardSensor,
@@ -51,6 +52,10 @@ const DEFAULT_HEIGHTS: Partial<Record<PageSectionType, number>> = {
   downloads: 220,
 };
 
+const MOVE_DROPDOWN_PANEL_ID = 'move-section-dropdown-panel';
+const PANEL_MAX_HEIGHT = 320;
+const GAP = 4;
+
 function MoveSectionDropdown({
   sectionId,
   sectionTitle,
@@ -63,43 +68,82 @@ function MoveSectionDropdown({
   onMove: (sectionId: string, targetPageId: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [position, setPosition] = useState<{ top?: number; bottom?: number; right: number } | null>(null);
+
+  useEffect(() => {
+    if (!open || !triggerRef.current) {
+      setPosition(null);
+      return;
+    }
+    const rect = triggerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom - GAP;
+    const spaceAbove = rect.top - GAP;
+    const openDown = spaceBelow >= Math.min(PANEL_MAX_HEIGHT, spaceAbove) || spaceBelow >= spaceAbove;
+    if (openDown) {
+      setPosition({
+        top: rect.bottom + GAP,
+        right: window.innerWidth - rect.right,
+      });
+    } else {
+      setPosition({
+        bottom: window.innerHeight - rect.top + GAP,
+        right: window.innerWidth - rect.right,
+      });
+    }
+  }, [open]);
+
+  const panelContent =
+    open && position ? (
+      <div
+        id={MOVE_DROPDOWN_PANEL_ID}
+        className="fixed z-40 w-52 max-h-80 overflow-y-auto bg-white rounded-lg shadow-xl border border-slate-200 py-1"
+        style={{
+          ...(position.top != null ? { top: position.top } : {}),
+          ...(position.bottom != null ? { bottom: position.bottom } : {}),
+          right: position.right,
+        }}
+      >
+        <p className="px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase">Move to page</p>
+        {pages.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onMove(sectionId, p.id);
+              setOpen(false);
+            }}
+            className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+          >
+            {p.title}
+          </button>
+        ))}
+        {pages.length === 0 && (
+          <p className="px-3 py-2 text-xs text-slate-400">No other pages available.</p>
+        )}
+      </div>
+    ) : null;
 
   return (
     <div className="relative">
       <button
+        ref={triggerRef}
         type="button"
         onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
         className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50"
         aria-label={`Move ${sectionTitle} to another page`}
         title="Move to another page"
+        aria-expanded={open}
+        aria-haspopup="true"
+        aria-controls={open ? MOVE_DROPDOWN_PANEL_ID : undefined}
       >
         <ArrowRightLeft size={14} />
       </button>
       {open && (
-        <>
-          <div className="fixed inset-0 z-30" aria-hidden onClick={(e) => { e.stopPropagation(); setOpen(false); }} />
-          <div className="absolute right-0 top-full mt-1 z-40 w-52 bg-white rounded-lg shadow-xl border border-slate-200 py-1">
-            <p className="px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase">Move to page</p>
-            {pages.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onMove(sectionId, p.id);
-                  setOpen(false);
-                }}
-                className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900"
-              >
-                {p.title}
-              </button>
-            ))}
-            {pages.length === 0 && (
-              <p className="px-3 py-2 text-xs text-slate-400">No other pages available.</p>
-            )}
-          </div>
-        </>
+        <div className="fixed inset-0 z-30" aria-hidden onClick={(e) => { e.stopPropagation(); setOpen(false); }} />
       )}
+      {open && panelContent && createPortal(panelContent, document.body)}
     </div>
   );
 }
