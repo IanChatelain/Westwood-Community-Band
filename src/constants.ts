@@ -1,4 +1,4 @@
-import { SiteSettings, PageConfig, User, UserRole, SidebarBlock, GalleryEvent } from './types';
+import { SiteSettings, PageConfig, User, UserRole, SidebarBlock } from './types';
 
 /** Default sidebar blocks used when a page has sidebar layout but no custom sidebarBlocks. */
 export const DEFAULT_SIDEBAR_BLOCKS: SidebarBlock[] = [
@@ -12,20 +12,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   logoUrl: "/treble-clef.svg",
   primaryColor: "#991b1b",  /* Westwood red */
   secondaryColor: "#1e3a8a",
-  footerText: "© 2026 Westwood Community Band. Forty-five Years of Making Music.",
+  footerText: "\u00a9 2026 Westwood Community Band. Forty-five Years of Making Music.",
 };
-
-const INITIAL_GALLERY_EVENTS: GalleryEvent[] = [
-  { id: 'ge-1', title: '2014 Christmas Bus Trip', slug: '2014-christmas-bus-trip', media: [] },
-  { id: 'ge-2', title: '2013 Forks Concert', slug: '2013-forks-concert', media: [] },
-  { id: 'ge-3', title: '2013 Spring Concert with Stonewall Collegiate Jazz Band', slug: '2013-spring-concert', media: [] },
-  { id: 'ge-4', title: '2012 Benefit for the Canadian Mental Health Association', slug: '2012-benefit-cmha', media: [] },
-  { id: 'ge-5', title: '2011 An Old Fashioned Christmas Concert', slug: '2011-christmas-concert', media: [] },
-  { id: 'ge-6', title: '2006/2007 Rehearsal', slug: '2006-2007-rehearsal', media: [] },
-  { id: 'ge-7', title: '2006 Christmas Concert at Rockwood ANAF', slug: '2006-christmas-concert', media: [] },
-  { id: 'ge-8', title: '2006 International Music Camp', slug: '2006-international-music-camp', media: [] },
-  { id: 'ge-9', title: '2006 June \u2013 Year End Concert at the Forks', slug: '2006-year-end-concert', media: [] },
-];
 
 export const INITIAL_PAGES: PageConfig[] = [
   {
@@ -54,7 +42,7 @@ export const INITIAL_PAGES: PageConfig[] = [
         id: 'h3',
         type: 'text',
         title: 'Our Mission',
-        content: "The Band's objectives are to play good music and offer musical entertainment to the wider community. The Band welcomes adults, beginners through to accomplished musicians, who play woodwind, brass, or percussion instruments. We practice from September – June, Thursday nights at John Taylor Collegiate."
+        content: "The Band's objectives are to play good music and offer musical entertainment to the wider community. The Band welcomes adults, beginners through to accomplished musicians, who play woodwind, brass, or percussion instruments. We practice from September \u2013 June, Thursday nights at John Taylor Collegiate."
       },
       {
         id: 'h4',
@@ -109,7 +97,7 @@ export const INITIAL_PAGES: PageConfig[] = [
         id: 'm2',
         type: 'text',
         title: 'Featured Recordings',
-        content: 'Liberty Bell • Big Band Showcase • It Don\'t Mean a Thing • Count Basie Salute • Themes Like Old Times • Caravan • Swing the Mood • Blues Brothers Revue'
+        content: 'Liberty Bell \u2022 Big Band Showcase \u2022 It Don\'t Mean a Thing \u2022 Count Basie Salute \u2022 Themes Like Old Times \u2022 Caravan \u2022 Swing the Mood \u2022 Blues Brothers Revue'
       }
     ]
   },
@@ -134,7 +122,7 @@ export const INITIAL_PAGES: PageConfig[] = [
         type: 'gallery',
         title: 'Event Photos',
         content: '',
-        galleryEvents: INITIAL_GALLERY_EVENTS,
+        galleryEvents: [],
       }
     ]
   },

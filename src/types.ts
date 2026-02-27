@@ -73,6 +73,14 @@ export interface PageSection {
   contactRecipients?: ContactRecipient[];
   /** For type === 'gallery': structured event-based gallery data. */
   galleryEvents?: GalleryEvent[];
+  /** For type === 'gallery': number of cards per row on desktop (default 3). */
+  galleryColumns?: 2 | 3 | 4;
+  /** For type === 'gallery': card padding and text sizing preset (default 'md'). */
+  galleryCardSize?: 'sm' | 'md' | 'lg';
+  /** For type === 'gallery': thumbnail aspect ratio (default 'landscape'). */
+  galleryThumbnailAspect?: 'landscape' | 'square';
+  /** For type === 'gallery': show event description on cards (default true). */
+  galleryShowDescription?: boolean;
 }
 
 export type SidebarBlockType = 'rehearsals' | 'fees' | 'contact' | 'custom';

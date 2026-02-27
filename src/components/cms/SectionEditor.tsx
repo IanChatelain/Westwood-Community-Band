@@ -202,11 +202,77 @@ function SortableSectionItem({
             />
           )}
           {section.type === 'gallery' && (
-            <GalleryEventsEditor
-              events={section.galleryEvents ?? []}
-              onChange={(galleryEvents) => onUpdate({ galleryEvents })}
-              inputClass={inputClass}
-            />
+            <>
+              <div className="space-y-3 pb-2">
+                <p className="text-[10px] font-bold text-slate-500 uppercase">Gallery Layout</p>
+                <div className="flex items-center gap-3">
+                  <label className="text-xs text-slate-600 w-28 flex-shrink-0">Cards per row</label>
+                  <select
+                    className={inputClass}
+                    value={section.galleryColumns ?? 3}
+                    onChange={(e) => onUpdate({ galleryColumns: parseInt(e.target.value, 10) as 2 | 3 | 4 })}
+                  >
+                    <option value={2}>2</option>
+                    <option value={3}>3</option>
+                    <option value={4}>4</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="text-xs text-slate-600 w-28 flex-shrink-0">Card size</label>
+                  <select
+                    className={inputClass}
+                    value={section.galleryCardSize ?? 'md'}
+                    onChange={(e) => onUpdate({ galleryCardSize: e.target.value as 'sm' | 'md' | 'lg' })}
+                  >
+                    <option value="sm">Small</option>
+                    <option value="md">Medium</option>
+                    <option value="lg">Large</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="text-xs text-slate-600 w-28 flex-shrink-0">Thumbnail shape</label>
+                  <div className="flex gap-2">
+                    {(['landscape', 'square'] as const).map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => onUpdate({ galleryThumbnailAspect: opt })}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                          (section.galleryThumbnailAspect ?? 'landscape') === opt
+                            ? 'border-red-600 bg-red-50 text-red-700'
+                            : 'border-slate-300 text-slate-600 hover:border-slate-400'
+                        }`}
+                      >
+                        {opt === 'landscape' ? 'Landscape (4:3)' : 'Square (1:1)'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="text-xs text-slate-600 w-28 flex-shrink-0">Show description</label>
+                  <button
+                    type="button"
+                    onClick={() => onUpdate({ galleryShowDescription: !(section.galleryShowDescription ?? true) })}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                      (section.galleryShowDescription ?? true) ? 'bg-red-600' : 'bg-slate-300'
+                    }`}
+                    role="switch"
+                    aria-checked={section.galleryShowDescription ?? true}
+                  >
+                    <span
+                      className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${
+                        (section.galleryShowDescription ?? true) ? 'translate-x-4.5' : 'translate-x-0.5'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+              <GalleryEventsEditor
+                events={section.galleryEvents ?? []}
+                onChange={(galleryEvents) => onUpdate({ galleryEvents })}
+                inputClass={inputClass}
+              />
+            </>
           )}
 
           {/* Size controls */}
@@ -576,12 +642,20 @@ export function SectionEditor({ sections, onChange }: SectionEditorProps) {
     const id = Math.random().toString(36).substring(2, 11);
     const label = SECTION_TYPE_LABELS[type] ?? type;
     const defaultHeight = DEFAULT_HEIGHTS[type];
+    const galleryDefaults = type === 'gallery' ? {
+      galleryEvents: [],
+      galleryColumns: 3 as const,
+      galleryCardSize: 'md' as const,
+      galleryThumbnailAspect: 'landscape' as const,
+      galleryShowDescription: true,
+    } : {};
     const newSection: PageSection = {
       id,
       type,
       title: label,
       content: '',
       ...(defaultHeight != null && { minHeight: defaultHeight }),
+      ...galleryDefaults,
     };
     onChange([...sections, newSection]);
     setExpandedId(id);

@@ -463,18 +463,49 @@ function GallerySection({ section, pageSlug }: { section: PageSection; pageSlug:
   const hasEvents = section.galleryEvents && section.galleryEvents.length > 0;
   const basePath = pageSlug === '/' ? '' : pageSlug;
 
+  const cols = section.galleryColumns ?? 3;
+  const cardSize = section.galleryCardSize ?? 'md';
+  const thumbAspect = section.galleryThumbnailAspect ?? 'landscape';
+  const showDesc = section.galleryShowDescription ?? true;
+
+  const gridColsClass: Record<number, string> = {
+    2: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6',
+    3: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6',
+    4: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6',
+  };
+
+  const cardPadding: Record<string, string> = {
+    sm: 'p-2.5',
+    md: 'p-4',
+    lg: 'p-6',
+  };
+
+  const titleSize: Record<string, string> = {
+    sm: 'text-sm',
+    md: 'text-base',
+    lg: 'text-lg',
+  };
+
+  const descSize: Record<string, string> = {
+    sm: 'text-xs',
+    md: 'text-sm',
+    lg: 'text-sm',
+  };
+
+  const aspectClass = thumbAspect === 'square' ? 'aspect-square' : 'aspect-[4/3]';
+
   return (
     <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm ring-1 ring-slate-900/5" style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
       <h3 className="text-2xl font-bold text-slate-900 mb-8 border-l-4 border-red-800 pl-6">{section.title}</h3>
       {hasEvents ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className={gridColsClass[cols] ?? gridColsClass[3]}>
           {section.galleryEvents!.map((ev) => (
             <Link
               key={ev.id}
               href={`${basePath}/${ev.slug}`}
               className="group block rounded-xl overflow-hidden border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all bg-white"
             >
-              <div className="aspect-[4/3] bg-slate-100 overflow-hidden">
+              <div className={`${aspectClass} bg-slate-100 overflow-hidden`}>
                 {ev.coverImageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -495,9 +526,9 @@ function GallerySection({ section, pageSlug }: { section: PageSection; pageSlug:
                   </div>
                 )}
               </div>
-              <div className="p-4">
-                <h4 className="font-semibold text-slate-900 group-hover:text-red-800 transition-colors">{ev.title}</h4>
-                {ev.description && <p className="text-sm text-slate-500 mt-1 line-clamp-2">{ev.description}</p>}
+              <div className={cardPadding[cardSize]}>
+                <h4 className={`font-semibold text-slate-900 group-hover:text-red-800 transition-colors ${titleSize[cardSize]}`}>{ev.title}</h4>
+                {showDesc && ev.description && <p className={`${descSize[cardSize]} text-slate-500 mt-1 line-clamp-2`}>{ev.description}</p>}
                 {ev.media.length > 0 && (
                   <p className="text-xs text-slate-400 mt-2">{ev.media.length} {ev.media.length === 1 ? 'item' : 'items'}</p>
                 )}
@@ -505,13 +536,18 @@ function GallerySection({ section, pageSlug }: { section: PageSection; pageSlug:
             </Link>
           ))}
         </div>
-      ) : (
+      ) : section.content && section.content.includes('•') ? (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {section.content.split('•').filter(Boolean).map((item, i) => (
             <div key={i} className="bg-slate-50 p-4 rounded-xl hover:bg-slate-100 hover:ring-2 hover:ring-slate-200 transition-all cursor-pointer group">
               <p className="text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors">{item.trim()}</p>
             </div>
           ))}
+        </div>
+      ) : (
+        <div className="text-center py-12 text-slate-400">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-4 opacity-50"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          <p className="text-sm">No events yet. Add events via the admin panel.</p>
         </div>
       )}
     </div>
@@ -624,36 +660,17 @@ export default function PageContent({ page }: PageContentProps) {
                   </div>
                   {section.title}
                 </h3>
-                <div
-                  className="text-slate-600 text-center mb-10 prose prose-slate prose-sm mx-auto"
-                  dangerouslySetInnerHTML={{ __html: textToHtml(section.content) }}
-                />
-                <div className="space-y-3">
-                  {[
-                    { date: 'Dec 15, 2024', time: '7:30 PM', event: 'Winter Gala Concert', venue: 'Centennial Concert Hall' },
-                    { date: 'Feb 14, 2025', time: '7:00 PM', event: 'Valentine\'s Day Performance', venue: 'Garden City Community Centre' },
-                    { date: 'Apr 20, 2025', time: '2:00 PM', event: 'Spring Concert', venue: 'John Taylor Collegiate' },
-                    { date: 'Jun 08, 2025', time: '1:00 PM', event: 'Year End Concert at The Forks', venue: 'The Forks, Winnipeg' },
-                  ].map((item, i) => (
-                    <div key={i} className="bg-slate-50 p-5 rounded-xl flex flex-wrap items-center justify-between hover:bg-slate-100 transition-colors group gap-4">
-                      <div className="flex gap-5 items-center">
-                        <div className="text-center min-w-[70px]">
-                          <p className="text-[10px] font-bold uppercase text-red-800 tracking-wide">{item.date.split(',')[1]?.trim()}</p>
-                          <p className="text-lg font-bold text-slate-900">{item.date.split(',')[0]}</p>
-                        </div>
-                        <div className="h-10 w-px bg-slate-200 hidden sm:block" aria-hidden="true"></div>
-                        <div>
-                          <h4 className="font-semibold text-slate-900">{item.event}</h4>
-                          <p className="text-sm text-slate-500 flex items-center gap-1"><MapPin size={12}/> {item.venue}</p>
-                        </div>
-                      </div>
-                      <div className="text-right flex items-center gap-2 text-slate-500">
-                        <Clock size={14}/>
-                        <p className="text-sm font-medium">{item.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {section.content ? (
+                  <div
+                    className="text-slate-600 text-center prose prose-slate prose-sm mx-auto"
+                    dangerouslySetInnerHTML={{ __html: textToHtml(section.content) }}
+                  />
+                ) : (
+                  <div className="text-center py-8 text-slate-400">
+                    <Calendar className="mx-auto mb-3 opacity-50" size={36}/>
+                    <p className="text-sm">No schedule information yet. Add details via the admin panel.</p>
+                  </div>
+                )}
               </div>
             )}
 
