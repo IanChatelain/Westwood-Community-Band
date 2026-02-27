@@ -700,9 +700,33 @@ function GalleryMediaEditor({
   onChange: (items: GalleryMediaItem[]) => void;
   inputClass: string;
 }) {
-  const addItem = (type: 'image' | 'video') => {
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [addingImage, setAddingImage] = useState(false);
+  const [addImageError, setAddImageError] = useState<string | null>(null);
+
+  const handleAddImage = async (file: File) => {
+    setAddImageError(null);
+    setAddingImage(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const result = await uploadImage(fd);
+      if (result.error) {
+        setAddImageError(result.error);
+      } else if (result.url) {
+        const id = Math.random().toString(36).substring(2, 11);
+        onChange([...items, { id, type: 'image', url: result.url, caption: '' }]);
+      }
+    } catch {
+      setAddImageError('Upload failed');
+    } finally {
+      setAddingImage(false);
+    }
+  };
+
+  const addVideo = () => {
     const id = Math.random().toString(36).substring(2, 11);
-    onChange([...items, { id, type, url: '', caption: '' }]);
+    onChange([...items, { id, type: 'video', url: '', caption: '' }]);
   };
 
   const updateItem = (id: string, updates: Partial<GalleryMediaItem>) => {
@@ -726,14 +750,26 @@ function GalleryMediaEditor({
       <div className="flex items-center justify-between">
         <label className="block text-[10px] font-bold text-slate-700 uppercase">Media Items</label>
         <div className="flex gap-1">
-          <button type="button" onClick={() => addItem('image')} className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 transition-colors">
-            <ImageIcon size={10} /> Image
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleAddImage(f);
+              e.target.value = '';
+            }}
+          />
+          <button type="button" disabled={addingImage} onClick={() => imageInputRef.current?.click()} className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 disabled:opacity-50 transition-colors">
+            <ImageIcon size={10} /> {addingImage ? 'Uploading...' : 'Image'}
           </button>
-          <button type="button" onClick={() => addItem('video')} className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 transition-colors">
+          <button type="button" onClick={addVideo} className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 transition-colors">
             <Video size={10} /> Video
           </button>
         </div>
       </div>
+      {addImageError && <p className="text-[10px] text-red-600">{addImageError}</p>}
       {items.length === 0 && (
         <p className="text-[10px] text-slate-500">No media yet.</p>
       )}
@@ -762,6 +798,7 @@ function GalleryMediaEditor({
                 onChange={(url) => updateItem(item.id, { url: url ?? '' })}
                 label="Image"
                 compact
+                hideRemoveButton
               />
             ) : (
               <input
@@ -1117,11 +1154,13 @@ function ImageUploadField({
   onChange,
   label,
   compact,
+  hideRemoveButton,
 }: {
   value: string | undefined;
   onChange: (url: string | undefined) => void;
   label?: string;
   compact?: boolean;
+  hideRemoveButton?: boolean;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -1153,14 +1192,16 @@ function ImageUploadField({
         <div className={`relative ${compact ? 'mb-1' : 'mb-2'} rounded-lg overflow-hidden border border-slate-200 bg-slate-50`}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={value} alt="" className={`w-full ${compact ? 'h-16' : 'h-24'} object-cover`} />
-          <button
-            type="button"
-            onClick={() => onChange(undefined)}
-            className="absolute top-1 right-1 p-1 bg-white/90 rounded-full text-slate-600 hover:text-red-600 shadow-sm"
-            aria-label="Remove image"
-          >
-            <X size={12} />
-          </button>
+          {!hideRemoveButton && (
+            <button
+              type="button"
+              onClick={() => onChange(undefined)}
+              className="absolute top-1 right-1 p-1 bg-white/90 rounded-full text-slate-600 hover:text-red-600 shadow-sm"
+              aria-label="Remove image"
+            >
+              <X size={12} />
+            </button>
+          )}
         </div>
       )}
       <input
