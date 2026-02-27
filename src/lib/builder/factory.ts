@@ -23,8 +23,6 @@ export function createBlockOfType(type: BuilderBlockType): BuilderBlock {
         src: '',
         alt: '',
         caption: '',
-        borderRadius: 8,
-        padding: 8,
       };
     case 'separator':
       return {
@@ -48,9 +46,6 @@ export function createBlockOfType(type: BuilderBlockType): BuilderBlock {
         label: 'Click me',
         href: '#',
         variant: 'primary',
-        borderRadius: 999,
-        paddingX: 16,
-        paddingY: 10,
       };
     default:
       // Fallback to rich text to remain robust as types evolve.

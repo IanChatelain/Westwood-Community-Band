@@ -321,7 +321,10 @@ export function BuilderBlockView({ block }: { block: BuilderBlock }) {
             <div className="absolute inset-0 bg-gradient-to-r from-red-900/85 via-red-800/40 to-transparent flex items-center px-6 md:px-12">
               <div className="max-w-xl space-y-3">
                 <h2 className="text-2xl md:text-4xl font-bold text-white leading-tight tracking-tight">{block.title ?? ''}</h2>
-                <p className="text-sm md:text-base text-red-100 leading-relaxed line-clamp-2">{block.content}</p>
+                <div
+                  className="text-sm md:text-base text-red-100 leading-relaxed line-clamp-3 prose prose-invert prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: block.content }}
+                />
                 <Link
                   href="/join"
                   className="inline-flex bg-white/95 text-red-800 hover:bg-white px-5 py-2.5 rounded-lg font-semibold shadow-sm transition-all items-center gap-2 group"
@@ -341,7 +344,10 @@ export function BuilderBlockView({ block }: { block: BuilderBlock }) {
             {block.title && (
               <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6 border-l-4 border-red-800 pl-6">{block.title}</h3>
             )}
-            <div className="text-lg text-slate-600 leading-relaxed whitespace-pre-line">{block.content}</div>
+            <div
+              className="prose prose-slate max-w-none text-lg leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: block.content }}
+            />
           </div>
         </section>
       );
@@ -349,17 +355,18 @@ export function BuilderBlockView({ block }: { block: BuilderBlock }) {
     return (
       <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="max-w-3xl">
-          <div className="text-lg text-slate-600 leading-relaxed whitespace-pre-line">
-            {block.content}
-          </div>
+          <div
+            className="prose prose-slate max-w-none text-lg leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: block.content }}
+          />
         </div>
       </section>
     );
   }
 
   if (block.type === 'image') {
-    const radius = block.borderRadius ?? 12;
-    const padding = block.padding ?? 8;
+    const radius = 12;
+    const padding = 8;
     return (
       <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
         <figure
@@ -426,15 +433,12 @@ export function BuilderBlockView({ block }: { block: BuilderBlock }) {
         : variant === 'ghost'
           ? `${base} bg-transparent text-red-800 border border-transparent hover:bg-red-50 focus:ring-red-800`
           : `${base} bg-red-800 text-white hover:bg-red-900 focus:ring-red-800`;
-    const radius = block.borderRadius ?? 999;
-    const paddingX = block.paddingX ?? 20;
-    const paddingY = block.paddingY ?? 10;
     return (
       <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
         <a
           href={block.href || '#'}
           className={classes}
-          style={{ borderRadius: radius, paddingLeft: paddingX, paddingRight: paddingX, paddingTop: paddingY, paddingBottom: paddingY }}
+          style={{ borderRadius: 999, paddingLeft: 20, paddingRight: 20, paddingTop: 10, paddingBottom: 10 }}
         >
           {block.label}
         </a>

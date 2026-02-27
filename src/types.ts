@@ -155,8 +155,6 @@ export interface ImageBlock extends BuilderBlockBase {
   src: string;
   alt: string;
   caption?: string;
-  borderRadius?: number;
-  padding?: number;
 }
 
 export interface SeparatorBlock extends BuilderBlockBase {
@@ -177,9 +175,6 @@ export interface ButtonBlock extends BuilderBlockBase {
   label: string;
   href: string;
   variant?: 'primary' | 'secondary' | 'ghost';
-  borderRadius?: number;
-  paddingX?: number;
-  paddingY?: number;
 }
 
 export type BuilderBlock =
