@@ -33,7 +33,26 @@ export interface SectionStyle {
   imageSize?: 'small' | 'medium' | 'large';
 }
 
-export type PageSectionType = 'hero' | 'text' | 'image-text' | 'gallery' | 'contact' | 'schedule' | 'table' | 'separator';
+export type PageSectionType = 'hero' | 'text' | 'image-text' | 'gallery' | 'contact' | 'schedule' | 'table' | 'separator' | 'downloads';
+
+export interface DownloadLink {
+  label: string;
+  url: string;
+}
+
+export interface DownloadItem {
+  label: string;
+  url?: string;
+  links?: DownloadLink[];
+  description?: string;
+  fileSize?: string;
+  duration?: string;
+}
+
+export interface DownloadGroup {
+  title: string;
+  items: DownloadItem[];
+}
 
 export interface GalleryMediaItem {
   id: string;
@@ -81,6 +100,10 @@ export interface PageSection {
   galleryThumbnailAspect?: 'landscape' | 'square';
   /** For type === 'gallery': show event description on cards (default true). */
   galleryShowDescription?: boolean;
+  /** For type === 'downloads': flat list of downloadable items. */
+  downloadItems?: DownloadItem[];
+  /** For type === 'downloads': grouped lists (e.g. newsletter by season). */
+  downloadGroups?: DownloadGroup[];
 }
 
 export type SidebarBlockType = 'rehearsals' | 'fees' | 'contact' | 'custom';

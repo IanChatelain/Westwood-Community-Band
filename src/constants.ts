@@ -89,8 +89,8 @@ export const INITIAL_PAGES: PageConfig[] = [
       {
         id: 'm1',
         type: 'hero',
-        title: 'Videos & Recordings',
-        content: 'Watch and listen to performances by the Westwood Community Band.',
+        title: 'Media & Resources',
+        content: 'Watch, listen, and access band resources \u2014 recordings, documents, and more.',
         imageUrl: '/images/media.jpg'
       },
       {
@@ -112,6 +112,38 @@ export const INITIAL_PAGES: PageConfig[] = [
           { id: 'm-swing-the-mood', title: 'Swing the Mood', slug: 'swing-the-mood', description: 'An energetic swing medley.', media: [] },
           { id: 'm-blues-brothers-revue', title: 'Blues Brothers Revue', slug: 'blues-brothers-revue', description: 'A rockin\' tribute to the Blues Brothers.', media: [] },
         ],
+      },
+      {
+        id: 'm3',
+        type: 'downloads',
+        title: 'Sample Recordings',
+        content: 'Tracks recorded during Westwood\'s 25th Anniversary Concert on July 30th, 2006 at the International Music Camp.',
+        downloadItems: [
+          { label: 'Liberty Bell', url: '#', description: 'A classic march by John Philip Sousa.', fileSize: '2.54 MB', duration: '2:47' },
+          { label: 'Big Band Showcase', url: '#', description: 'Highlights from our big band repertoire.', fileSize: '7.63 MB', duration: '8:20' },
+          { label: 'It Don\'t Mean a Thing', url: '#', description: 'Duke Ellington\'s iconic swing number.', fileSize: '3.12 MB', duration: '3:25' },
+          { label: 'Count Basie Salute', url: '#', description: 'A tribute to the legendary Count Basie.', fileSize: '3.91 MB', duration: '4:17' },
+          { label: 'Themes Like Old Times', url: '#', description: 'A nostalgic medley of timeless melodies.', fileSize: '5.11 MB', duration: '5:35' },
+          { label: 'Caravan', url: '#', description: 'The classic Duke Ellington and Juan Tizol composition.', fileSize: '2.53 MB', duration: '2:46' },
+          { label: 'Swing the Mood', url: '#', description: 'An energetic swing medley.', fileSize: '3.31 MB', duration: '3:38' },
+          { label: 'Blues Brothers Revue', url: '#', description: 'A rockin\' tribute to the Blues Brothers.', fileSize: '4.75 MB', duration: '5:12' },
+        ],
+      },
+      {
+        id: 'm4',
+        type: 'downloads',
+        title: 'Band Documents',
+        content: 'Download band resources including the complete music library listing.',
+        downloadItems: [
+          { label: 'Music List (Excel)', url: '#', description: 'Complete listing of music available in the Westwood Music Library.', fileSize: '39.5 KB' },
+          { label: 'Music List (HTML)', url: '#', description: 'View the music list in your browser.' },
+        ],
+      },
+      {
+        id: 'm5',
+        type: 'text',
+        title: 'International Music Camp',
+        content: 'The <a href="http://www.internationalmusiccamp.com/" target="_blank" rel="noopener noreferrer">International Music Camp</a> is an annual event for students and adults that takes place at the International Peace Gardens on the border between Manitoba and North Dakota.\n\nThe adult camp is a 4-day event. Every year a significant number of Westwood Band members make the trek to attend. In 2006, Westwood were guest performers at IMC for our 25th anniversary. We loved performing for such an amazing audience. The performance was recorded and several of the tracks are available above in our Sample Recordings section.',
       }
     ]
   },
@@ -122,7 +154,7 @@ export const INITIAL_PAGES: PageConfig[] = [
     layout: 'full',
     sidebarWidth: 25,
     showInNav: true,
-    navOrder: 3,
+    navOrder: 4,
     sections: [
       {
         id: 'ph1',
@@ -152,13 +184,112 @@ export const INITIAL_PAGES: PageConfig[] = [
     ]
   },
   {
+    id: 'newsletter',
+    title: 'Newsletter',
+    slug: '/newsletter',
+    layout: 'full',
+    sidebarWidth: 25,
+    showInNav: true,
+    navOrder: 3,
+    sections: [
+      {
+        id: 'nl1',
+        type: 'hero',
+        title: 'Newsletter Archive',
+        content: 'Browse past issues of the Westwood Community Band newsletter.',
+        imageUrl: '/images/band-hero.jpg'
+      },
+      {
+        id: 'nl2',
+        type: 'downloads',
+        title: 'Past Issues',
+        content: '',
+        downloadGroups: [
+          {
+            title: '2014 \u2013 2015',
+            items: [
+              { label: 'Jan 22, 2015', links: [{ label: 'Page 1', url: '#' }, { label: 'Page 2', url: '#' }] },
+              { label: 'Nov 20, 2014', links: [{ label: 'Page 1', url: '#' }] },
+              { label: 'Oct 30, 2014', links: [{ label: 'Page 1', url: '#' }] },
+              { label: 'Sep 11, 2014', links: [{ label: 'Page 1', url: '#' }, { label: 'Page 2', url: '#' }] },
+            ],
+          },
+          {
+            title: '2013 \u2013 2014',
+            items: [
+              { label: 'Jan 30, 2014', links: [{ label: 'Page 1', url: '#' }, { label: 'Page 2', url: '#' }] },
+              { label: 'Nov 07, 2013', links: [{ label: 'Page 1', url: '#' }] },
+              { label: 'Sep 19, 2013', links: [{ label: 'Page 1', url: '#' }, { label: 'Page 2', url: '#' }] },
+            ],
+          },
+          {
+            title: '2012 \u2013 2013',
+            items: [
+              { label: 'Jan 17, 2013', links: [{ label: 'Page 1', url: '#' }] },
+              { label: 'Oct 18, 2012', links: [{ label: 'Page 1', url: '#' }] },
+              { label: 'Sep 20, 2012', links: [{ label: 'Page 1', url: '#' }] },
+            ],
+          },
+          {
+            title: '2011 \u2013 2012',
+            items: [
+              { label: 'Nov 17, 2011', links: [{ label: 'Page 1', url: '#' }] },
+              { label: 'Oct 20, 2011', links: [{ label: 'Page 1', url: '#' }, { label: 'Page 2', url: '#' }] },
+            ],
+          },
+          {
+            title: '2010 \u2013 2011',
+            items: [
+              { label: 'Jan 27, 2011', links: [{ label: 'Page 1', url: '#' }] },
+            ],
+          },
+          {
+            title: '2009 \u2013 2010',
+            items: [
+              { label: 'Nov 26, 2009', links: [{ label: 'Page 1', url: '#' }, { label: 'Page 2', url: '#' }] },
+              { label: 'Sep 17, 2009', links: [{ label: 'Page 1', url: '#' }, { label: 'Page 2', url: '#' }] },
+            ],
+          },
+          {
+            title: '2008 \u2013 2009',
+            items: [
+              { label: 'May 07, 2009', links: [{ label: 'Page 1', url: '#' }] },
+              { label: 'Jan 29, 2009', links: [{ label: 'Page 1', url: '#' }] },
+              { label: 'Nov 20, 2008', links: [{ label: 'Page 1', url: '#' }] },
+              { label: 'Oct 30, 2008', links: [{ label: 'Page 1', url: '#' }, { label: 'Page 2', url: '#' }] },
+            ],
+          },
+          {
+            title: '2007 \u2013 2008',
+            items: [
+              { label: 'May 22, 2008', links: [{ label: 'Page 1', url: '#' }] },
+              { label: 'Jan 10, 2008', links: [{ label: 'Page 1', url: '#' }] },
+              { label: 'Nov 22, 2007', links: [{ label: 'Page 1', url: '#' }] },
+              { label: 'Nov 01, 2007', links: [{ label: 'Page 1', url: '#' }] },
+              { label: 'Oct 04, 2007', links: [{ label: 'Page 1', url: '#' }, { label: 'Page 2', url: '#' }] },
+            ],
+          },
+          {
+            title: '2006 \u2013 2007',
+            items: [
+              { label: 'May 03, 2007', links: [{ label: 'Page 1', url: '#' }] },
+              { label: 'Jan 11, 2007', links: [{ label: 'Page 1', url: '#' }, { label: 'Page 2', url: '#' }] },
+              { label: 'Nov 23, 2006', links: [{ label: 'Page 1', url: '#' }] },
+              { label: 'Nov 02, 2006', links: [{ label: 'Page 1', url: '#' }, { label: 'Page 2', url: '#' }] },
+            ],
+          },
+        ],
+      }
+    ]
+  },
+  {
     id: 'join',
     title: 'Join Us',
     slug: '/join',
     layout: 'sidebar-right',
     sidebarWidth: 35,
     showInNav: true,
-    navOrder: 4,
+    navOrder: 5,
     sidebarBlocks: [...DEFAULT_SIDEBAR_BLOCKS],
     sections: [
       {
@@ -195,7 +326,7 @@ export const INITIAL_PAGES: PageConfig[] = [
     layout: 'sidebar-right',
     sidebarWidth: 40,
     showInNav: true,
-    navOrder: 5,
+    navOrder: 6,
     sidebarBlocks: [...DEFAULT_SIDEBAR_BLOCKS],
     sections: [
       {

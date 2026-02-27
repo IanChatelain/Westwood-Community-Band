@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { PageConfig, SidebarBlock, PageSection, SectionStyle, BuilderBlock, BlockWrapperStyle, GalleryEvent } from '@/types';
+import { PageConfig, SidebarBlock, PageSection, SectionStyle, BuilderBlock, BlockWrapperStyle, GalleryEvent, DownloadItem, DownloadGroup } from '@/types';
 import { DEFAULT_SIDEBAR_BLOCKS } from '@/constants';
 
 /** Convert plain text (with \n) to HTML paragraphs. Pass HTML through unchanged. */
@@ -76,7 +76,7 @@ export function blockWrapperClassesAndStyle(s?: BlockWrapperStyle): { className:
   else if (s.shadow === 'none') classes.push('shadow-none');
   return { className: classes.join(' ').trim(), style };
 }
-import { Calendar, ArrowRight, Mail, MapPin, Clock, Send } from 'lucide-react';
+import { Calendar, ArrowRight, Mail, MapPin, Clock, Send, FileDown, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
@@ -695,6 +695,75 @@ export default function PageContent({ page }: PageContentProps) {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {section.type === 'downloads' && (
+              <div style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
+                {section.title && <h3 className="text-2xl font-bold text-slate-900 mb-6 border-l-4 border-red-800 pl-6">{section.title}</h3>}
+                {section.content && (
+                  <div className="text-slate-600 mb-6 prose prose-slate prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: textToHtml(section.content) }} />
+                )}
+
+                {/* Grouped downloads (e.g. newsletter by season) */}
+                {section.downloadGroups && section.downloadGroups.length > 0 && (
+                  <div className="space-y-8">
+                    {section.downloadGroups.map((group, gi) => (
+                      <div key={gi}>
+                        <h4 className="text-lg font-semibold text-slate-800 mb-3 pb-2 border-b border-slate-200">{group.title}</h4>
+                        <ul className="space-y-2">
+                          {group.items.map((item, ii) => (
+                            <li key={ii} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2 px-3 rounded-lg hover:bg-slate-50 transition-colors">
+                              <span className="font-medium text-slate-700">{item.label}</span>
+                              {item.url && (
+                                <a href={item.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-medium text-red-800 hover:text-red-900 hover:underline">
+                                  <FileDown size={14} /> Download
+                                </a>
+                              )}
+                              {item.links && item.links.length > 0 && (
+                                <span className="flex items-center gap-2">
+                                  {item.links.map((link, li) => (
+                                    <a key={li} href={link.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-medium text-red-800 hover:text-red-900 hover:underline">
+                                      <FileDown size={14} /> {link.label}
+                                    </a>
+                                  ))}
+                                </span>
+                              )}
+                              {item.description && <span className="text-sm text-slate-500 basis-full">{item.description}</span>}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Flat downloads list (documents, samples/recordings) */}
+                {section.downloadItems && section.downloadItems.length > 0 && (
+                  <ul className="divide-y divide-slate-100">
+                    {section.downloadItems.map((item, i) => (
+                      <li key={i} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-4 px-3 rounded-lg hover:bg-slate-50 transition-colors group">
+                        <FileDown size={18} className="text-red-800/70 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          {item.url ? (
+                            <a href={item.url} target="_blank" rel="noopener noreferrer" className="font-medium text-red-800 hover:text-red-900 hover:underline">
+                              {item.label}
+                            </a>
+                          ) : (
+                            <span className="font-medium text-slate-800">{item.label}</span>
+                          )}
+                          {item.description && <p className="text-sm text-slate-500 mt-0.5">{item.description}</p>}
+                        </div>
+                        {(item.fileSize || item.duration) && (
+                          <div className="flex items-center gap-3 text-xs text-slate-400">
+                            {item.fileSize && <span>{item.fileSize}</span>}
+                            {item.duration && <span>{item.duration}</span>}
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
 

@@ -17,7 +17,7 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { PageSection, PageSectionType, GalleryEvent, GalleryMediaItem } from '@/types';
+import type { PageSection, PageSectionType, GalleryEvent, GalleryMediaItem, DownloadItem, DownloadGroup, DownloadLink } from '@/types';
 import { ChevronDown, ChevronRight, Trash2, Plus, Upload, X, GripVertical, Image as ImageIcon, Video } from 'lucide-react';
 import { RichTextEditor } from '@/components/cms/RichTextEditor';
 import { uploadImage } from '@/app/actions/upload';
@@ -31,6 +31,7 @@ const SECTION_TYPE_OPTIONS: { value: PageSectionType; label: string }[] = [
   { value: 'schedule', label: 'Schedule' },
   { value: 'table', label: 'Table' },
   { value: 'separator', label: 'Divider' },
+  { value: 'downloads', label: 'Downloads / Link List' },
 ];
 
 const SECTION_TYPE_LABELS: Record<string, string> = Object.fromEntries(
@@ -45,6 +46,7 @@ const DEFAULT_HEIGHTS: Partial<Record<PageSectionType, number>> = {
   contact: 260,
   schedule: 260,
   table: 220,
+  downloads: 220,
 };
 
 interface SortableSectionItemProps {
@@ -273,6 +275,14 @@ function SortableSectionItem({
                 inputClass={inputClass}
               />
             </>
+          )}
+
+          {section.type === 'downloads' && (
+            <DownloadsEditor
+              section={section}
+              onUpdate={onUpdate}
+              inputClass={inputClass}
+            />
           )}
 
           {/* Size controls */}
@@ -538,6 +548,181 @@ function GalleryMediaEditor({
   );
 }
 
+function DownloadsEditor({
+  section,
+  onUpdate,
+  inputClass,
+}: {
+  section: PageSection;
+  onUpdate: (updates: Partial<PageSection>) => void;
+  inputClass: string;
+}) {
+  const [mode, setMode] = useState<'flat' | 'grouped'>(
+    (section.downloadGroups && section.downloadGroups.length > 0) ? 'grouped' : 'flat'
+  );
+
+  const items = section.downloadItems ?? [];
+  const groups = section.downloadGroups ?? [];
+
+  const addItem = () => {
+    onUpdate({ downloadItems: [...items, { label: 'New item', url: '#' }] });
+  };
+  const updateItem = (idx: number, updates: Partial<DownloadItem>) => {
+    const next = items.map((it, i) => i === idx ? { ...it, ...updates } : it);
+    onUpdate({ downloadItems: next });
+  };
+  const removeItem = (idx: number) => {
+    onUpdate({ downloadItems: items.filter((_, i) => i !== idx) });
+  };
+
+  const addGroup = () => {
+    onUpdate({ downloadGroups: [...groups, { title: 'New Group', items: [] }] });
+  };
+  const updateGroup = (idx: number, updates: Partial<DownloadGroup>) => {
+    const next = groups.map((g, i) => i === idx ? { ...g, ...updates } : g);
+    onUpdate({ downloadGroups: next });
+  };
+  const removeGroup = (idx: number) => {
+    onUpdate({ downloadGroups: groups.filter((_, i) => i !== idx) });
+  };
+  const addGroupItem = (gIdx: number) => {
+    const g = groups[gIdx];
+    updateGroup(gIdx, { items: [...g.items, { label: 'New item', url: '#' }] });
+  };
+  const updateGroupItem = (gIdx: number, iIdx: number, updates: Partial<DownloadItem>) => {
+    const g = groups[gIdx];
+    const nextItems = g.items.map((it, i) => i === iIdx ? { ...it, ...updates } : it);
+    updateGroup(gIdx, { items: nextItems });
+  };
+  const removeGroupItem = (gIdx: number, iIdx: number) => {
+    const g = groups[gIdx];
+    updateGroup(gIdx, { items: g.items.filter((_, i) => i !== iIdx) });
+  };
+  const addItemLink = (gIdx: number, iIdx: number) => {
+    const item = groups[gIdx].items[iIdx];
+    const links = item.links ?? [];
+    updateGroupItem(gIdx, iIdx, { links: [...links, { label: 'Link', url: '#' }] });
+  };
+  const updateItemLink = (gIdx: number, iIdx: number, lIdx: number, updates: Partial<DownloadLink>) => {
+    const item = groups[gIdx].items[iIdx];
+    const links = (item.links ?? []).map((l, i) => i === lIdx ? { ...l, ...updates } : l);
+    updateGroupItem(gIdx, iIdx, { links });
+  };
+  const removeItemLink = (gIdx: number, iIdx: number, lIdx: number) => {
+    const item = groups[gIdx].items[iIdx];
+    updateGroupItem(gIdx, iIdx, { links: (item.links ?? []).filter((_, i) => i !== lIdx) });
+  };
+
+  return (
+    <div className="space-y-3 pb-2">
+      <div className="flex items-center gap-2">
+        <label className="text-[10px] font-bold text-slate-500 uppercase">Mode</label>
+        <div className="flex gap-1">
+          {(['flat', 'grouped'] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMode(m)}
+              className={`px-3 py-1 text-xs font-medium rounded-lg border transition-colors ${
+                mode === m ? 'border-red-600 bg-red-50 text-red-700' : 'border-slate-300 text-slate-600 hover:border-slate-400'
+              }`}
+            >
+              {m === 'flat' ? 'Flat List' : 'Grouped List'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {mode === 'flat' && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-[10px] font-bold text-slate-500 uppercase">Items</label>
+            <button type="button" onClick={addItem} className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-red-600 text-white hover:bg-red-700 transition-colors">
+              <Plus size={11} /> Add Item
+            </button>
+          </div>
+          {items.length === 0 && <p className="text-xs text-slate-400 py-1">No items yet.</p>}
+          {items.map((item, idx) => (
+            <div key={idx} className="border border-slate-200 rounded-lg p-2 bg-slate-50 space-y-1.5">
+              <div className="flex items-start gap-2">
+                <div className="flex-1 space-y-1.5">
+                  <input type="text" className={inputClass} value={item.label} onChange={(e) => updateItem(idx, { label: e.target.value })} placeholder="Label" />
+                  <input type="url" className={inputClass} value={item.url ?? ''} onChange={(e) => updateItem(idx, { url: e.target.value })} placeholder="URL" />
+                  <input type="text" className={inputClass} value={item.description ?? ''} onChange={(e) => updateItem(idx, { description: e.target.value })} placeholder="Description (optional)" />
+                  <div className="flex gap-2">
+                    <input type="text" className={inputClass} value={item.fileSize ?? ''} onChange={(e) => updateItem(idx, { fileSize: e.target.value })} placeholder="File size (optional)" />
+                    <input type="text" className={inputClass} value={item.duration ?? ''} onChange={(e) => updateItem(idx, { duration: e.target.value })} placeholder="Duration (optional)" />
+                  </div>
+                </div>
+                <button type="button" onClick={() => removeItem(idx)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" aria-label="Remove item">
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {mode === 'grouped' && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="text-[10px] font-bold text-slate-500 uppercase">Groups</label>
+            <button type="button" onClick={addGroup} className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-red-600 text-white hover:bg-red-700 transition-colors">
+              <Plus size={11} /> Add Group
+            </button>
+          </div>
+          {groups.length === 0 && <p className="text-xs text-slate-400 py-1">No groups yet.</p>}
+          {groups.map((group, gIdx) => (
+            <div key={gIdx} className="border border-slate-200 rounded-lg bg-slate-50 overflow-hidden">
+              <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-200">
+                <input type="text" className={`${inputClass} flex-1`} value={group.title} onChange={(e) => updateGroup(gIdx, { title: e.target.value })} placeholder="Group title (e.g. 2024-2025)" />
+                <button type="button" onClick={() => removeGroup(gIdx)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" aria-label="Remove group">
+                  <Trash2 size={12} />
+                </button>
+              </div>
+              <div className="px-3 py-2 space-y-2">
+                {group.items.length === 0 && <p className="text-[10px] text-slate-400">No items in this group.</p>}
+                {group.items.map((item, iIdx) => (
+                  <div key={iIdx} className="border border-slate-200 rounded p-2 bg-white space-y-1.5">
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1 space-y-1.5">
+                        <input type="text" className={inputClass} value={item.label} onChange={(e) => updateGroupItem(gIdx, iIdx, { label: e.target.value })} placeholder="Label (e.g. Jan 22, 2015)" />
+                        <input type="url" className={inputClass} value={item.url ?? ''} onChange={(e) => updateGroupItem(gIdx, iIdx, { url: e.target.value })} placeholder="URL (or leave empty for multi-link)" />
+                        {item.description !== undefined && (
+                          <input type="text" className={inputClass} value={item.description} onChange={(e) => updateGroupItem(gIdx, iIdx, { description: e.target.value })} placeholder="Description" />
+                        )}
+                      </div>
+                      <button type="button" onClick={() => removeGroupItem(gIdx, iIdx)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" aria-label="Remove item">
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                    <div className="pl-2 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase">Links</span>
+                        <button type="button" onClick={() => addItemLink(gIdx, iIdx)} className="text-[10px] text-red-600 hover:text-red-700 font-medium">+ Add Link</button>
+                      </div>
+                      {(item.links ?? []).map((link, lIdx) => (
+                        <div key={lIdx} className="flex items-center gap-1">
+                          <input type="text" className={`${inputClass} w-24`} value={link.label} onChange={(e) => updateItemLink(gIdx, iIdx, lIdx, { label: e.target.value })} placeholder="Label" />
+                          <input type="url" className={`${inputClass} flex-1`} value={link.url} onChange={(e) => updateItemLink(gIdx, iIdx, lIdx, { url: e.target.value })} placeholder="URL" />
+                          <button type="button" onClick={() => removeItemLink(gIdx, iIdx, lIdx)} className="p-0.5 text-red-400 hover:text-red-600" aria-label="Remove link"><X size={12} /></button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <button type="button" onClick={() => addGroupItem(gIdx)} className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 transition-colors">
+                  <Plus size={10} /> Add Item
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ImageUploadField({
   value,
   onChange,
@@ -649,6 +834,10 @@ export function SectionEditor({ sections, onChange }: SectionEditorProps) {
       galleryThumbnailAspect: 'landscape' as const,
       galleryShowDescription: true,
     } : {};
+    const downloadsDefaults = type === 'downloads' ? {
+      downloadItems: [] as DownloadItem[],
+      downloadGroups: [] as DownloadGroup[],
+    } : {};
     const newSection: PageSection = {
       id,
       type,
@@ -656,6 +845,7 @@ export function SectionEditor({ sections, onChange }: SectionEditorProps) {
       content: '',
       ...(defaultHeight != null && { minHeight: defaultHeight }),
       ...galleryDefaults,
+      ...downloadsDefaults,
     };
     onChange([...sections, newSection]);
     setExpandedId(id);
