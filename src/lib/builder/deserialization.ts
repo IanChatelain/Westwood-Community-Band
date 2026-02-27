@@ -39,12 +39,32 @@ export function deserializePageConfigToBuilderPage(pageConfig: PageConfig): Buil
     const id = typeof section.id === 'string' ? section.id : `${pageConfig.id}-${Math.random().toString(36).slice(2)}`;
     const title = typeof section.title === 'string' ? section.title : '';
     const content = typeof section.content === 'string' ? section.content : '';
+    const imageUrl = typeof section.imageUrl === 'string' ? section.imageUrl : undefined;
     if (section.type === 'separator') {
       return {
         id,
         type: 'separator',
         thickness: 1,
         style: section.separatorStyle === 'dotted' ? 'dotted' : 'solid',
+      };
+    }
+    if (section.type === 'hero') {
+      return {
+        id,
+        type: 'richText',
+        content,
+        displayStyle: 'hero',
+        title: title || undefined,
+        imageUrl: imageUrl || undefined,
+      };
+    }
+    if (section.type === 'text') {
+      return {
+        id,
+        type: 'richText',
+        content,
+        displayStyle: 'header',
+        title: title || undefined,
       };
     }
     return {

@@ -112,6 +112,12 @@ export interface BuilderBlockBase {
 export interface RichTextBlock extends BuilderBlockBase {
   type: 'richText';
   content: string;
+  /** Display style: text (plain), header (bordered heading), hero (banner). Default 'text'. */
+  displayStyle?: 'text' | 'header' | 'hero';
+  /** Title for header/hero styles. */
+  title?: string;
+  /** Background image for hero style. */
+  imageUrl?: string;
 }
 
 export interface ImageBlock extends BuilderBlockBase {

@@ -243,6 +243,42 @@ function ContactSection({ section }: { section: PageSection }) {
 
 export function BuilderBlockView({ block }: { block: BuilderBlock }) {
   if (block.type === 'richText') {
+    const style = block.displayStyle ?? 'text';
+    if (style === 'hero') {
+      return (
+        <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="relative h-[260px] md:h-[320px] rounded-2xl overflow-hidden shadow-lg ring-1 ring-slate-200/80 bg-gradient-to-br from-red-800 to-red-700">
+            {block.imageUrl && (
+              <img src={block.imageUrl} className="absolute inset-0 w-full h-full object-cover opacity-30" alt={block.title ?? ''} />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-r from-red-900/85 via-red-800/40 to-transparent flex items-center px-6 md:px-12">
+              <div className="max-w-xl space-y-3">
+                <h2 className="text-2xl md:text-4xl font-bold text-white leading-tight tracking-tight">{block.title ?? ''}</h2>
+                <p className="text-sm md:text-base text-red-100 leading-relaxed line-clamp-2">{block.content}</p>
+                <Link
+                  href="/join"
+                  className="inline-flex bg-white/95 text-red-800 hover:bg-white px-5 py-2.5 rounded-lg font-semibold shadow-sm transition-all items-center gap-2 group"
+                >
+                  Join Us <ArrowRight className="group-hover:translate-x-1 transition-transform" size={16} />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+    if (style === 'header') {
+      return (
+        <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="max-w-3xl">
+            {block.title && (
+              <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6 border-l-4 border-red-800 pl-6">{block.title}</h3>
+            )}
+            <div className="text-lg text-slate-600 leading-relaxed whitespace-pre-line">{block.content}</div>
+          </div>
+        </section>
+      );
+    }
     return (
       <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="max-w-3xl">

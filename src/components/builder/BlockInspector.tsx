@@ -20,17 +20,60 @@ function InspectorFields({ block, pageId }: { block: BuilderBlock; pageId: strin
 
   if (block.type === 'richText') {
     const b = block as RichTextBlock;
+    const displayStyle = b.displayStyle ?? 'text';
     return (
-      <div className="space-y-2">
-        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-          Text content
-        </label>
-        <textarea
-          rows={6}
-          className={inputClass}
-          value={b.content}
-          onChange={(e) => update({ content: e.target.value } as Partial<RichTextBlock>)}
-        />
+      <div className="space-y-3">
+        <div>
+          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+            Style
+          </label>
+          <select
+            className={selectClass}
+            value={displayStyle}
+            onChange={(e) => update({ displayStyle: e.target.value as RichTextBlock['displayStyle'] } as Partial<RichTextBlock>)}
+          >
+            <option value="text">Text</option>
+            <option value="header">Header</option>
+            <option value="hero">Hero</option>
+          </select>
+        </div>
+        {(displayStyle === 'header' || displayStyle === 'hero') && (
+          <div>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              Title
+            </label>
+            <input
+              className={inputClass}
+              value={b.title ?? ''}
+              onChange={(e) => update({ title: e.target.value } as Partial<RichTextBlock>)}
+              placeholder="Section title"
+            />
+          </div>
+        )}
+        {displayStyle === 'hero' && (
+          <div>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              Background image URL
+            </label>
+            <input
+              className={inputClass}
+              value={b.imageUrl ?? ''}
+              onChange={(e) => update({ imageUrl: e.target.value || undefined } as Partial<RichTextBlock>)}
+              placeholder="/images/hero-bg.jpg"
+            />
+          </div>
+        )}
+        <div>
+          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+            Text content
+          </label>
+          <textarea
+            rows={6}
+            className={inputClass}
+            value={b.content}
+            onChange={(e) => update({ content: e.target.value } as Partial<RichTextBlock>)}
+          />
+        </div>
       </div>
     );
   }
