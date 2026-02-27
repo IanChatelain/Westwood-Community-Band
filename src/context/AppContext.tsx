@@ -13,7 +13,7 @@ import {
   PageBuilderState,
 } from '@/types';
 import { db } from '@/services/db';
-import { createEmptyPage } from '@/constants';
+import { createEmptyPage, DEFAULT_SETTINGS, INITIAL_USERS } from '@/constants';
 import { cloneBlock } from '@/lib/builder/factory';
 import { createInitialBuilderState } from '@/lib/builder/state';
 import { createClient } from '@/lib/supabase/client';
@@ -38,6 +38,8 @@ interface AppContextType {
   setIsLoginModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   pageBuilder: PageBuilderState;
   pageBuilderActions: PageBuilderActions;
+  /** True while initial data is being fetched from Supabase. */
+  loading: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -53,20 +55,69 @@ function profileToUser(profile: { id: string; username: string; role: string; em
 
 const SUPABASE_ENABLED = typeof process !== 'undefined' && !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+function PageLoadingSkeleton() {
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <div className="h-8 bg-[#991b1b]" />
+      <div className="h-20 bg-white border-b border-slate-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center h-full gap-4">
+          <div className="w-10 h-10 bg-slate-200 rounded-lg animate-pulse" />
+          <div className="space-y-1.5">
+            <div className="w-40 h-4 bg-slate-200 rounded animate-pulse" />
+            <div className="w-24 h-2 bg-slate-200 rounded animate-pulse" />
+          </div>
+          <div className="flex-1" />
+          <div className="hidden md:flex gap-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="w-16 h-4 bg-slate-200 rounded animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
+        <div className="h-[260px] bg-slate-200 rounded-2xl animate-pulse" />
+        <div className="space-y-4 max-w-3xl">
+          <div className="h-7 bg-slate-200 rounded w-56 animate-pulse" />
+          <div className="h-4 bg-slate-100 rounded w-full animate-pulse" />
+          <div className="h-4 bg-slate-100 rounded w-5/6 animate-pulse" />
+          <div className="h-4 bg-slate-100 rounded w-4/6 animate-pulse" />
+        </div>
+        <div className="space-y-4 max-w-3xl">
+          <div className="h-7 bg-slate-200 rounded w-44 animate-pulse" />
+          <div className="h-4 bg-slate-100 rounded w-full animate-pulse" />
+          <div className="h-4 bg-slate-100 rounded w-3/4 animate-pulse" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(() => {
+    if (SUPABASE_ENABLED) {
+      // Supabase-backed mode: start with lightweight placeholders and hydrate from Supabase only.
+      return {
+        settings: DEFAULT_SETTINGS,
+        pages: [],
+        users: INITIAL_USERS,
+        currentUser: null,
+        pageBuilder: createInitialBuilderState([]),
+      };
+    }
+
+    // Local mode (no Supabase): fall back to browser storage + defaults.
     const base = db.load();
     return {
       ...base,
       pageBuilder: createInitialBuilderState(base.pages),
-      // When Supabase is enabled, currentUser must come from auth only—never stale localStorage
-      currentUser: SUPABASE_ENABLED ? null : base.currentUser,
-    };
+      currentUser: base.currentUser,
+    } as AppState;
   });
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
   const [adminTab, setAdminTab] = useState<string>('overview');
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(SUPABASE_ENABLED);
   const stateRef = useRef(state);
   stateRef.current = state;
 
@@ -102,7 +153,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
-  // Initial load: Supabase first, then fallback to localStorage
   useEffect(() => {
     setMounted(true);
     if (SUPABASE_ENABLED) {
@@ -118,14 +168,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
               pageBuilder: createInitialBuilderState(nextPages),
             };
           });
-        } else {
-          const base = db.load();
-          setState(prev => ({
-            ...base,
-            pageBuilder: createInitialBuilderState(base.pages),
-            currentUser: prev.currentUser, // Preserve auth result; do not overwrite with stale base
-          }));
         }
+        setLoading(false);
       });
     } else {
       const base = db.load();
@@ -133,6 +177,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ...base,
         pageBuilder: createInitialBuilderState(base.pages),
       });
+      setLoading(false);
     }
   }, []);
 
@@ -265,20 +310,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           title: fallbackPage?.title ?? '',
           blocks: [],
         };
-        const pages = prev.pages.map(p =>
-          p.id === pageId ? { ...p, blocks } : p,
-        );
         return {
           ...prev,
-          pages,
           pageBuilder: {
             ...builder,
             pages: {
               ...builder.pages,
-              [pageId]: {
-                ...existing,
-                blocks,
-              },
+              [pageId]: { ...existing, blocks },
             },
             isDirtyByPageId: { ...builder.isDirtyByPageId, [pageId]: true },
           },
@@ -301,12 +339,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         } else {
           blocks.splice(index, 0, block);
         }
-        const pages = prev.pages.map(p =>
-          p.id === pageId ? { ...p, blocks } : p,
-        );
         return {
           ...prev,
-          pages,
           pageBuilder: {
             ...builder,
             pages: {
@@ -324,12 +358,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const page = builder.pages[pageId];
         if (!page) return prev;
         const blocks = page.blocks.map(b => (b.id === blockId ? updater(b) : b));
-        const pages = prev.pages.map(p =>
-          p.id === pageId ? { ...p, blocks } : p,
-        );
         return {
           ...prev,
-          pages,
           pageBuilder: {
             ...builder,
             pages: {
@@ -347,12 +377,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const page = builder.pages[pageId];
         if (!page) return prev;
         const blocks = page.blocks.filter(b => b.id !== blockId);
-        const pages = prev.pages.map(p =>
-          p.id === pageId ? { ...p, blocks } : p,
-        );
         return {
           ...prev,
-          pages,
           pageBuilder: {
             ...builder,
             pages: {
@@ -376,12 +402,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const blocks = [...page.blocks];
         const [item] = blocks.splice(currentIndex, 1);
         blocks.splice(toIndex, 0, item);
-        const pages = prev.pages.map(p =>
-          p.id === pageId ? { ...p, blocks } : p,
-        );
         return {
           ...prev,
-          pages,
           pageBuilder: {
             ...builder,
             pages: {
@@ -404,12 +426,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const cloned = cloneBlock(original);
         const blocks = [...page.blocks];
         blocks.splice(idx + 1, 0, cloned);
-        const pages = prev.pages.map(p =>
-          p.id === pageId ? { ...p, blocks } : p,
-        );
         return {
           ...prev,
-          pages,
           pageBuilder: {
             ...builder,
             pages: {
@@ -440,7 +458,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   if (!mounted) {
-    return null;
+    return <PageLoadingSkeleton />;
   }
 
   return (
@@ -461,6 +479,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       pageBuilderActions,
       persist,
       revertPage,
+      loading,
     }}>
       {children}
     </AppContext.Provider>

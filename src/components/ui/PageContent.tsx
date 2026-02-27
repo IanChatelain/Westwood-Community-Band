@@ -4,6 +4,16 @@ import React, { useState } from 'react';
 import { PageConfig, SidebarBlock, PageSection, SectionStyle, BuilderBlock, BlockWrapperStyle } from '@/types';
 import { DEFAULT_SIDEBAR_BLOCKS } from '@/constants';
 
+/** Convert plain text (with \n) to HTML paragraphs. Pass HTML through unchanged. */
+function textToHtml(text: string): string {
+  if (!text) return '';
+  if (/<[a-z][\s\S]*?>/i.test(text)) return text;
+  return text
+    .split(/\n\n+/)
+    .map(para => `<p>${para.replace(/\n/g, '<br>')}</p>`)
+    .join('');
+}
+
 export function blockWrapperClassesAndStyle(s?: BlockWrapperStyle): { className: string; style: React.CSSProperties } {
   if (!s) return { className: '', style: {} };
   const classes: string[] = [];
@@ -323,7 +333,7 @@ export function BuilderBlockView({ block }: { block: BuilderBlock }) {
                 <h2 className="text-2xl md:text-4xl font-bold text-white leading-tight tracking-tight">{block.title ?? ''}</h2>
                 <div
                   className="text-sm md:text-base text-red-100 leading-relaxed line-clamp-3 prose prose-invert prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: block.content }}
+                  dangerouslySetInnerHTML={{ __html: textToHtml(block.content) }}
                 />
                 <Link
                   href="/join"
@@ -346,7 +356,7 @@ export function BuilderBlockView({ block }: { block: BuilderBlock }) {
             )}
             <div
               className="prose prose-slate max-w-none text-lg leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: block.content }}
+              dangerouslySetInnerHTML={{ __html: textToHtml(block.content) }}
             />
           </div>
         </section>
@@ -357,7 +367,7 @@ export function BuilderBlockView({ block }: { block: BuilderBlock }) {
         <div className="max-w-3xl">
           <div
             className="prose prose-slate max-w-none text-lg leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: block.content }}
+            dangerouslySetInnerHTML={{ __html: textToHtml(block.content) }}
           />
         </div>
       </section>
@@ -483,7 +493,10 @@ export default function PageContent({ page }: PageContentProps) {
                 <div className="absolute inset-0 bg-gradient-to-r from-red-900/85 via-red-800/40 to-transparent flex items-center px-6 md:px-12">
                   <div className="max-w-xl space-y-3">
                     <h2 className="text-2xl md:text-4xl font-bold text-white leading-tight tracking-tight">{section.title}</h2>
-                    <p className="text-sm md:text-base text-red-100 leading-relaxed line-clamp-2">{section.content}</p>
+                    <div
+                      className="text-sm md:text-base text-red-100 leading-relaxed line-clamp-3 prose prose-invert prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: textToHtml(section.content) }}
+                    />
                     <Link 
                       href="/join"
                       className="inline-flex bg-white/95 text-red-800 hover:bg-white px-5 py-2.5 rounded-lg font-semibold shadow-sm transition-all items-center gap-2 group"
@@ -498,7 +511,10 @@ export default function PageContent({ page }: PageContentProps) {
             {section.type === 'text' && (
               <div className="max-w-3xl">
                 <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6 border-l-4 border-red-800 pl-6">{section.title}</h3>
-                <div className="text-lg text-slate-600 leading-relaxed whitespace-pre-line">{section.content}</div>
+                <div
+                  className="prose prose-slate max-w-none text-lg leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: textToHtml(section.content) }}
+                />
               </div>
             )}
 
@@ -513,7 +529,10 @@ export default function PageContent({ page }: PageContentProps) {
                   )}
                   <div className="space-y-5">
                     <h3 className="text-2xl md:text-3xl font-bold text-slate-900">{section.title}</h3>
-                    <div className="text-base text-slate-600 leading-relaxed whitespace-pre-line">{section.content}</div>
+                    <div
+                      className="prose prose-slate max-w-none text-base leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: textToHtml(section.content) }}
+                    />
                   </div>
                 </div>
               );
@@ -542,7 +561,10 @@ export default function PageContent({ page }: PageContentProps) {
                   </div>
                   {section.title}
                 </h3>
-                <p className="text-slate-600 text-center mb-10">{section.content}</p>
+                <div
+                  className="text-slate-600 text-center mb-10 prose prose-slate prose-sm mx-auto"
+                  dangerouslySetInnerHTML={{ __html: textToHtml(section.content) }}
+                />
                 <div className="space-y-3">
                   {[
                     { date: 'Dec 15, 2024', time: '7:30 PM', event: 'Winter Gala Concert', venue: 'Centennial Concert Hall' },

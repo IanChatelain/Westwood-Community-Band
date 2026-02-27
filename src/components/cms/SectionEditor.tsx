@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import type { PageSection } from '@/types';
 import { ChevronUp, ChevronDown } from 'lucide-react';
+import { RichTextEditor } from '@/components/cms/RichTextEditor';
 
 const SECTION_TYPE_LABELS: Record<string, string> = {
   hero: 'Hero banner',
@@ -107,12 +108,9 @@ export function SectionEditor({ sections, onChange }: SectionEditorProps) {
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
                     Content
                   </label>
-                  <textarea
-                    rows={4}
-                    className={inputClass}
+                  <RichTextEditor
                     value={section.content}
-                    onChange={(e) => updateSection(section.id, { content: e.target.value })}
-                    placeholder="Section content"
+                    onChange={(html) => updateSection(section.id, { content: html })}
                   />
                 </div>
               )}
