@@ -242,8 +242,18 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
 
       {/* Editor: live preview + section panel */}
       <div className="flex-1 flex gap-4 min-h-0">
-        <div className="flex-1 min-w-0 overflow-auto rounded-xl border-2 border-slate-200 bg-slate-50 p-4">
-          <PageContent page={editedPage} />
+        <div className="flex-1 min-w-0 flex flex-col">
+          <div className="mb-2">
+            <h2 className="text-xs font-bold text-slate-600 uppercase tracking-widest">
+              Live preview
+            </h2>
+            <p className="text-[11px] text-slate-500">
+              What you see here is exactly how the page will appear to visitors.
+            </p>
+          </div>
+          <div className="flex-1 overflow-auto rounded-xl border-2 border-slate-200 bg-slate-50 p-4">
+            <PageContent page={editedPage} />
+          </div>
         </div>
         <div className="w-96 min-w-80 shrink-0 overflow-auto bg-white rounded-xl border border-slate-200 p-4">
           <SectionEditor sections={editedPage.sections} onChange={setSections} />
