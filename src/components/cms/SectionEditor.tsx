@@ -39,6 +39,12 @@ const SECTION_TYPE_LABELS: Record<string, string> = Object.fromEntries(
 
 const DEFAULT_HEIGHTS: Partial<Record<PageSectionType, number>> = {
   hero: 260,
+  text: 220,
+  'image-text': 240,
+  gallery: 240,
+  contact: 260,
+  schedule: 260,
+  table: 220,
 };
 
 interface SortableSectionItemProps {
@@ -328,11 +334,13 @@ export function SectionEditor({ sections, onChange }: SectionEditorProps) {
   const addSection = (type: PageSectionType) => {
     const id = Math.random().toString(36).substring(2, 11);
     const label = SECTION_TYPE_LABELS[type] ?? type;
+    const defaultHeight = DEFAULT_HEIGHTS[type];
     const newSection: PageSection = {
       id,
       type,
       title: label,
       content: '',
+      ...(defaultHeight != null && { minHeight: defaultHeight }),
     };
     onChange([...sections, newSection]);
     setExpandedId(id);
