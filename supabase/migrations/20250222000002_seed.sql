@@ -30,7 +30,17 @@ INSERT INTO pages (id, title, slug, layout, sidebar_width, sections, show_in_nav
 ]'::jsonb, true, 2, NULL),
 ('photos', 'Photos', '/photos', 'full', 25, '[
   {"id":"ph1","type":"hero","title":"Photo Gallery","content":"Browse photos from our concerts, rehearsals, and special events over the years.","imageUrl":"/images/photos.jpg"},
-  {"id":"ph2","type":"gallery","title":"Event Photos","content":"2014 Christmas Bus Trip • 2013 Forks Concert • 2013 Spring Concert with Stonewall Collegiate Jazz Band • 2012 Benefit for the Canadian Mental Health Association • 2011 An Old Fashioned Christmas Concert • 2006/2007 Rehearsal • 2006 Christmas Concert at Rockwood ANAF • 2006 International Music Camp • 2006 June – Year End Concert at the Forks"}
+  {"id":"ph2","type":"gallery","title":"Event Photos","content":"","galleryEvents":[
+    {"id":"ge-1","title":"2014 Christmas Bus Trip","slug":"2014-christmas-bus-trip","media":[]},
+    {"id":"ge-2","title":"2013 Forks Concert","slug":"2013-forks-concert","media":[]},
+    {"id":"ge-3","title":"2013 Spring Concert with Stonewall Collegiate Jazz Band","slug":"2013-spring-concert","media":[]},
+    {"id":"ge-4","title":"2012 Benefit for the Canadian Mental Health Association","slug":"2012-benefit-cmha","media":[]},
+    {"id":"ge-5","title":"2011 An Old Fashioned Christmas Concert","slug":"2011-christmas-concert","media":[]},
+    {"id":"ge-6","title":"2006/2007 Rehearsal","slug":"2006-2007-rehearsal","media":[]},
+    {"id":"ge-7","title":"2006 Christmas Concert at Rockwood ANAF","slug":"2006-christmas-concert","media":[]},
+    {"id":"ge-8","title":"2006 International Music Camp","slug":"2006-international-music-camp","media":[]},
+    {"id":"ge-9","title":"2006 June – Year End Concert at the Forks","slug":"2006-year-end-concert","media":[]}
+  ]}
 ]'::jsonb, true, 3, NULL),
 ('join', 'Join Us', '/join', 'sidebar-right', 35, '[
   {"id":"j1","type":"text","title":"Welcome New Members","content":"The Band welcomes adults, beginners through to accomplished musicians, who play woodwind, brass, or percussion instruments. This is a friendly environment, and new members are welcome to sit-in for a couple of nights with no commitment necessary. You will soon feel at home!"},

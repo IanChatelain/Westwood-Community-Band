@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { PageConfig, SidebarBlock, PageSection, SectionStyle, BuilderBlock, BlockWrapperStyle } from '@/types';
+import { PageConfig, SidebarBlock, PageSection, SectionStyle, BuilderBlock, BlockWrapperStyle, GalleryEvent } from '@/types';
 import { DEFAULT_SIDEBAR_BLOCKS } from '@/constants';
 
 /** Convert plain text (with \n) to HTML paragraphs. Pass HTML through unchanged. */
@@ -459,6 +459,65 @@ export function BuilderBlockView({ block }: { block: BuilderBlock }) {
   return null;
 }
 
+function GallerySection({ section, pageSlug }: { section: PageSection; pageSlug: string }) {
+  const hasEvents = section.galleryEvents && section.galleryEvents.length > 0;
+  const basePath = pageSlug === '/' ? '' : pageSlug;
+
+  return (
+    <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm ring-1 ring-slate-900/5" style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
+      <h3 className="text-2xl font-bold text-slate-900 mb-8 border-l-4 border-red-800 pl-6">{section.title}</h3>
+      {hasEvents ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {section.galleryEvents!.map((ev) => (
+            <Link
+              key={ev.id}
+              href={`${basePath}/${ev.slug}`}
+              className="group block rounded-xl overflow-hidden border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all bg-white"
+            >
+              <div className="aspect-[4/3] bg-slate-100 overflow-hidden">
+                {ev.coverImageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={ev.coverImageUrl}
+                    alt={ev.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : ev.media.length > 0 && ev.media[0].type === 'image' && ev.media[0].url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={ev.media[0].url}
+                    alt={ev.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                  </div>
+                )}
+              </div>
+              <div className="p-4">
+                <h4 className="font-semibold text-slate-900 group-hover:text-red-800 transition-colors">{ev.title}</h4>
+                {ev.description && <p className="text-sm text-slate-500 mt-1 line-clamp-2">{ev.description}</p>}
+                {ev.media.length > 0 && (
+                  <p className="text-xs text-slate-400 mt-2">{ev.media.length} {ev.media.length === 1 ? 'item' : 'items'}</p>
+                )}
+              </div>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {section.content.split('•').filter(Boolean).map((item, i) => (
+            <div key={i} className="bg-slate-50 p-4 rounded-xl hover:bg-slate-100 hover:ring-2 hover:ring-slate-200 transition-all cursor-pointer group">
+              <p className="text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors">{item.trim()}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface PageContentProps {
   page: PageConfig;
 }
@@ -548,16 +607,7 @@ export default function PageContent({ page }: PageContentProps) {
             })()}
 
             {section.type === 'gallery' && (
-              <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm ring-1 ring-slate-900/5" style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
-                <h3 className="text-2xl font-bold text-slate-900 mb-8 border-l-4 border-red-800 pl-6">{section.title}</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {section.content.split('•').filter(Boolean).map((item, i) => (
-                    <div key={i} className="bg-slate-50 p-4 rounded-xl hover:bg-slate-100 hover:ring-2 hover:ring-slate-200 transition-all cursor-pointer group">
-                      <p className="text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors">{item.trim()}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <GallerySection section={section} pageSlug={page.slug} />
             )}
 
             {section.type === 'contact' && (

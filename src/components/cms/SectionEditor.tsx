@@ -17,8 +17,8 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { PageSection, PageSectionType } from '@/types';
-import { ChevronDown, Trash2, Plus, Upload, X } from 'lucide-react';
+import type { PageSection, PageSectionType, GalleryEvent, GalleryMediaItem } from '@/types';
+import { ChevronDown, ChevronRight, Trash2, Plus, Upload, X, GripVertical, Image as ImageIcon, Video } from 'lucide-react';
 import { RichTextEditor } from '@/components/cms/RichTextEditor';
 import { uploadImage } from '@/app/actions/upload';
 
@@ -202,22 +202,11 @@ function SortableSectionItem({
             />
           )}
           {section.type === 'gallery' && (
-            <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                Gallery items (one per line)
-              </label>
-              <textarea
-                rows={3}
-                className={inputClass}
-                value={(section.content || '').replace(/ • /g, '\n')}
-                onChange={(e) =>
-                  onUpdate({
-                    content: e.target.value.split('\n').filter(Boolean).join(' • '),
-                  })
-                }
-                placeholder="Item 1&#10;Item 2"
-              />
-            </div>
+            <GalleryEventsEditor
+              events={section.galleryEvents ?? []}
+              onChange={(galleryEvents) => onUpdate({ galleryEvents })}
+              inputClass={inputClass}
+            />
           )}
 
           {/* Size controls */}
@@ -264,12 +253,235 @@ function SortableSectionItem({
   );
 }
 
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+function GalleryEventsEditor({
+  events,
+  onChange,
+  inputClass,
+}: {
+  events: GalleryEvent[];
+  onChange: (events: GalleryEvent[]) => void;
+  inputClass: string;
+}) {
+  const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
+
+  const addEvent = () => {
+    const id = Math.random().toString(36).substring(2, 11);
+    const newEvent: GalleryEvent = { id, title: 'New Event', slug: 'new-event', media: [] };
+    onChange([...events, newEvent]);
+    setExpandedEventId(id);
+  };
+
+  const updateEvent = (id: string, updates: Partial<GalleryEvent>) => {
+    onChange(events.map((ev) => (ev.id === id ? { ...ev, ...updates } : ev)));
+  };
+
+  const removeEvent = (id: string) => {
+    onChange(events.filter((ev) => ev.id !== id));
+    if (expandedEventId === id) setExpandedEventId(null);
+  };
+
+  const moveEvent = (idx: number, dir: -1 | 1) => {
+    const target = idx + dir;
+    if (target < 0 || target >= events.length) return;
+    const next = [...events];
+    [next[idx], next[target]] = [next[target], next[idx]];
+    onChange(next);
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <label className="block text-[10px] font-bold text-slate-500 uppercase">Gallery Events</label>
+        <button type="button" onClick={addEvent} className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-red-600 text-white hover:bg-red-700 transition-colors">
+          <Plus size={11} /> Add Event
+        </button>
+      </div>
+      {events.length === 0 && (
+        <p className="text-xs text-slate-400 py-2">No events yet. Click &quot;Add Event&quot; to create one.</p>
+      )}
+      {events.map((ev, idx) => {
+        const isOpen = expandedEventId === ev.id;
+        return (
+          <div key={ev.id} className="border border-slate-200 rounded-lg bg-slate-50 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setExpandedEventId(isOpen ? null : ev.id)}
+              className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-slate-100"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                {ev.coverImageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={ev.coverImageUrl} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" />
+                )}
+                <span className="text-xs font-medium text-slate-800 truncate">{ev.title || 'Untitled'}</span>
+                <span className="text-[10px] text-slate-400">({ev.media.length} items)</span>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                <button type="button" onClick={(e) => { e.stopPropagation(); moveEvent(idx, -1); }} disabled={idx === 0} className="p-0.5 text-slate-400 hover:text-slate-600 disabled:opacity-30" aria-label="Move up">&#9650;</button>
+                <button type="button" onClick={(e) => { e.stopPropagation(); moveEvent(idx, 1); }} disabled={idx === events.length - 1} className="p-0.5 text-slate-400 hover:text-slate-600 disabled:opacity-30" aria-label="Move down">&#9660;</button>
+                <button type="button" onClick={(e) => { e.stopPropagation(); removeEvent(ev.id); }} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50" aria-label="Remove event">
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            </button>
+            {isOpen && (
+              <div className="px-3 pb-3 pt-1 space-y-2 border-t border-slate-200">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Title</label>
+                  <input
+                    type="text"
+                    className={inputClass}
+                    value={ev.title}
+                    onChange={(e) => {
+                      const title = e.target.value;
+                      const updates: Partial<GalleryEvent> = { title };
+                      if (ev.slug === slugify(ev.title) || !ev.slug || ev.slug === 'new-event') {
+                        updates.slug = slugify(title);
+                      }
+                      updateEvent(ev.id, updates);
+                    }}
+                    placeholder="Event title"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Slug</label>
+                  <input type="text" className={inputClass} value={ev.slug} onChange={(e) => updateEvent(ev.id, { slug: slugify(e.target.value) })} placeholder="event-slug" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Description</label>
+                  <textarea rows={2} className={inputClass} value={ev.description ?? ''} onChange={(e) => updateEvent(ev.id, { description: e.target.value })} placeholder="Optional description" />
+                </div>
+                <ImageUploadField value={ev.coverImageUrl} onChange={(url) => updateEvent(ev.id, { coverImageUrl: url })} label="Cover Image" />
+                <GalleryMediaEditor
+                  items={ev.media}
+                  onChange={(media) => updateEvent(ev.id, { media })}
+                  inputClass={inputClass}
+                />
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function GalleryMediaEditor({
+  items,
+  onChange,
+  inputClass,
+}: {
+  items: GalleryMediaItem[];
+  onChange: (items: GalleryMediaItem[]) => void;
+  inputClass: string;
+}) {
+  const addItem = (type: 'image' | 'video') => {
+    const id = Math.random().toString(36).substring(2, 11);
+    onChange([...items, { id, type, url: '', caption: '' }]);
+  };
+
+  const updateItem = (id: string, updates: Partial<GalleryMediaItem>) => {
+    onChange(items.map((m) => (m.id === id ? { ...m, ...updates } : m)));
+  };
+
+  const removeItem = (id: string) => {
+    onChange(items.filter((m) => m.id !== id));
+  };
+
+  const moveItem = (idx: number, dir: -1 | 1) => {
+    const target = idx + dir;
+    if (target < 0 || target >= items.length) return;
+    const next = [...items];
+    [next[idx], next[target]] = [next[target], next[idx]];
+    onChange(next);
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <label className="block text-[10px] font-bold text-slate-500 uppercase">Media Items</label>
+        <div className="flex gap-1">
+          <button type="button" onClick={() => addItem('image')} className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 transition-colors">
+            <ImageIcon size={10} /> Image
+          </button>
+          <button type="button" onClick={() => addItem('video')} className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 transition-colors">
+            <Video size={10} /> Video
+          </button>
+        </div>
+      </div>
+      {items.length === 0 && (
+        <p className="text-[10px] text-slate-400">No media yet.</p>
+      )}
+      {items.map((item, idx) => (
+        <div key={item.id} className="flex items-start gap-2 p-2 border border-slate-200 rounded bg-white">
+          <div className="flex flex-col gap-0.5 pt-1">
+            <button type="button" onClick={() => moveItem(idx, -1)} disabled={idx === 0} className="text-slate-400 hover:text-slate-600 disabled:opacity-30 text-[8px]" aria-label="Move up">&#9650;</button>
+            <button type="button" onClick={() => moveItem(idx, 1)} disabled={idx === items.length - 1} className="text-slate-400 hover:text-slate-600 disabled:opacity-30 text-[8px]" aria-label="Move down">&#9660;</button>
+          </div>
+          {item.type === 'image' && item.url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={item.url} alt="" className="w-12 h-12 rounded object-cover flex-shrink-0" />
+          )}
+          {item.type === 'video' && (
+            <div className="w-12 h-12 rounded bg-slate-100 flex items-center justify-center flex-shrink-0">
+              <Video size={16} className="text-slate-400" />
+            </div>
+          )}
+          <div className="flex-1 space-y-1 min-w-0">
+            <div className="flex items-center gap-1">
+              <span className="text-[9px] font-bold uppercase text-slate-400">{item.type}</span>
+            </div>
+            {item.type === 'image' ? (
+              <ImageUploadField
+                value={item.url || undefined}
+                onChange={(url) => updateItem(item.id, { url: url ?? '' })}
+                label="Image"
+                compact
+              />
+            ) : (
+              <input
+                type="url"
+                className={inputClass}
+                value={item.url}
+                onChange={(e) => updateItem(item.id, { url: e.target.value })}
+                placeholder="https://youtube.com/watch?v=..."
+              />
+            )}
+            <input
+              type="text"
+              className={inputClass}
+              value={item.caption ?? ''}
+              onChange={(e) => updateItem(item.id, { caption: e.target.value })}
+              placeholder="Caption (optional)"
+            />
+          </div>
+          <button type="button" onClick={() => removeItem(item.id)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" aria-label="Remove media item">
+            <X size={12} />
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ImageUploadField({
   value,
   onChange,
+  label,
+  compact,
 }: {
   value: string | undefined;
   onChange: (url: string | undefined) => void;
+  label?: string;
+  compact?: boolean;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -296,11 +508,11 @@ function ImageUploadField({
 
   return (
     <div>
-      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Image</label>
+      {!compact && <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">{label ?? 'Image'}</label>}
       {value && (
-        <div className="relative mb-2 rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
+        <div className={`relative ${compact ? 'mb-1' : 'mb-2'} rounded-lg overflow-hidden border border-slate-200 bg-slate-50`}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={value} alt="" className="w-full h-24 object-cover" />
+          <img src={value} alt="" className={`w-full ${compact ? 'h-16' : 'h-24'} object-cover`} />
           <button
             type="button"
             onClick={() => onChange(undefined)}
@@ -326,10 +538,10 @@ function ImageUploadField({
         type="button"
         disabled={uploading}
         onClick={() => fileRef.current?.click()}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 text-slate-700 hover:border-red-400 hover:text-red-700 disabled:opacity-50 transition-colors"
+        className={`flex items-center gap-1.5 ${compact ? 'px-2 py-1 text-[10px]' : 'px-3 py-1.5 text-xs'} font-medium rounded-lg border border-slate-300 text-slate-700 hover:border-red-400 hover:text-red-700 disabled:opacity-50 transition-colors`}
       >
-        <Upload size={13} />
-        {uploading ? 'Uploading...' : value ? 'Replace image' : 'Upload image'}
+        <Upload size={compact ? 10 : 13} />
+        {uploading ? 'Uploading...' : value ? 'Replace' : 'Upload'}
       </button>
       {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
     </div>

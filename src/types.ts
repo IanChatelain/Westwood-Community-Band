@@ -35,6 +35,23 @@ export interface SectionStyle {
 
 export type PageSectionType = 'hero' | 'text' | 'image-text' | 'gallery' | 'contact' | 'schedule' | 'table' | 'separator';
 
+export interface GalleryMediaItem {
+  id: string;
+  type: 'image' | 'video';
+  url: string;
+  thumbnailUrl?: string;
+  caption?: string;
+}
+
+export interface GalleryEvent {
+  id: string;
+  title: string;
+  slug: string;
+  coverImageUrl?: string;
+  description?: string;
+  media: GalleryMediaItem[];
+}
+
 export interface PageSection {
   id: string;
   type: PageSectionType;
@@ -54,6 +71,8 @@ export interface PageSection {
   separatorSpacing?: 'small' | 'medium' | 'large';
   /** For type === 'contact': options for the \"Send to\" dropdown. */
   contactRecipients?: ContactRecipient[];
+  /** For type === 'gallery': structured event-based gallery data. */
+  galleryEvents?: GalleryEvent[];
 }
 
 export type SidebarBlockType = 'rehearsals' | 'fees' | 'contact' | 'custom';
