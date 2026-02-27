@@ -4,7 +4,7 @@ import React from 'react';
 import { PageConfig, SidebarBlock, SidebarBlockType } from '@/types';
 import { DEFAULT_SIDEBAR_BLOCKS } from '@/constants';
 import { useAppContext } from '@/context/AppContext';
-import { Save, Layout as LayoutIcon, ChevronDown, Undo2 } from 'lucide-react';
+import { Save, Layout as LayoutIcon, ChevronDown, Undo2, X } from 'lucide-react';
 import { SectionEditor } from '@/components/cms/SectionEditor';
 import PageContent from '@/components/ui/PageContent';
 
@@ -27,7 +27,7 @@ function pageConfigEqual(a: PageConfig, b: PageConfig): boolean {
 }
 
 const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, onRegisterSave }) => {
-  const { revertPage, state, moveSectionToPage } = useAppContext();
+  const { revertPage, state, moveSectionToPage, addPage, setAdminTab } = useAppContext();
   const lastSavedRef = React.useRef<PageConfig>(page);
   const [editedPage, setEditedPage] = React.useState<PageConfig>(() => {
     const p = { ...page, blocks: undefined };
@@ -40,6 +40,30 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
   const [saveError, setSaveError] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [sidebarEditorOpen, setSidebarEditorOpen] = React.useState(false);
+  const [moveToNewPageSectionId, setMoveToNewPageSectionId] = React.useState<string | null>(null);
+  const [newPageTitle, setNewPageTitle] = React.useState('');
+  const [newPageSlug, setNewPageSlug] = React.useState('');
+
+  const normalizedSlug = newPageSlug.trim() ? `/${newPageSlug.replace(/^\//, '')}` : '';
+  const slugConflict = normalizedSlug ? state.pages.some(p => p.slug === normalizedSlug) : false;
+
+  const handleMoveToNewPage = async () => {
+    if (!moveToNewPageSectionId || slugConflict) return;
+    const title = newPageTitle.trim() || 'New Page';
+    const slug = normalizedSlug || `/${Math.random().toString(36).slice(2, 8)}`;
+    const newPage = addPage(title, slug, true);
+    const ok = await moveSectionToPage(moveToNewPageSectionId, page.id, newPage.id);
+    if (ok) {
+      setEditedPage(prev => ({
+        ...prev,
+        sections: prev.sections.filter(s => s.id !== moveToNewPageSectionId),
+      }));
+    }
+    setMoveToNewPageSectionId(null);
+    setNewPageTitle('');
+    setNewPageSlug('');
+    setAdminTab(`edit-page-${newPage.id}`);
+  };
 
   React.useEffect(() => {
     const p = { ...page, blocks: undefined };
@@ -270,9 +294,64 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
                 }));
               }
             }}
+            onMoveSectionToNewPage={(sectionId) => {
+              setMoveToNewPageSectionId(sectionId);
+              setNewPageTitle('');
+              setNewPageSlug('');
+            }}
           />
         </div>
       </div>
+
+      {moveToNewPageSectionId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setMoveToNewPageSectionId(null)}>
+          <div className="bg-white rounded-xl shadow-xl ring-1 ring-slate-900/5 p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center">
+              <h4 className="font-bold text-slate-900">Move section to new page</h4>
+              <button onClick={() => setMoveToNewPageSectionId(null)} className="p-1 text-slate-500 hover:text-slate-700" aria-label="Close">
+                <X size={20} />
+              </button>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Page title</label>
+              <input
+                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-slate-900"
+                value={newPageTitle}
+                onChange={(e) => setNewPageTitle(e.target.value)}
+                placeholder="e.g. About Us"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">URL path</label>
+              <input
+                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-slate-900"
+                value={newPageSlug}
+                onChange={(e) => setNewPageSlug(e.target.value.replace(/\s/g, '').toLowerCase())}
+                placeholder="e.g. about (becomes /about)"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Page URL will be /{newPageSlug || '\u2026'}.
+              </p>
+              {slugConflict && (
+                <p className="text-xs text-red-600 mt-1">A page with this URL already exists.</p>
+              )}
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={handleMoveToNewPage}
+                disabled={slugConflict}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg"
+              >
+                Create page &amp; move section
+              </button>
+              <button onClick={() => setMoveToNewPageSectionId(null)} className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg font-bold">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

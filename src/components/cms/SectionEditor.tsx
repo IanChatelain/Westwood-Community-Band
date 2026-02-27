@@ -61,11 +61,13 @@ function MoveSectionDropdown({
   sectionTitle,
   pages,
   onMove,
+  onMoveToNewPage,
 }: {
   sectionId: string;
   sectionTitle: string;
   pages: { id: string; title: string }[];
   onMove: (sectionId: string, targetPageId: string) => void;
+  onMoveToNewPage?: (sectionId: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -119,7 +121,23 @@ function MoveSectionDropdown({
             {p.title}
           </button>
         ))}
-        {pages.length === 0 && (
+        {onMoveToNewPage && (
+          <>
+            <div className="border-t border-slate-200 my-1" />
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMoveToNewPage(sectionId);
+                setOpen(false);
+              }}
+              className="w-full text-left px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700"
+            >
+              + New page&hellip;
+            </button>
+          </>
+        )}
+        {pages.length === 0 && !onMoveToNewPage && (
           <p className="px-3 py-2 text-xs text-slate-400">No other pages available.</p>
         )}
       </div>
@@ -259,6 +277,7 @@ interface SortableSectionItemProps {
   inputClass: string;
   otherPages?: { id: string; title: string }[];
   onMoveToPage?: (sectionId: string, targetPageId: string) => void;
+  onMoveToNewPage?: (sectionId: string) => void;
 }
 
 function SortableSectionItem({
@@ -271,6 +290,7 @@ function SortableSectionItem({
   inputClass,
   otherPages,
   onMoveToPage,
+  onMoveToNewPage,
 }: SortableSectionItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: section.id,
@@ -329,12 +349,13 @@ function SortableSectionItem({
           >
             <ChevronDown size={14} />
           </span>
-          {otherPages && otherPages.length > 0 && onMoveToPage && (
+          {(otherPages && otherPages.length > 0 && onMoveToPage || onMoveToNewPage) && (
             <MoveSectionDropdown
               sectionId={section.id}
               sectionTitle={displayTitle}
-              pages={otherPages}
-              onMove={onMoveToPage}
+              pages={otherPages ?? []}
+              onMove={onMoveToPage ?? (() => {})}
+              onMoveToNewPage={onMoveToNewPage}
             />
           )}
           <button
@@ -1173,9 +1194,10 @@ interface SectionEditorProps {
   currentPageId?: string;
   allPages?: PageConfig[];
   onMoveSection?: (sectionId: string, targetPageId: string) => void;
+  onMoveSectionToNewPage?: (sectionId: string) => void;
 }
 
-export function SectionEditor({ sections, onChange, currentPageId, allPages, onMoveSection }: SectionEditorProps) {
+export function SectionEditor({ sections, onChange, currentPageId, allPages, onMoveSection, onMoveSectionToNewPage }: SectionEditorProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
 
@@ -1341,6 +1363,7 @@ export function SectionEditor({ sections, onChange, currentPageId, allPages, onM
                 inputClass={inputClass}
                 otherPages={otherPages}
                 onMoveToPage={onMoveSection}
+                onMoveToNewPage={onMoveSectionToNewPage}
               />
             ))}
           </div>
