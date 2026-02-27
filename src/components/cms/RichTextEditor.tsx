@@ -97,9 +97,14 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
       </div>
       <div
         ref={editorRef}
-        className="min-h-[120px] max-h-[260px] overflow-auto px-3 py-2 text-xs text-slate-900 leading-relaxed outline-none whitespace-pre-wrap"
+        className="min-h-[120px] max-h-[260px] overflow-auto px-3 py-2 text-xs text-slate-900 leading-relaxed outline-none whitespace-pre-wrap [&_a]:text-blue-600 [&_a]:underline [&_a:hover]:text-blue-800"
         contentEditable
         onInput={handleInput}
+        onClick={(e) => {
+          if ((e.target as Node).nodeType === Node.ELEMENT_NODE && (e.target as Element).closest('a')) {
+            e.preventDefault();
+          }
+        }}
         suppressContentEditableWarning
       />
     </div>
