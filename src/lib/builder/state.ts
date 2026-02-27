@@ -1,4 +1,5 @@
-import type { BuilderBlock, BuilderPage, PageBuilderState, PageConfig } from '@/types';
+import type { BuilderPage, PageBuilderState, PageConfig } from '@/types';
+import { deserializePageConfigToBuilderPage } from './deserialization';
 
 export function createInitialBuilderState(pages: PageConfig[]): PageBuilderState {
   const builderPages: Record<string, BuilderPage> = {};
@@ -6,13 +7,8 @@ export function createInitialBuilderState(pages: PageConfig[]): PageBuilderState
   const selectedBlockIdByPageId: Record<string, string | null> = {};
 
   for (const page of pages) {
-    const blocks: BuilderBlock[] = page.blocks ?? [];
-    builderPages[page.id] = {
-      id: page.id,
-      slug: page.slug,
-      title: page.title,
-      blocks,
-    };
+    const builderPage = deserializePageConfigToBuilderPage(page);
+    builderPages[page.id] = builderPage;
     isDirtyByPageId[page.id] = false;
     selectedBlockIdByPageId[page.id] = null;
   }

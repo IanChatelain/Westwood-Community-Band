@@ -112,40 +112,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(t);
   }, [state.settings, state.pages, mounted]);
 
-  // Supabase auth: sync session and profile to state.currentUser
+  // Supabase auth: sync session and profile to state.currentUser.
+  // The profile (and its role) is always the single source of truth.
   useEffect(() => {
     if (!mounted || !SUPABASE_ENABLED) return;
     const supabase = createClient();
+
     const loadProfile = async (sessionUser: { id: string; email?: string | null }) => {
-      const { data } = await supabase.from('profiles').select('id, username, role, email').eq('id', sessionUser.id).single();
-      if (data) {
-        setState(prev => ({ ...prev, currentUser: profileToUser(data) }));
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, role, email')
+        .eq('id', sessionUser.id)
+        .single();
+
+      if (error) {
+        // If there's no profile or RLS blocks access, treat as unauthenticated for now.
+        console.error('Error loading profile for user', sessionUser.id, error);
+        setState(prev => ({ ...prev, currentUser: null }));
         return;
       }
-      // No profile yet: auto-create so the user can access the admin dashboard.
-      const username = sessionUser.email?.split('@')[0] || 'User';
-      const { error } = await supabase.from('profiles').insert({
-        id: sessionUser.id,
-        username,
-        role: 'GUEST',
-        email: sessionUser.email ?? null,
-      });
-      if (!error) {
-        setState(prev => ({ ...prev, currentUser: profileToUser({ id: sessionUser.id, username, role: 'GUEST', email: sessionUser.email ?? null }) }));
+
+      if (data) {
+        setState(prev => ({ ...prev, currentUser: profileToUser(data) }));
       } else {
-        // Insert failed (e.g. RLS); fallback to session so user can at least see the dashboard
-        setState(prev => ({ ...prev, currentUser: { id: sessionUser.id, username, role: 'GUEST' as UserRole, email: sessionUser.email ?? '' } }));
+        setState(prev => ({ ...prev, currentUser: null }));
       }
     };
+
     const clearUser = () => setState(prev => ({ ...prev, currentUser: null }));
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) loadProfile(session.user);
       else clearUser();
     });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) loadProfile(session.user);
       else clearUser();
     });
+
     return () => subscription.unsubscribe();
   }, [mounted]);
 
@@ -159,10 +164,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updatePage = (updatedPage: PageConfig) => {
     setState(prev => {
       const existing = prev.pages.find(p => p.id === updatedPage.id);
-      const merged: PageConfig =
-        existing && updatedPage.blocks === undefined
-          ? { ...updatedPage, blocks: existing.blocks }
-          : updatedPage;
+      const merged: PageConfig = existing
+        ? { ...updatedPage, blocks: updatedPage.blocks ?? existing.blocks }
+        : updatedPage;
       if (SUPABASE_ENABLED) {
         // Fire-and-forget; we don't await inside setState
         void savePage(merged);

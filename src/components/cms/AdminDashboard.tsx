@@ -116,7 +116,7 @@ export default function AdminDashboard() {
                 <section>
                   <h4 className="font-bold text-slate-900 mb-1">Editing a page</h4>
                   <p>
-                    Choose full-width or sidebar layout. Add sections (text, hero, image+text, gallery, table, etc.) and use the block-type dropdown to change a section. Use <strong>Save Changes</strong> to publish. Turn on <strong>Live preview</strong> to see the page as visitors will.
+                    Choose full-width or sidebar layout. Use the visual page builder to add and arrange blocks (rich text, image, separator, spacer, button). Use <strong>Save Changes</strong> to publish. Turn on <strong>Live preview</strong> to see the page as visitors will.
                   </p>
                 </section>
                 <section>

@@ -20,7 +20,7 @@ export default function DashboardOverview({ pageCount, userCount }: DashboardOve
       <div className="bg-slate-100 border border-slate-200 rounded-xl p-6 text-slate-700">
         <h3 className="font-bold text-slate-900 mb-2">Getting started</h3>
         <p className="text-sm mb-2">
-          Use <strong>Page Content</strong> to add or select a page to edit. In the editor you can change layout, sections, and sidebar. Click <strong>Save Changes</strong> to publish. Use <strong>Live preview</strong> (sidebar or toolbar) to see the page as visitors will. Use <strong>View site (new tab)</strong> to open the public site without leaving admin.
+          Use <strong>Page Content</strong> to add or select a page to edit. In the editor you can change layout, content blocks, and sidebar. Click <strong>Save Changes</strong> to publish. Use <strong>Live preview</strong> (sidebar or toolbar) to see the page as visitors will. Use <strong>View site (new tab)</strong> to open the public site without leaving admin.
         </p>
         <ul className="text-sm list-disc list-inside space-y-1">
           <li>Dashboard: overview and quick stats</li>
