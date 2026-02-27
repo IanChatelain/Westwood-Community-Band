@@ -33,7 +33,16 @@ export interface SectionStyle {
   imageSize?: 'small' | 'medium' | 'large';
 }
 
-export type PageSectionType = 'hero' | 'text' | 'image-text' | 'gallery' | 'contact' | 'schedule' | 'table' | 'separator' | 'downloads';
+export type PageSectionType = 'hero' | 'text' | 'image-text' | 'gallery' | 'contact' | 'schedule' | 'performances' | 'table' | 'separator' | 'downloads';
+
+export interface PerformanceItem {
+  id: string;
+  date: string;
+  title: string;
+  venue?: string;
+  time?: string;
+  description?: string;
+}
 
 export interface DownloadLink {
   label: string;
@@ -104,6 +113,8 @@ export interface PageSection {
   downloadItems?: DownloadItem[];
   /** For type === 'downloads': grouped lists (e.g. newsletter by season). */
   downloadGroups?: DownloadGroup[];
+  /** For type === 'performances': structured performance/concert entries. */
+  performanceItems?: PerformanceItem[];
 }
 
 export type SidebarBlockType = 'rehearsals' | 'fees' | 'contact' | 'custom';

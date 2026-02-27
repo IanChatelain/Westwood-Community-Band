@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { PageConfig, SidebarBlock, PageSection, SectionStyle, BuilderBlock, BlockWrapperStyle, GalleryEvent, DownloadItem, DownloadGroup } from '@/types';
+import { PageConfig, SidebarBlock, PageSection, SectionStyle, BuilderBlock, BlockWrapperStyle, GalleryEvent, DownloadItem, DownloadGroup, PerformanceItem } from '@/types';
 import { DEFAULT_SIDEBAR_BLOCKS } from '@/constants';
 
 /** Convert plain text (with \n) to HTML paragraphs. Pass HTML through unchanged. */
@@ -76,7 +76,7 @@ export function blockWrapperClassesAndStyle(s?: BlockWrapperStyle): { className:
   else if (s.shadow === 'none') classes.push('shadow-none');
   return { className: classes.join(' ').trim(), style };
 }
-import { Calendar, ArrowRight, Mail, MapPin, Clock, Send, FileDown, ExternalLink } from 'lucide-react';
+import { Calendar, ArrowRight, Mail, MapPin, Clock, Send, FileDown, ExternalLink, Music } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
@@ -674,6 +674,47 @@ export default function PageContent({ page }: PageContentProps) {
               </div>
             )}
 
+            {section.type === 'performances' && (
+              <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm ring-1 ring-slate-900/5" style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
+                <h3 className="text-2xl font-bold text-slate-900 mb-8 border-l-4 border-red-800 pl-6">{section.title}</h3>
+                {section.performanceItems && section.performanceItems.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {section.performanceItems.map((perf) => (
+                      <div key={perf.id} className="rounded-xl border border-slate-200 bg-slate-50 p-5 hover:shadow-md hover:border-slate-300 transition-all">
+                        <div className="flex flex-wrap items-center gap-2 mb-3">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-800 text-white">
+                            <Calendar size={12} />
+                            {perf.date}
+                          </span>
+                          {perf.time && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-200 text-slate-700">
+                              <Clock size={11} />
+                              {perf.time}
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="text-lg font-bold text-slate-900 mb-1">{perf.title}</h4>
+                        {perf.venue && (
+                          <p className="text-sm text-slate-500 flex items-center gap-1.5 mb-2">
+                            <MapPin size={13} className="flex-shrink-0" />
+                            {perf.venue}
+                          </p>
+                        )}
+                        {perf.description && (
+                          <p className="text-sm text-slate-600 leading-relaxed">{perf.description}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-slate-400">
+                    <Music className="mx-auto mb-3 opacity-50" size={36} />
+                    <p className="text-sm">No performances scheduled yet. Add events via the admin panel.</p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {section.type === 'table' && section.tableData && (
               <div className="overflow-x-auto" style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
                 {section.title && <h3 className="text-2xl font-bold text-slate-900 mb-4 border-l-4 border-red-800 pl-6">{section.title}</h3>}
@@ -739,31 +780,53 @@ export default function PageContent({ page }: PageContentProps) {
                 )}
 
                 {/* Flat downloads list (documents, samples/recordings) */}
-                {section.downloadItems && section.downloadItems.length > 0 && (
-                  <ul className="divide-y divide-slate-100">
-                    {section.downloadItems.map((item, i) => (
-                      <li key={i} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-4 px-3 rounded-lg hover:bg-slate-50 transition-colors group">
-                        <FileDown size={18} className="text-red-800/70 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          {item.url ? (
-                            <a href={item.url} target="_blank" rel="noopener noreferrer" className="font-medium text-red-800 hover:text-red-900 hover:underline">
-                              {item.label}
-                            </a>
-                          ) : (
-                            <span className="font-medium text-slate-800">{item.label}</span>
-                          )}
-                          {item.description && <p className="text-sm text-slate-500 mt-0.5">{item.description}</p>}
-                        </div>
-                        {(item.fileSize || item.duration) && (
-                          <div className="flex items-center gap-3 text-xs text-slate-400">
-                            {item.fileSize && <span>{item.fileSize}</span>}
-                            {item.duration && <span>{item.duration}</span>}
-                          </div>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                {section.downloadItems && section.downloadItems.length > 0 && (() => {
+                  const hasDuration = section.downloadItems.some((it) => it.duration);
+                  const hasSize = section.downloadItems.some((it) => it.fileSize);
+                  return (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="border-b-2 border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            <th className="py-3 px-3">Name</th>
+                            {hasSize && <th className="py-3 px-3 hidden sm:table-cell">Size</th>}
+                            {hasDuration && <th className="py-3 px-3 hidden sm:table-cell">Duration</th>}
+                            <th className="py-3 px-3 text-right">Download</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {section.downloadItems.map((item, i) => (
+                            <tr key={i} className="hover:bg-slate-50 transition-colors group">
+                              <td className="py-3.5 px-3">
+                                <span className="font-medium text-slate-800">{item.label}</span>
+                                {item.description && <p className="text-sm text-slate-500 mt-0.5">{item.description}</p>}
+                              </td>
+                              {hasSize && (
+                                <td className="py-3.5 px-3 text-xs text-slate-400 whitespace-nowrap hidden sm:table-cell">
+                                  {item.fileSize ?? '\u2014'}
+                                </td>
+                              )}
+                              {hasDuration && (
+                                <td className="py-3.5 px-3 text-xs text-slate-400 whitespace-nowrap hidden sm:table-cell">
+                                  {item.duration ?? '\u2014'}
+                                </td>
+                              )}
+                              <td className="py-3.5 px-3 text-right">
+                                {item.url ? (
+                                  <a href={item.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm font-medium text-red-800 hover:text-red-900 hover:underline">
+                                    <FileDown size={14} /> Download
+                                  </a>
+                                ) : (
+                                  <span className="text-xs text-slate-400">&mdash;</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 

@@ -17,10 +17,10 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { PageSection, PageSectionType, GalleryEvent, GalleryMediaItem, DownloadItem, DownloadGroup, DownloadLink } from '@/types';
-import { ChevronDown, ChevronRight, Trash2, Plus, Upload, X, GripVertical, Image as ImageIcon, Video } from 'lucide-react';
+import type { PageSection, PageSectionType, PageConfig, GalleryEvent, GalleryMediaItem, DownloadItem, DownloadGroup, DownloadLink, PerformanceItem } from '@/types';
+import { ChevronDown, ChevronRight, Trash2, Plus, Upload, X, GripVertical, Image as ImageIcon, Video, ArrowRightLeft } from 'lucide-react';
 import { RichTextEditor } from '@/components/cms/RichTextEditor';
-import { uploadImage } from '@/app/actions/upload';
+import { uploadImage, uploadRecording, uploadDocument } from '@/app/actions/upload';
 
 const SECTION_TYPE_OPTIONS: { value: PageSectionType; label: string }[] = [
   { value: 'hero', label: 'Hero Banner' },
@@ -29,6 +29,7 @@ const SECTION_TYPE_OPTIONS: { value: PageSectionType; label: string }[] = [
   { value: 'gallery', label: 'Gallery' },
   { value: 'contact', label: 'Contact Form' },
   { value: 'schedule', label: 'Schedule' },
+  { value: 'performances', label: 'Performances' },
   { value: 'table', label: 'Table' },
   { value: 'separator', label: 'Divider' },
   { value: 'downloads', label: 'Downloads / Link List' },
@@ -45,9 +46,63 @@ const DEFAULT_HEIGHTS: Partial<Record<PageSectionType, number>> = {
   gallery: 240,
   contact: 260,
   schedule: 260,
+  performances: 260,
   table: 220,
   downloads: 220,
 };
+
+function MoveSectionDropdown({
+  sectionId,
+  sectionTitle,
+  pages,
+  onMove,
+}: {
+  sectionId: string;
+  sectionTitle: string;
+  pages: { id: string; title: string }[];
+  onMove: (sectionId: string, targetPageId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+        className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50"
+        aria-label={`Move ${sectionTitle} to another page`}
+        title="Move to another page"
+      >
+        <ArrowRightLeft size={14} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-30" aria-hidden onClick={(e) => { e.stopPropagation(); setOpen(false); }} />
+          <div className="absolute right-0 top-full mt-1 z-40 w-52 bg-white rounded-lg shadow-xl border border-slate-200 py-1">
+            <p className="px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase">Move to page</p>
+            {pages.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMove(sectionId, p.id);
+                  setOpen(false);
+                }}
+                className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+              >
+                {p.title}
+              </button>
+            ))}
+            {pages.length === 0 && (
+              <p className="px-3 py-2 text-xs text-slate-400">No other pages available.</p>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 interface SortableSectionItemProps {
   section: PageSection;
@@ -57,6 +112,8 @@ interface SortableSectionItemProps {
   onUpdate: (updates: Partial<PageSection>) => void;
   onRemove: () => void;
   inputClass: string;
+  otherPages?: { id: string; title: string }[];
+  onMoveToPage?: (sectionId: string, targetPageId: string) => void;
 }
 
 function SortableSectionItem({
@@ -67,6 +124,8 @@ function SortableSectionItem({
   onUpdate,
   onRemove,
   inputClass,
+  otherPages,
+  onMoveToPage,
 }: SortableSectionItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: section.id,
@@ -125,6 +184,14 @@ function SortableSectionItem({
           >
             <ChevronDown size={14} />
           </span>
+          {otherPages && otherPages.length > 0 && onMoveToPage && (
+            <MoveSectionDropdown
+              sectionId={section.id}
+              sectionTitle={displayTitle}
+              pages={otherPages}
+              onMove={onMoveToPage}
+            />
+          )}
           <button
             type="button"
             onClick={(e) => {
@@ -275,6 +342,14 @@ function SortableSectionItem({
                 inputClass={inputClass}
               />
             </>
+          )}
+
+          {section.type === 'performances' && (
+            <PerformancesEditor
+              items={section.performanceItems ?? []}
+              onChange={(performanceItems) => onUpdate({ performanceItems })}
+              inputClass={inputClass}
+            />
           )}
 
           {section.type === 'downloads' && (
@@ -548,6 +623,153 @@ function GalleryMediaEditor({
   );
 }
 
+function PerformancesEditor({
+  items,
+  onChange,
+  inputClass,
+}: {
+  items: PerformanceItem[];
+  onChange: (items: PerformanceItem[]) => void;
+  inputClass: string;
+}) {
+  const addItem = () => {
+    const id = Math.random().toString(36).substring(2, 11);
+    onChange([...items, { id, date: '', title: 'New Performance', venue: '', time: '', description: '' }]);
+  };
+  const updateItem = (idx: number, updates: Partial<PerformanceItem>) => {
+    onChange(items.map((it, i) => i === idx ? { ...it, ...updates } : it));
+  };
+  const removeItem = (idx: number) => {
+    onChange(items.filter((_, i) => i !== idx));
+  };
+  const moveItem = (idx: number, dir: -1 | 1) => {
+    const target = idx + dir;
+    if (target < 0 || target >= items.length) return;
+    const next = [...items];
+    [next[idx], next[target]] = [next[target], next[idx]];
+    onChange(next);
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <label className="text-[10px] font-bold text-slate-500 uppercase">Performance Items</label>
+        <button type="button" onClick={addItem} className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-red-600 text-white hover:bg-red-700 transition-colors">
+          <Plus size={11} /> Add Performance
+        </button>
+      </div>
+      {items.length === 0 && <p className="text-xs text-slate-400 py-1">No performances yet.</p>}
+      {items.map((item, idx) => (
+        <div key={item.id} className="border border-slate-200 rounded-lg p-2 bg-slate-50 space-y-1.5">
+          <div className="flex items-start gap-2">
+            <div className="flex flex-col gap-0.5 pt-1">
+              <button type="button" onClick={() => moveItem(idx, -1)} disabled={idx === 0} className="text-slate-400 hover:text-slate-600 disabled:opacity-30 text-[8px]" aria-label="Move up">&#9650;</button>
+              <button type="button" onClick={() => moveItem(idx, 1)} disabled={idx === items.length - 1} className="text-slate-400 hover:text-slate-600 disabled:opacity-30 text-[8px]" aria-label="Move down">&#9660;</button>
+            </div>
+            <div className="flex-1 space-y-1.5">
+              <input type="text" className={inputClass} value={item.title} onChange={(e) => updateItem(idx, { title: e.target.value })} placeholder="Performance title" />
+              <div className="flex gap-2">
+                <input type="text" className={inputClass} value={item.date} onChange={(e) => updateItem(idx, { date: e.target.value })} placeholder="Date (e.g. March 15, 2025)" />
+                <input type="text" className={inputClass} value={item.time ?? ''} onChange={(e) => updateItem(idx, { time: e.target.value })} placeholder="Time (e.g. 7:00 PM)" />
+              </div>
+              <input type="text" className={inputClass} value={item.venue ?? ''} onChange={(e) => updateItem(idx, { venue: e.target.value })} placeholder="Venue" />
+              <input type="text" className={inputClass} value={item.description ?? ''} onChange={(e) => updateItem(idx, { description: e.target.value })} placeholder="Description (optional)" />
+            </div>
+            <button type="button" onClick={() => removeItem(idx)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" aria-label="Remove performance">
+              <Trash2 size={12} />
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function getAudioDuration(file: File): Promise<string | null> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const audio = new Audio(url);
+    audio.addEventListener('loadedmetadata', () => {
+      const secs = Math.round(audio.duration);
+      const m = Math.floor(secs / 60);
+      const s = secs % 60;
+      URL.revokeObjectURL(url);
+      resolve(`${m}:${s.toString().padStart(2, '0')}`);
+    });
+    audio.addEventListener('error', () => {
+      URL.revokeObjectURL(url);
+      resolve(null);
+    });
+  });
+}
+
+function DownloadItemUploadButton({
+  idx,
+  onUploaded,
+}: {
+  idx: number;
+  onUploaded: (idx: number, updates: Partial<DownloadItem>) => void;
+}) {
+  const audioRef = useRef<HTMLInputElement>(null);
+  const docRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleAudio = async (file: File) => {
+    setError(null);
+    setUploading(true);
+    try {
+      const duration = await getAudioDuration(file);
+      const fd = new FormData();
+      fd.append('file', file);
+      const result = await uploadRecording(fd);
+      if (result.error) { setError(result.error); }
+      else if (result.url) {
+        onUploaded(idx, {
+          url: result.url,
+          fileSize: result.fileSize ?? undefined,
+          ...(duration ? { duration } : {}),
+        });
+      }
+    } catch { setError('Upload failed'); }
+    finally { setUploading(false); }
+  };
+
+  const handleDoc = async (file: File) => {
+    setError(null);
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const result = await uploadDocument(fd);
+      if (result.error) { setError(result.error); }
+      else if (result.url) {
+        onUploaded(idx, {
+          url: result.url,
+          fileSize: result.fileSize ?? undefined,
+        });
+      }
+    } catch { setError('Upload failed'); }
+    finally { setUploading(false); }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+      <input ref={audioRef} type="file" accept="audio/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAudio(f); e.target.value = ''; }} />
+      <input ref={docRef} type="file" accept=".pdf,.xlsx,.xls,.docx,.doc,.html,.txt,.csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleDoc(f); e.target.value = ''; }} />
+      <button type="button" disabled={uploading} onClick={() => audioRef.current?.click()}
+        className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 disabled:opacity-50 transition-colors">
+        <Upload size={10} /> {uploading ? 'Uploading...' : 'Audio'}
+      </button>
+      <button type="button" disabled={uploading} onClick={() => docRef.current?.click()}
+        className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 disabled:opacity-50 transition-colors">
+        <Upload size={10} /> {uploading ? 'Uploading...' : 'Document'}
+      </button>
+      {error && <span className="text-[10px] text-red-600">{error}</span>}
+    </div>
+  );
+}
+
 function DownloadsEditor({
   section,
   onUpdate,
@@ -647,12 +869,13 @@ function DownloadsEditor({
               <div className="flex items-start gap-2">
                 <div className="flex-1 space-y-1.5">
                   <input type="text" className={inputClass} value={item.label} onChange={(e) => updateItem(idx, { label: e.target.value })} placeholder="Label" />
-                  <input type="url" className={inputClass} value={item.url ?? ''} onChange={(e) => updateItem(idx, { url: e.target.value })} placeholder="URL" />
+                  <input type="url" className={inputClass} value={item.url ?? ''} onChange={(e) => updateItem(idx, { url: e.target.value })} placeholder="URL (or upload below)" />
                   <input type="text" className={inputClass} value={item.description ?? ''} onChange={(e) => updateItem(idx, { description: e.target.value })} placeholder="Description (optional)" />
                   <div className="flex gap-2">
-                    <input type="text" className={inputClass} value={item.fileSize ?? ''} onChange={(e) => updateItem(idx, { fileSize: e.target.value })} placeholder="File size (optional)" />
-                    <input type="text" className={inputClass} value={item.duration ?? ''} onChange={(e) => updateItem(idx, { duration: e.target.value })} placeholder="Duration (optional)" />
+                    <input type="text" className={inputClass} value={item.fileSize ?? ''} onChange={(e) => updateItem(idx, { fileSize: e.target.value })} placeholder="File size" />
+                    <input type="text" className={inputClass} value={item.duration ?? ''} onChange={(e) => updateItem(idx, { duration: e.target.value })} placeholder="Duration" />
                   </div>
+                  <DownloadItemUploadButton idx={idx} onUploaded={updateItem} />
                 </div>
                 <button type="button" onClick={() => removeItem(idx)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" aria-label="Remove item">
                   <Trash2 size={12} />
@@ -802,9 +1025,12 @@ function ImageUploadField({
 interface SectionEditorProps {
   sections: PageSection[];
   onChange: (sections: PageSection[]) => void;
+  currentPageId?: string;
+  allPages?: PageConfig[];
+  onMoveSection?: (sectionId: string, targetPageId: string) => void;
 }
 
-export function SectionEditor({ sections, onChange }: SectionEditorProps) {
+export function SectionEditor({ sections, onChange, currentPageId, allPages, onMoveSection }: SectionEditorProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
 
@@ -834,6 +1060,9 @@ export function SectionEditor({ sections, onChange }: SectionEditorProps) {
       galleryThumbnailAspect: 'landscape' as const,
       galleryShowDescription: true,
     } : {};
+    const performancesDefaults = type === 'performances' ? {
+      performanceItems: [] as PerformanceItem[],
+    } : {};
     const downloadsDefaults = type === 'downloads' ? {
       downloadItems: [] as DownloadItem[],
       downloadGroups: [] as DownloadGroup[],
@@ -845,6 +1074,7 @@ export function SectionEditor({ sections, onChange }: SectionEditorProps) {
       content: '',
       ...(defaultHeight != null && { minHeight: defaultHeight }),
       ...galleryDefaults,
+      ...performancesDefaults,
       ...downloadsDefaults,
     };
     onChange([...sections, newSection]);
@@ -859,6 +1089,10 @@ export function SectionEditor({ sections, onChange }: SectionEditorProps) {
     }
     onChange(next);
   };
+
+  const otherPages = (allPages && currentPageId)
+    ? allPages.filter(p => p.id !== currentPageId).map(p => ({ id: p.id, title: p.title }))
+    : undefined;
 
   const inputClass =
     'w-full p-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500';
@@ -957,6 +1191,8 @@ export function SectionEditor({ sections, onChange }: SectionEditorProps) {
                 onUpdate={(updates) => updateSection(section.id, updates)}
                 onRemove={() => removeSection(section.id)}
                 inputClass={inputClass}
+                otherPages={otherPages}
+                onMoveToPage={onMoveSection}
               />
             ))}
           </div>

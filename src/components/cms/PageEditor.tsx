@@ -27,7 +27,7 @@ function pageConfigEqual(a: PageConfig, b: PageConfig): boolean {
 }
 
 const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, onRegisterSave }) => {
-  const { revertPage } = useAppContext();
+  const { revertPage, state, moveSectionToPage } = useAppContext();
   const lastSavedRef = React.useRef<PageConfig>(page);
   const [editedPage, setEditedPage] = React.useState<PageConfig>(() => {
     const p = { ...page, blocks: undefined };
@@ -256,7 +256,21 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
           </div>
         </div>
         <div className="w-96 min-w-80 shrink-0 overflow-auto bg-white rounded-xl border border-slate-200 p-4">
-          <SectionEditor sections={editedPage.sections} onChange={setSections} />
+          <SectionEditor
+            sections={editedPage.sections}
+            onChange={setSections}
+            currentPageId={page.id}
+            allPages={state.pages}
+            onMoveSection={async (sectionId, targetPageId) => {
+              const ok = await moveSectionToPage(sectionId, page.id, targetPageId);
+              if (ok) {
+                setEditedPage(prev => ({
+                  ...prev,
+                  sections: prev.sections.filter(s => s.id !== sectionId),
+                }));
+              }
+            }}
+          />
         </div>
       </div>
     </div>

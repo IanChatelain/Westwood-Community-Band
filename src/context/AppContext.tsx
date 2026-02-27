@@ -5,6 +5,7 @@ import {
   AppState,
   UserRole,
   PageConfig,
+  PageSection,
   SiteSettings,
   User,
   BuilderBlock,
@@ -30,6 +31,8 @@ interface AppContextType {
   persist: () => Promise<boolean>;
   /** Revert a page to a previous version (e.g. discard unsaved edits). */
   revertPage: (pageId: string, savedPage: PageConfig) => void;
+  /** Move a section from one page to another. */
+  moveSectionToPage: (sectionId: string, fromPageId: string, toPageId: string) => Promise<boolean>;
   isAdminMode: boolean;
   setIsAdminMode: React.Dispatch<React.SetStateAction<boolean>>;
   adminTab: string;
@@ -288,6 +291,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setTimeout(persist, 0);
   };
 
+  const moveSectionToPage = useCallback(async (sectionId: string, fromPageId: string, toPageId: string): Promise<boolean> => {
+    if (fromPageId === toPageId) return true;
+
+    setState(prev => {
+      const fromPage = prev.pages.find(p => p.id === fromPageId);
+      const toPage = prev.pages.find(p => p.id === toPageId);
+      if (!fromPage || !toPage) return prev;
+
+      const section = fromPage.sections.find(s => s.id === sectionId);
+      if (!section) return prev;
+
+      const movedSection: PageSection = {
+        ...section,
+        id: toPage.sections.some(s => s.id === section.id)
+          ? Math.random().toString(36).substring(2, 11)
+          : section.id,
+      };
+
+      return {
+        ...prev,
+        pages: prev.pages.map(p => {
+          if (p.id === fromPageId) {
+            return { ...p, sections: p.sections.filter(s => s.id !== sectionId) };
+          }
+          if (p.id === toPageId) {
+            return { ...p, sections: [...p.sections, movedSection] };
+          }
+          return p;
+        }),
+      };
+    });
+
+    return new Promise<boolean>((resolve) => {
+      setTimeout(async () => {
+        const ok = await persist();
+        resolve(ok);
+      }, 0);
+    });
+  }, [persist]);
+
   const pageBuilder: PageBuilderState = state.pageBuilder;
 
   const pageBuilderActions: PageBuilderActions = {
@@ -479,6 +522,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       pageBuilderActions,
       persist,
       revertPage,
+      moveSectionToPage,
       loading,
     }}>
       {children}
