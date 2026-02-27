@@ -13,8 +13,8 @@ import { ShieldCheck, HelpCircle, X, LogIn } from 'lucide-react';
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { state, setState, logout, updatePage, addPage, removePage, adminTab, setAdminTab, setIsLoginModalOpen } = useAppContext();
-  const [previewOpen, setPreviewOpen] = useState(false);
+  const { state, setState, logout, updatePage, addPage, removePage, persist, adminTab, setAdminTab, setIsLoginModalOpen } = useAppContext();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -52,8 +52,6 @@ export default function AdminDashboard() {
     );
   }
 
-  const isEditingPage = adminTab.startsWith('edit-page-');
-
   return (
     <div className="flex min-h-screen bg-slate-100">
       <AdminSidebar
@@ -61,16 +59,19 @@ export default function AdminDashboard() {
         setTab={setAdminTab}
         user={state.currentUser}
         onLogout={handleLogout}
-        onTogglePreview={() => setPreviewOpen((p) => !p)}
-        previewOpen={previewOpen}
-        isEditingPage={isEditingPage}
+        collapsed={sidebarCollapsed}
+        onToggleCollapsed={() => setSidebarCollapsed((c) => !c)}
       />
 
-      <main className="flex-grow p-8 max-h-screen overflow-y-auto">
-        <header className="mb-8 flex justify-between items-end">
+      <main className={`flex-grow max-h-screen overflow-y-auto ${adminTab.startsWith('edit-page-') ? 'p-4' : 'p-8'}`}>
+        <header className={`flex justify-between items-end ${adminTab.startsWith('edit-page-') ? 'mb-4' : 'mb-8'}`}>
           <div>
-            <h2 className="text-3xl font-extrabold text-slate-900 capitalize">{adminTab.replace(/-/g, ' ')}</h2>
-            <p className="text-slate-600 mt-1">Manage your website content and structure with ease.</p>
+            <h2 className={`font-extrabold text-slate-900 capitalize ${adminTab.startsWith('edit-page-') ? 'text-xl' : 'text-3xl'}`}>
+              {adminTab.startsWith('edit-page-') ? 'Edit page' : adminTab.replace(/-/g, ' ')}
+            </h2>
+            <p className="text-slate-600 mt-1 text-sm">
+              {adminTab.startsWith('edit-page-') ? 'Drag blocks in the preview. Click a block to edit.' : 'Manage your website content and structure with ease.'}
+            </p>
           </div>
           <div className="flex gap-2 items-center">
             <button
@@ -110,13 +111,13 @@ export default function AdminDashboard() {
                 <section>
                   <h4 className="font-bold text-slate-900 mb-1">Page Content</h4>
                   <p>
-                    Click a page to edit its content and layout. Use <strong>Add page</strong> for new pages. Use the live preview toggle to see how the page will look as you edit.
+                    Click a page to edit its content and layout. Use <strong>Add page</strong> for new pages. Edit directly in the live preview—drag blocks to build your page.
                   </p>
                 </section>
                 <section>
                   <h4 className="font-bold text-slate-900 mb-1">Editing a page</h4>
                   <p>
-                    Choose full-width or sidebar layout. Use the visual page builder to add and arrange blocks (rich text, image, separator, spacer, button). Use <strong>Save Changes</strong> to publish. Turn on <strong>Live preview</strong> to see the page as visitors will.
+                    Choose full-width or sidebar layout. Use the visual page builder to add and arrange blocks. Changes are not auto-saved—click <strong>Save</strong> to publish. Use <strong>Revert</strong> to discard unsaved edits.
                   </p>
                 </section>
                 <section>
@@ -147,8 +148,6 @@ export default function AdminDashboard() {
           <PageEditor
             page={state.pages.find((p) => `edit-page-${p.id}` === adminTab)!}
             onSave={updatePage}
-            showPreview={previewOpen}
-            onTogglePreview={() => setPreviewOpen((p) => !p)}
           />
         )}
 
@@ -156,6 +155,7 @@ export default function AdminDashboard() {
           <SettingsTab
             settings={state.settings}
             onUpdateSettings={(settings) => setState((prev) => ({ ...prev, settings }))}
+            onApply={persist}
           />
         )}
 

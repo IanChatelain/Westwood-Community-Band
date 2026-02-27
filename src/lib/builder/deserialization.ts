@@ -1,4 +1,6 @@
-import type { BuilderBlock, BuilderPage, PageConfig } from '@/types';
+import type { BuilderBlock, BuilderBlockType, BuilderPage, PageConfig } from '@/types';
+
+const BUILDER_BLOCK_TYPES: BuilderBlockType[] = ['richText', 'image', 'separator', 'spacer', 'button'];
 
 function isBuilderBlockArray(sections: unknown[]): sections is BuilderBlock[] {
   return sections.every(
@@ -7,8 +9,8 @@ function isBuilderBlockArray(sections: unknown[]): sections is BuilderBlock[] {
       typeof s === 'object' &&
       'id' in s &&
       'type' in s &&
-      typeof (s as any).id === 'string' &&
-      typeof (s as any).type === 'string',
+      typeof (s as { id: unknown; type: unknown }).id === 'string' &&
+      BUILDER_BLOCK_TYPES.includes((s as { type: unknown }).type as BuilderBlockType),
   );
 }
 

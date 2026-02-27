@@ -15,6 +15,9 @@ function InspectorFields({ block, pageId }: { block: BuilderBlock; pageId: strin
     pageBuilderActions.updateBlock(pageId, block.id, (prev) => ({ ...prev, ...updates } as BuilderBlock));
   };
 
+  const inputClass = 'w-full p-2 text-xs border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500';
+  const selectClass = 'w-full p-2 text-xs border border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500';
+
   if (block.type === 'richText') {
     const b = block as RichTextBlock;
     return (
@@ -24,7 +27,7 @@ function InspectorFields({ block, pageId }: { block: BuilderBlock; pageId: strin
         </label>
         <textarea
           rows={6}
-          className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+          className={inputClass}
           value={b.content}
           onChange={(e) => update({ content: e.target.value } as Partial<RichTextBlock>)}
         />
@@ -41,7 +44,7 @@ function InspectorFields({ block, pageId }: { block: BuilderBlock; pageId: strin
             Image URL
           </label>
           <input
-            className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            className={inputClass}
             value={b.src}
             onChange={(e) => update({ src: e.target.value } as Partial<ImageBlock>)}
           />
@@ -51,7 +54,7 @@ function InspectorFields({ block, pageId }: { block: BuilderBlock; pageId: strin
             Alt text
           </label>
           <input
-            className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            className={inputClass}
             value={b.alt}
             onChange={(e) => update({ alt: e.target.value } as Partial<ImageBlock>)}
           />
@@ -61,7 +64,7 @@ function InspectorFields({ block, pageId }: { block: BuilderBlock; pageId: strin
             Caption
           </label>
           <input
-            className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            className={inputClass}
             value={b.caption ?? ''}
             onChange={(e) => update({ caption: e.target.value } as Partial<ImageBlock>)}
           />
@@ -74,7 +77,7 @@ function InspectorFields({ block, pageId }: { block: BuilderBlock; pageId: strin
             <input
               type="number"
               min={0}
-              className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+              className={inputClass}
               value={b.borderRadius ?? 0}
               onChange={(e) => update({ borderRadius: Number(e.target.value) } as Partial<ImageBlock>)}
             />
@@ -86,7 +89,7 @@ function InspectorFields({ block, pageId }: { block: BuilderBlock; pageId: strin
             <input
               type="number"
               min={0}
-              className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+              className={inputClass}
               value={b.padding ?? 0}
               onChange={(e) => update({ padding: Number(e.target.value) } as Partial<ImageBlock>)}
             />
@@ -108,7 +111,7 @@ function InspectorFields({ block, pageId }: { block: BuilderBlock; pageId: strin
             type="number"
             min={1}
             max={8}
-            className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            className={inputClass}
             value={b.thickness ?? 1}
             onChange={(e) => update({ thickness: Number(e.target.value) } as Partial<SeparatorBlock>)}
           />
@@ -118,7 +121,7 @@ function InspectorFields({ block, pageId }: { block: BuilderBlock; pageId: strin
             Style
           </label>
           <select
-            className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            className={selectClass}
             value={b.style ?? 'solid'}
             onChange={(e) => update({ style: e.target.value as SeparatorBlock['style'] } as Partial<SeparatorBlock>)}
           >
@@ -144,7 +147,7 @@ function InspectorFields({ block, pageId }: { block: BuilderBlock; pageId: strin
             Width
           </label>
           <select
-            className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            className={selectClass}
             value={b.width ?? 'content'}
             onChange={(e) => update({ width: e.target.value as SeparatorBlock['width'] } as Partial<SeparatorBlock>)}
           >
@@ -167,7 +170,7 @@ function InspectorFields({ block, pageId }: { block: BuilderBlock; pageId: strin
         <input
           type="number"
           min={0}
-          className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+          className={inputClass}
           value={b.height}
           onChange={(e) => update({ height: Number(e.target.value) } as Partial<SpacerBlock>)}
         />
@@ -184,7 +187,8 @@ function InspectorFields({ block, pageId }: { block: BuilderBlock; pageId: strin
             Label
           </label>
           <input
-            className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            className={inputClass}
+            placeholder="Button text"
             value={b.label}
             onChange={(e) => update({ label: e.target.value } as Partial<ButtonBlock>)}
           />
@@ -194,7 +198,8 @@ function InspectorFields({ block, pageId }: { block: BuilderBlock; pageId: strin
             Link URL
           </label>
           <input
-            className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            className={inputClass}
+            placeholder="#"
             value={b.href}
             onChange={(e) => update({ href: e.target.value } as Partial<ButtonBlock>)}
           />
@@ -204,7 +209,7 @@ function InspectorFields({ block, pageId }: { block: BuilderBlock; pageId: strin
             Variant
           </label>
           <select
-            className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            className={selectClass}
             value={b.variant ?? 'primary'}
             onChange={(e) => update({ variant: e.target.value as ButtonBlock['variant'] } as Partial<ButtonBlock>)}
           >
@@ -221,7 +226,7 @@ function InspectorFields({ block, pageId }: { block: BuilderBlock; pageId: strin
             <input
               type="number"
               min={0}
-              className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+              className={inputClass}
               value={b.borderRadius ?? 0}
               onChange={(e) => update({ borderRadius: Number(e.target.value) } as Partial<ButtonBlock>)}
             />
@@ -234,7 +239,7 @@ function InspectorFields({ block, pageId }: { block: BuilderBlock; pageId: strin
               <input
                 type="number"
                 min={0}
-                className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                className={inputClass}
                 value={b.paddingX ?? 0}
                 onChange={(e) => update({ paddingX: Number(e.target.value) } as Partial<ButtonBlock>)}
               />
@@ -246,7 +251,7 @@ function InspectorFields({ block, pageId }: { block: BuilderBlock; pageId: strin
               <input
                 type="number"
                 min={0}
-                className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                className={inputClass}
                 value={b.paddingY ?? 0}
                 onChange={(e) => update({ paddingY: Number(e.target.value) } as Partial<ButtonBlock>)}
               />
@@ -270,7 +275,7 @@ export function BlockInspector({ pageId }: BlockInspectorProps) {
   return (
     <aside
       aria-label="Block settings"
-      className="w-full sm:w-72 shrink-0 bg-white border border-slate-200 rounded-xl p-3"
+      className="w-full min-w-72 shrink-0 bg-white border border-slate-200 rounded-xl p-4"
     >
       <header className="space-y-0.5 mb-2">
         <h3 className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">

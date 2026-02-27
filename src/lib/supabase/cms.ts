@@ -2,8 +2,18 @@
 
 import { createClient } from '@/lib/supabase/client';
 import type { AppState, SiteSettings, PageConfig } from '@/types';
+import type { BuilderBlockType } from '@/types';
 import { DEFAULT_SETTINGS, INITIAL_PAGES, INITIAL_USERS } from '@/constants';
 import { deserializePageConfigToBuilderPage } from '@/lib/builder/deserialization';
+
+const BUILDER_BLOCK_TYPES: BuilderBlockType[] = ['richText', 'image', 'separator', 'spacer', 'button'];
+
+function isBuilderBlocks(arr: unknown[]): boolean {
+  return arr.length > 0 && arr.every(
+    (s) => s && typeof s === 'object' && 'type' in s && BUILDER_BLOCK_TYPES.includes((s as { type: unknown }).type as BuilderBlockType),
+  );
+}
+
 function rowToSettings(row: { band_name: string; logo_url: string; primary_color: string; secondary_color: string; footer_text: string }): SiteSettings {
   return {
     bandName: row.band_name,
@@ -26,23 +36,26 @@ function rowToPage(row: {
   nav_order: number | null;
   nav_label: string | null;
 }): PageConfig {
+  const sectionsData = Array.isArray(row.sections) ? row.sections : [];
+  const storedAsBlocks = isBuilderBlocks(sectionsData as object[]);
+
   const base: PageConfig = {
     id: row.id,
     title: row.title,
     slug: row.slug,
     layout: row.layout as PageConfig['layout'],
     sidebarWidth: row.sidebar_width,
-    sections: Array.isArray(row.sections) ? row.sections as PageConfig['sections'] : [],
+    sections: storedAsBlocks ? [] : (sectionsData as PageConfig['sections']),
     sidebarBlocks: row.sidebar_blocks ? (Array.isArray(row.sidebar_blocks) ? row.sidebar_blocks as PageConfig['sidebarBlocks'] : undefined) : undefined,
     showInNav: row.show_in_nav ?? true,
     navOrder: row.nav_order ?? 999,
     navLabel: row.nav_label ?? undefined,
   };
-  const builderPage = deserializePageConfigToBuilderPage(base);
-  return {
-    ...base,
-    blocks: builderPage.blocks,
-  };
+
+  if (storedAsBlocks) {
+    return { ...base, blocks: sectionsData as PageConfig['blocks'] };
+  }
+  return base;
 }
 
 export async function loadCmsState(): Promise<Partial<AppState> | null> {

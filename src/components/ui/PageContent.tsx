@@ -24,7 +24,7 @@ function imageLayoutClasses(style?: SectionStyle): { wrapper: string; image: str
   return { wrapper: 'grid grid-cols-1 md:grid-cols-2 gap-12 items-start', image: size };
 }
 
-function SidebarBlockContent({ block }: { block: SidebarBlock }) {
+export function SidebarBlockContent({ block }: { block: SidebarBlock }) {
   if (block.type === 'rehearsals') {
     return (
       <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm ring-1 ring-slate-900/5">
@@ -241,7 +241,7 @@ function ContactSection({ section }: { section: PageSection }) {
   );
 }
 
-function BuilderBlockView({ block }: { block: BuilderBlock }) {
+export function BuilderBlockView({ block }: { block: BuilderBlock }) {
   if (block.type === 'richText') {
     return (
       <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">

@@ -6,9 +6,10 @@ import { SiteSettings } from '@/types';
 interface SettingsTabProps {
   settings: SiteSettings;
   onUpdateSettings: (settings: SiteSettings) => void;
+  onApply: () => void;
 }
 
-export default function SettingsTab({ settings, onUpdateSettings }: SettingsTabProps) {
+export default function SettingsTab({ settings, onUpdateSettings, onApply }: SettingsTabProps) {
   const [feedback, setFeedback] = useState(false);
 
   return (
@@ -37,6 +38,7 @@ export default function SettingsTab({ settings, onUpdateSettings }: SettingsTabP
         )}
         <button
           onClick={() => {
+            onApply();
             setFeedback(true);
             window.setTimeout(() => setFeedback(false), 3000);
           }}

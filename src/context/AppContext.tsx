@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import {
   AppState,
   UserRole,
@@ -26,6 +26,10 @@ interface AppContextType {
   updatePage: (updatedPage: PageConfig) => void;
   addPage: (title: string, slug: string, addToNav?: boolean) => PageConfig;
   removePage: (pageId: string) => void;
+  /** Persist current state to storage. Call explicitly after Save/Apply—no auto-save. */
+  persist: () => void;
+  /** Revert a page to a previous version (e.g. discard unsaved edits). */
+  revertPage: (pageId: string, savedPage: PageConfig) => void;
   isAdminMode: boolean;
   setIsAdminMode: React.Dispatch<React.SetStateAction<boolean>>;
   adminTab: string;
@@ -63,6 +67,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [adminTab, setAdminTab] = useState<string>('overview');
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
   const [mounted, setMounted] = useState(false);
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
+  const persist = useCallback(() => {
+    const s = stateRef.current;
+    if (!SUPABASE_ENABLED) {
+      db.save(s);
+    } else {
+      saveSettings(s.settings);
+      savePages(s.pages);
+    }
+  }, []);
+
+  const revertPage = useCallback((pageId: string, savedPage: PageConfig) => {
+    setState(prev => ({
+      ...prev,
+      pages: prev.pages.map(p => (p.id === pageId ? savedPage : p)),
+      pageBuilder: {
+        ...prev.pageBuilder,
+        pages: {
+          ...prev.pageBuilder.pages,
+          [pageId]: {
+            id: savedPage.id,
+            slug: savedPage.slug,
+            title: savedPage.title,
+            blocks: savedPage.blocks ?? [],
+          },
+        },
+      },
+    }));
+  }, []);
 
   // Initial load: Supabase first, then fallback to localStorage
   useEffect(() => {
@@ -98,19 +133,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Persist: Supabase when enabled, else localStorage (debounce Supabase writes)
-  useEffect(() => {
-    if (!mounted) return;
-    if (!SUPABASE_ENABLED) {
-      db.save(state);
-      return;
-    }
-    const t = window.setTimeout(() => {
-      saveSettings(state.settings);
-      savePages(state.pages);
-    }, 800);
-    return () => clearTimeout(t);
-  }, [state.settings, state.pages, mounted]);
+  // No auto-save: persistence happens only when user explicitly Saves or Applies.
 
   // Supabase auth: sync session and profile to state.currentUser.
   // The profile (and its role) is always the single source of truth.
@@ -167,15 +190,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const merged: PageConfig = existing
         ? { ...updatedPage, blocks: updatedPage.blocks ?? existing.blocks }
         : updatedPage;
-      if (SUPABASE_ENABLED) {
-        // Fire-and-forget; we don't await inside setState
-        void savePage(merged);
-      }
       return {
         ...prev,
         pages: prev.pages.map(p => (p.id === merged.id ? merged : p)),
       };
     });
+    setTimeout(persist, 0);
   };
 
   const addPage = (title: string, slug: string, addToNav = true): PageConfig => {
@@ -196,7 +216,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         pageBuilder: createInitialBuilderState(pages),
       };
     });
-    if (SUPABASE_ENABLED) savePage(newPage);
+    setTimeout(persist, 0);
     return newPage;
   };
 
@@ -212,6 +232,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       };
     });
     if (SUPABASE_ENABLED) deletePage(pageId);
+    setTimeout(persist, 0);
   };
 
   const pageBuilder: PageBuilderState = state.pageBuilder;
@@ -430,6 +451,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setIsLoginModalOpen,
       pageBuilder,
       pageBuilderActions,
+      persist,
+      revertPage,
     }}>
       {children}
     </AppContext.Provider>
