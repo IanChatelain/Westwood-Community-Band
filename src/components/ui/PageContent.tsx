@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { PageConfig, SidebarBlock, PageSection, SectionStyle } from '@/types';
+import { PageConfig, SidebarBlock, PageSection, SectionStyle, BuilderBlock } from '@/types';
 import { DEFAULT_SIDEBAR_BLOCKS } from '@/constants';
 import { Calendar, ArrowRight, Mail, MapPin, Clock, Send } from 'lucide-react';
 import Link from 'next/link';
@@ -241,11 +241,114 @@ function ContactSection({ section }: { section: PageSection }) {
   );
 }
 
+function BuilderBlockView({ block }: { block: BuilderBlock }) {
+  if (block.type === 'richText') {
+    return (
+      <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="max-w-3xl">
+          <div className="text-lg text-slate-600 leading-relaxed whitespace-pre-line">
+            {block.content}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (block.type === 'image') {
+    const radius = block.borderRadius ?? 12;
+    const padding = block.padding ?? 8;
+    return (
+      <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <figure
+          className="bg-white shadow-sm ring-1 ring-slate-200 overflow-hidden max-w-3xl"
+          style={{ borderRadius: radius, padding }}
+        >
+          {block.src && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={block.src}
+              alt={block.alt}
+              className="w-full h-auto object-cover rounded-md"
+            />
+          )}
+          {(block.caption || block.alt) && (
+            <figcaption className="mt-2 text-xs text-slate-500">
+              {block.caption || block.alt}
+            </figcaption>
+          )}
+        </figure>
+      </section>
+    );
+  }
+
+  if (block.type === 'separator') {
+    const thickness = block.thickness ?? 1;
+    const style =
+      block.style === 'dashed'
+        ? 'border-dashed'
+        : block.style === 'dotted'
+          ? 'border-dotted'
+          : 'border-solid';
+    const widthClass =
+      block.width === 'narrow'
+        ? 'max-w-xs mx-auto'
+        : block.width === 'content'
+          ? 'max-w-2xl mx-auto'
+          : 'w-full';
+    return (
+      <section className="py-6" aria-hidden="true">
+        <hr
+          className={`${widthClass} border-0 border-t ${style}`}
+          style={{ borderTopWidth: thickness, borderColor: block.color ?? '#CBD5E1' }}
+        />
+      </section>
+    );
+  }
+
+  if (block.type === 'spacer') {
+    return (
+      <div
+        style={{ height: block.height }}
+        aria-hidden="true"
+      />
+    );
+  }
+
+  if (block.type === 'button') {
+    const variant = block.variant ?? 'primary';
+    const base = 'inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2';
+    const classes =
+      variant === 'secondary'
+        ? `${base} bg-white text-red-800 border border-red-800 hover:bg-red-50 focus:ring-red-800`
+        : variant === 'ghost'
+          ? `${base} bg-transparent text-red-800 border border-transparent hover:bg-red-50 focus:ring-red-800`
+          : `${base} bg-red-800 text-white hover:bg-red-900 focus:ring-red-800`;
+    const radius = block.borderRadius ?? 999;
+    const paddingX = block.paddingX ?? 20;
+    const paddingY = block.paddingY ?? 10;
+    return (
+      <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <a
+          href={block.href || '#'}
+          className={classes}
+          style={{ borderRadius: radius, paddingLeft: paddingX, paddingRight: paddingX, paddingTop: paddingY, paddingBottom: paddingY }}
+        >
+          {block.label}
+        </a>
+      </section>
+    );
+  }
+
+  return null;
+}
+
 interface PageContentProps {
   page: PageConfig;
 }
 
 export default function PageContent({ page }: PageContentProps) {
+  const hasBlocks = page.blocks && page.blocks.length > 0;
+
   return (
     <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row gap-12`}>
       {/* Main Content Area */}
@@ -253,7 +356,11 @@ export default function PageContent({ page }: PageContentProps) {
         className="flex-grow space-y-16"
         style={{ width: page.layout === 'full' ? '100%' : `${100 - page.sidebarWidth}%` }}
       >
-        {page.sections.map((section) => (
+        {hasBlocks && page.blocks!.map((block) => (
+          <BuilderBlockView key={block.id} block={block} />
+        ))}
+
+        {!hasBlocks && page.sections.map((section) => (
           <section key={section.id} className="animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className={sectionWrapperClasses(section.style)}>
             {section.type === 'hero' && (

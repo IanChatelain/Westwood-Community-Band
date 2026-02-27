@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/client';
 import type { AppState, SiteSettings, PageConfig } from '@/types';
 import { DEFAULT_SETTINGS, INITIAL_PAGES, INITIAL_USERS } from '@/constants';
-
+import { deserializePageConfigToBuilderPage } from '@/lib/builder/deserialization';
 function rowToSettings(row: { band_name: string; logo_url: string; primary_color: string; secondary_color: string; footer_text: string }): SiteSettings {
   return {
     bandName: row.band_name,
@@ -26,7 +26,7 @@ function rowToPage(row: {
   nav_order: number | null;
   nav_label: string | null;
 }): PageConfig {
-  return {
+  const base: PageConfig = {
     id: row.id,
     title: row.title,
     slug: row.slug,
@@ -37,6 +37,11 @@ function rowToPage(row: {
     showInNav: row.show_in_nav ?? true,
     navOrder: row.nav_order ?? 999,
     navLabel: row.nav_label ?? undefined,
+  };
+  const builderPage = deserializePageConfigToBuilderPage(base);
+  return {
+    ...base,
+    blocks: builderPage.blocks,
   };
 }
 
@@ -86,7 +91,7 @@ export async function savePage(page: PageConfig): Promise<boolean> {
       slug: page.slug,
       layout: page.layout,
       sidebar_width: page.sidebarWidth,
-      sections: page.sections,
+      sections: page.blocks && page.blocks.length > 0 ? page.blocks : page.sections,
       sidebar_blocks: page.sidebarBlocks ?? null,
       show_in_nav: page.showInNav ?? true,
       nav_order: page.navOrder ?? 999,
@@ -118,7 +123,7 @@ export async function savePages(pages: PageConfig[]): Promise<boolean> {
       slug: p.slug,
       layout: p.layout,
       sidebar_width: p.sidebarWidth,
-      sections: p.sections,
+      sections: p.blocks && p.blocks.length > 0 ? p.blocks : p.sections,
       sidebar_blocks: p.sidebarBlocks ?? null,
       show_in_nav: p.showInNav ?? true,
       nav_order: p.navOrder ?? 999,

@@ -9,11 +9,11 @@ import DashboardOverview from '@/components/cms/admin/DashboardOverview';
 import PageListTab from '@/components/cms/admin/PageListTab';
 import SettingsTab from '@/components/cms/admin/SettingsTab';
 import UsersTab from '@/components/cms/admin/UsersTab';
-import { ShieldCheck, HelpCircle, X } from 'lucide-react';
+import { ShieldCheck, HelpCircle, X, LogIn } from 'lucide-react';
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { state, setState, logout, updatePage, addPage, removePage, adminTab, setAdminTab } = useAppContext();
+  const { state, setState, logout, updatePage, addPage, removePage, adminTab, setAdminTab, setIsLoginModalOpen } = useAppContext();
   const [previewOpen, setPreviewOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
 
@@ -22,7 +22,35 @@ export default function AdminDashboard() {
     router.push('/');
   };
 
-  if (!state.currentUser) return null;
+  if (!state.currentUser) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-100">
+        <div className="text-center max-w-sm px-6">
+          <div className="inline-flex p-4 rounded-full bg-slate-200 mb-4">
+            <LogIn size={32} className="text-slate-600" />
+          </div>
+          <h1 className="text-xl font-bold text-slate-900 mb-2">Sign in to continue</h1>
+          <p className="text-slate-600 mb-6">Log in to access the admin dashboard and manage your site.</p>
+          <button
+            type="button"
+            onClick={() => setIsLoginModalOpen(true)}
+            className="px-6 py-3 rounded-lg font-semibold text-white bg-red-800 hover:bg-red-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+          >
+            Log in
+          </button>
+          <p className="mt-6 text-sm text-slate-500">
+            <button
+              type="button"
+              onClick={() => router.push('/')}
+              className="text-red-600 hover:underline"
+            >
+              Return to site
+            </button>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const isEditingPage = adminTab.startsWith('edit-page-');
 

@@ -2,6 +2,7 @@
 
 import { AppState, PageConfig, SiteSettings } from '../types';
 import { DEFAULT_SETTINGS, INITIAL_PAGES, INITIAL_USERS, DEFAULT_SIDEBAR_BLOCKS } from '../constants';
+import { createInitialBuilderState } from '../lib/builder/state';
 
 const STORAGE_KEY = 'westwood_band_cms_data';
 const VERSION_KEY = 'westwood_band_cms_version';
@@ -75,28 +76,40 @@ export class DbService {
   }
 
   public load(): AppState {
-    if (typeof window === 'undefined') {
-      return {
-        settings: DEFAULT_SETTINGS,
-        pages: INITIAL_PAGES,
-        users: INITIAL_USERS,
-        currentUser: null
-      };
-    }
-    
-    this.checkVersion();
-    const data = localStorage.getItem(STORAGE_KEY);
-    if (!data) {
-      return {
-        settings: DEFAULT_SETTINGS,
-        pages: INITIAL_PAGES,
-        users: INITIAL_USERS,
-        currentUser: null
-      };
-    }
-    const state = JSON.parse(data) as AppState;
-    state.pages = this.migratePages(state.pages);
-    return this.migrateNavFromSettings(state);
+    const base = typeof window === 'undefined'
+      ? {
+          settings: DEFAULT_SETTINGS,
+          pages: INITIAL_PAGES,
+          users: INITIAL_USERS,
+          currentUser: null as AppState['currentUser'],
+        }
+      : (() => {
+          this.checkVersion();
+          const data = localStorage.getItem(STORAGE_KEY);
+          if (!data) {
+            return {
+              settings: DEFAULT_SETTINGS,
+              pages: INITIAL_PAGES,
+              users: INITIAL_USERS,
+              currentUser: null as AppState['currentUser'],
+            };
+          }
+          const state = JSON.parse(data) as Partial<AppState>;
+          const pages = this.migratePages(state.pages ?? INITIAL_PAGES);
+          const migrated = this.migrateNavFromSettings({
+            ...state,
+            pages,
+            settings: state.settings ?? DEFAULT_SETTINGS,
+            users: state.users ?? INITIAL_USERS,
+            currentUser: state.currentUser ?? null,
+          } as AppState);
+          return migrated;
+        })();
+
+    return {
+      ...base,
+      pageBuilder: createInitialBuilderState(base.pages),
+    } as AppState;
   }
 
   public reset(): void {

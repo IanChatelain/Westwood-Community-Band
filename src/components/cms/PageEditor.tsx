@@ -29,6 +29,7 @@ import {
   PanelRightClose,
 } from 'lucide-react';
 import { gemini } from '@/services/gemini';
+import { BuilderCanvas } from '@/components/builder/BuilderCanvas';
 
 interface PageEditorProps {
   page: PageConfig;
@@ -245,6 +246,9 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, showPreview = fal
             </div>
           </div>
         </div>
+
+        {/* Visual builder */}
+        <BuilderCanvas pageId={page.id} />
 
         {/* Sidebar content (when layout has sidebar) */}
         {editedPage.layout !== 'full' && (
