@@ -155,8 +155,8 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
               }
               className={`p-2 border rounded-lg flex items-center gap-1 transition-all text-xs font-medium ${
                 editedPage.layout === layout
-                  ? 'border-red-600 bg-red-50 text-red-700'
-                  : 'border-slate-300 hover:border-red-400 text-slate-600'
+                  ? 'border-red-600 bg-red-600 text-white'
+                  : 'border-slate-300 hover:border-red-400 text-slate-700'
               }`}
             >
               <LayoutIcon size={14} />
@@ -271,7 +271,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
             <h2 className="text-xs font-bold text-slate-600 uppercase tracking-widest">
               Live preview
             </h2>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-slate-600">
               What you see here is exactly how the page will appear to visitors.
             </p>
           </div>

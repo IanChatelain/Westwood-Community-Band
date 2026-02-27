@@ -332,12 +332,12 @@ export function BuilderBlockView({ block }: { block: BuilderBlock }) {
               <div className="max-w-xl space-y-3">
                 <h2 className="text-2xl md:text-4xl font-bold text-white leading-tight tracking-tight">{block.title ?? ''}</h2>
                 <div
-                  className="text-sm md:text-base text-red-100 leading-relaxed line-clamp-3 prose prose-invert prose-sm max-w-none"
+                  className="text-sm md:text-base text-white/90 leading-relaxed line-clamp-3 prose prose-invert prose-sm max-w-none"
                   dangerouslySetInnerHTML={{ __html: textToHtml(block.content) }}
                 />
                 <Link
                   href="/join"
-                  className="inline-flex bg-white/95 text-red-800 hover:bg-white px-5 py-2.5 rounded-lg font-semibold shadow-sm transition-all items-center gap-2 group"
+                  className="inline-flex bg-white text-slate-900 hover:bg-slate-100 px-5 py-2.5 rounded-lg font-semibold shadow-md ring-1 ring-white/20 transition-all items-center gap-2 group"
                 >
                   Join Us <ArrowRight className="group-hover:translate-x-1 transition-transform" size={16} />
                 </Link>
@@ -545,8 +545,8 @@ function GallerySection({ section, pageSlug }: { section: PageSection; pageSlug:
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 text-slate-400">
-          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-4 opacity-50"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+        <div className="text-center py-12 text-slate-500">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-4 opacity-60"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
           <p className="text-sm">No events yet. Add events via the admin panel.</p>
         </div>
       )}
@@ -598,12 +598,12 @@ export default function PageContent({ page }: PageContentProps) {
                   <div className="max-w-xl space-y-3">
                     <h2 className="text-2xl md:text-4xl font-bold text-white leading-tight tracking-tight">{section.title}</h2>
                     <div
-                      className="text-sm md:text-base text-red-100 leading-relaxed line-clamp-3 prose prose-invert prose-sm max-w-none"
+                      className="text-sm md:text-base text-white/90 leading-relaxed line-clamp-3 prose prose-invert prose-sm max-w-none"
                       dangerouslySetInnerHTML={{ __html: textToHtml(section.content) }}
                     />
                     <Link 
                       href="/join"
-                      className="inline-flex bg-white/95 text-red-800 hover:bg-white px-5 py-2.5 rounded-lg font-semibold shadow-sm transition-all items-center gap-2 group"
+                      className="inline-flex bg-white text-slate-900 hover:bg-slate-100 px-5 py-2.5 rounded-lg font-semibold shadow-md ring-1 ring-white/20 transition-all items-center gap-2 group"
                     >
                       Join Us <ArrowRight className="group-hover:translate-x-1 transition-transform" size={16} />
                     </Link>
@@ -787,7 +787,7 @@ export default function PageContent({ page }: PageContentProps) {
                     <div className="overflow-x-auto">
                       <table className="w-full text-left">
                         <thead>
-                          <tr className="border-b-2 border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                          <tr className="border-b-2 border-slate-200 text-xs font-bold text-slate-700 uppercase tracking-wider">
                             <th className="py-3 px-3">Name</th>
                             {hasSize && <th className="py-3 px-3 hidden sm:table-cell">Size</th>}
                             {hasDuration && <th className="py-3 px-3 hidden sm:table-cell">Duration</th>}

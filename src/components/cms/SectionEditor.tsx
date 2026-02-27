@@ -106,7 +106,7 @@ function MoveSectionDropdown({
           right: position.right,
         }}
       >
-        <p className="px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase">Move to page</p>
+        <p className="px-3 py-1.5 text-[10px] font-bold text-slate-700 uppercase">Move to page</p>
         {pages.map((p) => (
           <button
             key={p.id}
@@ -204,38 +204,38 @@ function SectionHelpTooltip() {
       onMouseEnter={show}
       onMouseLeave={scheduleHide}
     >
-      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Section controls</p>
+      <p className="text-[10px] font-bold text-slate-700 uppercase tracking-wide">Section controls</p>
 
       {/* Mock row */}
       <div className="border border-slate-200 rounded-lg bg-white pointer-events-none">
         <div className="flex items-center justify-between px-3 py-2.5">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="shrink-0 px-2 py-1 text-[10px] font-semibold text-slate-600 border border-slate-200 rounded-md bg-slate-50">
+            <span className="shrink-0 px-2 py-1 text-[10px] font-semibold text-slate-700 border border-slate-300 rounded-md bg-slate-100">
               Drag
             </span>
             <span className="text-sm font-medium text-slate-800">Example Section</span>
-            <span className="text-[11px] text-slate-400">(Text)</span>
+            <span className="text-[11px] text-slate-600">(Text)</span>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-            <span className="text-slate-400"><ChevronDown size={14} /></span>
-            <span className="p-1 text-slate-400"><ArrowRightLeft size={14} /></span>
+            <span className="text-slate-600"><ChevronDown size={14} /></span>
+            <span className="p-1 text-slate-600"><ArrowRightLeft size={14} /></span>
             <span className="p-1 text-red-400"><Trash2 size={14} /></span>
           </div>
         </div>
       </div>
 
       {/* Legend */}
-      <ul className="space-y-1.5 text-xs text-slate-600">
+      <ul className="space-y-1.5 text-xs text-slate-700">
         <li className="flex items-start gap-2">
-          <span className="shrink-0 px-1.5 py-0.5 text-[9px] font-semibold text-slate-600 border border-slate-200 rounded bg-slate-50 mt-px">Drag</span>
+          <span className="shrink-0 px-1.5 py-0.5 text-[9px] font-semibold text-slate-700 border border-slate-300 rounded bg-slate-100 mt-px">Drag</span>
           <span>Click and drag to reorder sections.</span>
         </li>
         <li className="flex items-start gap-2">
-          <span className="shrink-0 mt-0.5 text-slate-500"><ChevronDown size={13} /></span>
+          <span className="shrink-0 mt-0.5 text-slate-600"><ChevronDown size={13} /></span>
           <span>Click the row to expand or collapse settings.</span>
         </li>
         <li className="flex items-start gap-2">
-          <span className="shrink-0 mt-0.5 text-slate-500"><ArrowRightLeft size={13} /></span>
+          <span className="shrink-0 mt-0.5 text-slate-600"><ArrowRightLeft size={13} /></span>
           <span>Move section to a different page.</span>
         </li>
         <li className="flex items-start gap-2">
@@ -328,7 +328,7 @@ function SortableSectionItem({
         <div className="flex items-center gap-2 min-w-0">
           <button
             type="button"
-            className="shrink-0 px-2 py-1 text-[10px] font-semibold text-slate-600 border border-slate-200 rounded-md bg-slate-50 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500 cursor-grab"
+            className="shrink-0 px-2 py-1 text-[10px] font-semibold text-slate-700 border border-slate-300 rounded-md bg-slate-100 hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 cursor-grab"
             {...listeners}
             {...attributes}
             aria-label={`Drag ${displayTitle} section to reorder`}
@@ -338,7 +338,7 @@ function SortableSectionItem({
           <span className="text-sm font-medium text-slate-800 truncate">
             {displayTitle}
           </span>
-          <span className="text-[11px] text-slate-400 flex-shrink-0">
+          <span className="text-[11px] text-slate-600 flex-shrink-0">
             ({typeLabel})
           </span>
         </div>
@@ -379,7 +379,7 @@ function SortableSectionItem({
           className="px-3 pb-3 pt-0 space-y-3 border-t border-slate-100"
         >
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+            <label className="block text-[10px] font-bold text-slate-700 uppercase mb-1">
               Section type
             </label>
             <select
@@ -408,7 +408,7 @@ function SortableSectionItem({
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+            <label className="block text-[10px] font-bold text-slate-700 uppercase mb-1">
               Title
             </label>
             <input
@@ -421,7 +421,7 @@ function SortableSectionItem({
           </div>
           {section.type !== 'gallery' && section.type !== 'separator' && (
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+              <label className="block text-[10px] font-bold text-slate-700 uppercase mb-1">
                 Content
               </label>
               <RichTextEditor
@@ -439,9 +439,9 @@ function SortableSectionItem({
           {section.type === 'gallery' && (
             <>
               <div className="space-y-3 pb-2">
-                <p className="text-[10px] font-bold text-slate-500 uppercase">Gallery Layout</p>
+                <p className="text-[10px] font-bold text-slate-700 uppercase">Gallery Layout</p>
                 <div className="flex items-center gap-3">
-                  <label className="text-xs text-slate-600 w-28 flex-shrink-0">Cards per row</label>
+                  <label className="text-xs text-slate-700 w-28 flex-shrink-0">Cards per row</label>
                   <select
                     className={inputClass}
                     value={section.galleryColumns ?? 3}
@@ -453,7 +453,7 @@ function SortableSectionItem({
                   </select>
                 </div>
                 <div className="flex items-center gap-3">
-                  <label className="text-xs text-slate-600 w-28 flex-shrink-0">Card size</label>
+                  <label className="text-xs text-slate-700 w-28 flex-shrink-0">Card size</label>
                   <select
                     className={inputClass}
                     value={section.galleryCardSize ?? 'md'}
@@ -465,7 +465,7 @@ function SortableSectionItem({
                   </select>
                 </div>
                 <div className="flex items-center gap-3">
-                  <label className="text-xs text-slate-600 w-28 flex-shrink-0">Thumbnail shape</label>
+                  <label className="text-xs text-slate-700 w-28 flex-shrink-0">Thumbnail shape</label>
                   <div className="flex gap-2">
                     {(['landscape', 'square'] as const).map((opt) => (
                       <button
@@ -474,8 +474,8 @@ function SortableSectionItem({
                         onClick={() => onUpdate({ galleryThumbnailAspect: opt })}
                         className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                           (section.galleryThumbnailAspect ?? 'landscape') === opt
-                            ? 'border-red-600 bg-red-50 text-red-700'
-                            : 'border-slate-300 text-slate-600 hover:border-slate-400'
+                            ? 'border-red-600 bg-red-600 text-white'
+                            : 'border-slate-300 text-slate-700 hover:border-slate-400'
                         }`}
                       >
                         {opt === 'landscape' ? 'Landscape (4:3)' : 'Square (1:1)'}
@@ -484,7 +484,7 @@ function SortableSectionItem({
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <label className="text-xs text-slate-600 w-28 flex-shrink-0">Show description</label>
+                  <label className="text-xs text-slate-700 w-28 flex-shrink-0">Show description</label>
                   <button
                     type="button"
                     onClick={() => onUpdate({ galleryShowDescription: !(section.galleryShowDescription ?? true) })}
@@ -528,9 +528,9 @@ function SortableSectionItem({
 
           {/* Size controls */}
           <div className="pt-2 border-t border-slate-100 space-y-3">
-            <p className="text-[10px] font-bold text-slate-500 uppercase">Size</p>
+            <p className="text-[10px] font-bold text-slate-700 uppercase">Size</p>
             <div className="flex items-center gap-3">
-              <label className="text-xs text-slate-600 w-16 flex-shrink-0">Height</label>
+              <label className="text-xs text-slate-700 w-16 flex-shrink-0">Height</label>
               <input
                 type="range"
                 min={section.type === 'hero' ? '80' : '0'}
@@ -542,12 +542,12 @@ function SortableSectionItem({
                 }
                 className="flex-1 h-1.5 bg-slate-200 rounded accent-red-600"
               />
-              <span className="text-xs text-slate-500 w-14 text-right tabular-nums">
+              <span className="text-xs text-slate-700 w-14 text-right tabular-nums">
                 {currentH === 0 ? 'Auto' : `${currentH}px`}
               </span>
             </div>
             <div className="flex items-center gap-3">
-              <label className="text-xs text-slate-600 w-16 flex-shrink-0">Width</label>
+              <label className="text-xs text-slate-700 w-16 flex-shrink-0">Width</label>
               <input
                 type="range"
                 min="25"
@@ -559,7 +559,7 @@ function SortableSectionItem({
                 }
                 className="flex-1 h-1.5 bg-slate-200 rounded accent-red-600"
               />
-              <span className="text-xs text-slate-500 w-14 text-right tabular-nums">
+              <span className="text-xs text-slate-700 w-14 text-right tabular-nums">
                 {section.maxWidth ?? 100}%
               </span>
             </div>
@@ -615,13 +615,13 @@ function GalleryEventsEditor({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="block text-[10px] font-bold text-slate-500 uppercase">Gallery Events</label>
+        <label className="block text-[10px] font-bold text-slate-700 uppercase">Gallery Events</label>
         <button type="button" onClick={addEvent} className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-red-600 text-white hover:bg-red-700 transition-colors">
           <Plus size={11} /> Add Event
         </button>
       </div>
       {events.length === 0 && (
-        <p className="text-xs text-slate-400 py-2">No events yet. Click &quot;Add Event&quot; to create one.</p>
+        <p className="text-xs text-slate-500 py-2">No events yet. Click &quot;Add Event&quot; to create one.</p>
       )}
       {events.map((ev, idx) => {
         const isOpen = expandedEventId === ev.id;
@@ -652,7 +652,7 @@ function GalleryEventsEditor({
             {isOpen && (
               <div className="px-3 pb-3 pt-1 space-y-2 border-t border-slate-200">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Title</label>
+                  <label className="block text-[10px] font-bold text-slate-700 uppercase mb-0.5">Title</label>
                   <input
                     type="text"
                     className={inputClass}
@@ -669,11 +669,11 @@ function GalleryEventsEditor({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Slug</label>
+                  <label className="block text-[10px] font-bold text-slate-700 uppercase mb-0.5">Slug</label>
                   <input type="text" className={inputClass} value={ev.slug} onChange={(e) => updateEvent(ev.id, { slug: slugify(e.target.value) })} placeholder="event-slug" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Description</label>
+                  <label className="block text-[10px] font-bold text-slate-700 uppercase mb-0.5">Description</label>
                   <textarea rows={2} className={inputClass} value={ev.description ?? ''} onChange={(e) => updateEvent(ev.id, { description: e.target.value })} placeholder="Optional description" />
                 </div>
                 <ImageUploadField value={ev.coverImageUrl} onChange={(url) => updateEvent(ev.id, { coverImageUrl: url })} label="Cover Image" />
@@ -724,7 +724,7 @@ function GalleryMediaEditor({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="block text-[10px] font-bold text-slate-500 uppercase">Media Items</label>
+        <label className="block text-[10px] font-bold text-slate-700 uppercase">Media Items</label>
         <div className="flex gap-1">
           <button type="button" onClick={() => addItem('image')} className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 transition-colors">
             <ImageIcon size={10} /> Image
@@ -735,7 +735,7 @@ function GalleryMediaEditor({
         </div>
       </div>
       {items.length === 0 && (
-        <p className="text-[10px] text-slate-400">No media yet.</p>
+        <p className="text-[10px] text-slate-500">No media yet.</p>
       )}
       {items.map((item, idx) => (
         <div key={item.id} className="flex items-start gap-2 p-2 border border-slate-200 rounded bg-white">
@@ -819,12 +819,12 @@ function PerformancesEditor({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-[10px] font-bold text-slate-500 uppercase">Performance Items</label>
+        <label className="text-[10px] font-bold text-slate-700 uppercase">Performance Items</label>
         <button type="button" onClick={addItem} className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-red-600 text-white hover:bg-red-700 transition-colors">
           <Plus size={11} /> Add Performance
         </button>
       </div>
-      {items.length === 0 && <p className="text-xs text-slate-400 py-1">No performances yet.</p>}
+      {items.length === 0 && <p className="text-xs text-slate-500 py-1">No performances yet.</p>}
       {items.map((item, idx) => (
         <div key={item.id} className="border border-slate-200 rounded-lg p-2 bg-slate-50 space-y-1.5">
           <div className="flex items-start gap-2">
@@ -1004,7 +1004,7 @@ function DownloadsEditor({
   return (
     <div className="space-y-3 pb-2">
       <div className="flex items-center gap-2">
-        <label className="text-[10px] font-bold text-slate-500 uppercase">Mode</label>
+        <label className="text-[10px] font-bold text-slate-700 uppercase">Mode</label>
         <div className="flex gap-1">
           {(['flat', 'grouped'] as const).map((m) => (
             <button
@@ -1012,7 +1012,7 @@ function DownloadsEditor({
               type="button"
               onClick={() => setMode(m)}
               className={`px-3 py-1 text-xs font-medium rounded-lg border transition-colors ${
-                mode === m ? 'border-red-600 bg-red-50 text-red-700' : 'border-slate-300 text-slate-600 hover:border-slate-400'
+                mode === m ? 'border-red-600 bg-red-600 text-white' : 'border-slate-300 text-slate-700 hover:border-slate-400'
               }`}
             >
               {m === 'flat' ? 'Flat List' : 'Grouped List'}
@@ -1024,12 +1024,12 @@ function DownloadsEditor({
       {mode === 'flat' && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-[10px] font-bold text-slate-500 uppercase">Items</label>
+            <label className="text-[10px] font-bold text-slate-700 uppercase">Items</label>
             <button type="button" onClick={addItem} className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-red-600 text-white hover:bg-red-700 transition-colors">
               <Plus size={11} /> Add Item
             </button>
           </div>
-          {items.length === 0 && <p className="text-xs text-slate-400 py-1">No items yet.</p>}
+          {items.length === 0 && <p className="text-xs text-slate-500 py-1">No items yet.</p>}
           {items.map((item, idx) => (
             <div key={idx} className="border border-slate-200 rounded-lg p-2 bg-slate-50 space-y-1.5">
               <div className="flex items-start gap-2">
@@ -1055,12 +1055,12 @@ function DownloadsEditor({
       {mode === 'grouped' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <label className="text-[10px] font-bold text-slate-500 uppercase">Groups</label>
+            <label className="text-[10px] font-bold text-slate-700 uppercase">Groups</label>
             <button type="button" onClick={addGroup} className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-red-600 text-white hover:bg-red-700 transition-colors">
               <Plus size={11} /> Add Group
             </button>
           </div>
-          {groups.length === 0 && <p className="text-xs text-slate-400 py-1">No groups yet.</p>}
+          {groups.length === 0 && <p className="text-xs text-slate-500 py-1">No groups yet.</p>}
           {groups.map((group, gIdx) => (
             <div key={gIdx} className="border border-slate-200 rounded-lg bg-slate-50 overflow-hidden">
               <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-200">
@@ -1070,7 +1070,7 @@ function DownloadsEditor({
                 </button>
               </div>
               <div className="px-3 py-2 space-y-2">
-                {group.items.length === 0 && <p className="text-[10px] text-slate-400">No items in this group.</p>}
+                {group.items.length === 0 && <p className="text-[10px] text-slate-500">No items in this group.</p>}
                 {group.items.map((item, iIdx) => (
                   <div key={iIdx} className="border border-slate-200 rounded p-2 bg-white space-y-1.5">
                     <div className="flex items-start gap-2">
@@ -1148,7 +1148,7 @@ function ImageUploadField({
 
   return (
     <div>
-      {!compact && <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">{label ?? 'Image'}</label>}
+      {!compact && <label className="block text-[10px] font-bold text-slate-700 uppercase mb-1">{label ?? 'Image'}</label>}
       {value && (
         <div className={`relative ${compact ? 'mb-1' : 'mb-2'} rounded-lg overflow-hidden border border-slate-200 bg-slate-50`}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1284,7 +1284,7 @@ export function SectionEditor({ sections, onChange, currentPageId, allPages, onM
     <div className="space-y-2">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-1.5">
-          <h3 className="text-xs font-bold text-slate-600 uppercase tracking-widest">
+          <h3 className="text-xs font-bold text-slate-700 uppercase tracking-widest">
             Page sections
           </h3>
           <SectionHelpTooltip />
@@ -1316,7 +1316,7 @@ export function SectionEditor({ sections, onChange, currentPageId, allPages, onM
           )}
         </div>
       </div>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-slate-600 mb-3">
         Edit content below. Changes appear in the preview. Click a section header to expand or collapse its settings, and
         use the drag handle to reorder sections.
       </p>
