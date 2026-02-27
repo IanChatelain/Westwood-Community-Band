@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
 import AdminSidebar from '@/components/cms/AdminSidebar';
@@ -9,7 +9,67 @@ import DashboardOverview from '@/components/cms/admin/DashboardOverview';
 import PageListTab from '@/components/cms/admin/PageListTab';
 import SettingsTab from '@/components/cms/admin/SettingsTab';
 import UsersTab from '@/components/cms/admin/UsersTab';
-import { ShieldCheck, HelpCircle, X, LogIn } from 'lucide-react';
+import { ShieldCheck, HelpCircle, X, LogIn, AlertTriangle, Save, Trash2 } from 'lucide-react';
+
+function UnsavedChangesModal({
+  onSave,
+  onDiscard,
+  onCancel,
+  saving,
+}: {
+  onSave: () => void;
+  onDiscard: () => void;
+  onCancel: () => void;
+  saving: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" aria-modal="true" role="dialog">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="p-6 pb-0">
+          <div className="flex items-start gap-4">
+            <div className="p-3 rounded-full bg-amber-50 flex-shrink-0">
+              <AlertTriangle size={24} className="text-amber-500" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">Unsaved changes</h3>
+              <p className="text-sm text-slate-600 mt-1">
+                You have unsaved changes on this page. Would you like to save before leaving?
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="p-6 flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={saving}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+          >
+            <Save size={16} />
+            {saving ? 'Saving...' : 'Save & leave'}
+          </button>
+          <button
+            type="button"
+            onClick={onDiscard}
+            disabled={saving}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm border-2 border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+          >
+            <Trash2 size={16} />
+            Discard changes
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={saving}
+            className="w-full px-4 py-2.5 rounded-xl text-sm text-slate-500 hover:text-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+          >
+            Keep editing
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -17,7 +77,76 @@ export default function AdminDashboard() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
 
+  const editorDirtyRef = useRef(false);
+  const editorSaveFnRef = useRef<(() => Promise<void>) | null>(null);
+  const [pendingTab, setPendingTab] = useState<string | null>(null);
+  const [modalSaving, setModalSaving] = useState(false);
+
+  const handleEditorDirtyChange = useCallback((dirty: boolean) => {
+    editorDirtyRef.current = dirty;
+  }, []);
+
+  const handleRegisterSave = useCallback((fn: (() => Promise<void>) | null) => {
+    editorSaveFnRef.current = fn;
+  }, []);
+
+  const guardedSetTab = useCallback((tab: string) => {
+    if (adminTab.startsWith('edit-page-') && editorDirtyRef.current && tab !== adminTab) {
+      setPendingTab(tab);
+      return;
+    }
+    setAdminTab(tab);
+  }, [adminTab, setAdminTab]);
+
+  const handleModalSave = async () => {
+    if (editorSaveFnRef.current) {
+      setModalSaving(true);
+      await editorSaveFnRef.current();
+      setModalSaving(false);
+    }
+    editorDirtyRef.current = false;
+    if (pendingTab) {
+      setAdminTab(pendingTab);
+      setPendingTab(null);
+    }
+  };
+
+  const handleModalDiscard = () => {
+    editorDirtyRef.current = false;
+    if (pendingTab) {
+      setAdminTab(pendingTab);
+      setPendingTab(null);
+    }
+  };
+
+  const handleModalCancel = () => {
+    setPendingTab(null);
+  };
+
   const handleLogout = async () => {
+    if (adminTab.startsWith('edit-page-') && editorDirtyRef.current) {
+      setPendingTab('__logout__');
+      return;
+    }
+    await logout();
+    router.push('/');
+  };
+
+  const handleModalSaveForLogout = async () => {
+    if (editorSaveFnRef.current) {
+      setModalSaving(true);
+      await editorSaveFnRef.current();
+      setModalSaving(false);
+    }
+    editorDirtyRef.current = false;
+    setPendingTab(null);
+    await logout();
+    router.push('/');
+  };
+
+  const handleModalDiscardForLogout = async () => {
+    editorDirtyRef.current = false;
+    setPendingTab(null);
     await logout();
     router.push('/');
   };
@@ -56,7 +185,7 @@ export default function AdminDashboard() {
     <div className="flex min-h-screen bg-slate-100">
       <AdminSidebar
         currentTab={adminTab}
-        setTab={setAdminTab}
+        setTab={guardedSetTab}
         user={state.currentUser}
         onLogout={handleLogout}
         collapsed={sidebarCollapsed}
@@ -140,7 +269,7 @@ export default function AdminDashboard() {
             pages={state.pages}
             onAddPage={addPage}
             onRemovePage={removePage}
-            onSetAdminTab={setAdminTab}
+            onSetAdminTab={guardedSetTab}
           />
         )}
 
@@ -148,6 +277,8 @@ export default function AdminDashboard() {
           <PageEditor
             page={state.pages.find((p) => `edit-page-${p.id}` === adminTab)!}
             onSave={updatePage}
+            onDirtyChange={handleEditorDirtyChange}
+            onRegisterSave={handleRegisterSave}
           />
         )}
 
@@ -161,6 +292,24 @@ export default function AdminDashboard() {
 
         {adminTab === 'users' && <UsersTab />}
       </main>
+
+      {pendingTab && pendingTab !== '__logout__' && (
+        <UnsavedChangesModal
+          onSave={handleModalSave}
+          onDiscard={handleModalDiscard}
+          onCancel={handleModalCancel}
+          saving={modalSaving}
+        />
+      )}
+
+      {pendingTab === '__logout__' && (
+        <UnsavedChangesModal
+          onSave={handleModalSaveForLogout}
+          onDiscard={handleModalDiscardForLogout}
+          onCancel={handleModalCancel}
+          saving={modalSaving}
+        />
+      )}
     </div>
   );
 }

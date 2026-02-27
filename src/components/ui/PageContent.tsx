@@ -482,11 +482,20 @@ export default function PageContent({ page }: PageContentProps) {
           );
         })}
 
-        {!hasBlocks && page.sections.map((section) => (
-          <section key={section.id} className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+        {!hasBlocks && page.sections.map((section) => {
+          const sectionStyle: React.CSSProperties = {};
+          if (section.maxWidth && section.maxWidth < 100) {
+            sectionStyle.maxWidth = `${section.maxWidth}%`;
+            sectionStyle.marginLeft = 'auto';
+            sectionStyle.marginRight = 'auto';
+            sectionStyle.width = '100%';
+          }
+          const heroH = section.minHeight && section.minHeight > 0 ? section.minHeight : 260;
+          return (
+          <section key={section.id} className="animate-in fade-in slide-in-from-bottom-4 duration-700" style={sectionStyle}>
             <div className={sectionWrapperClasses(section.style)}>
             {section.type === 'hero' && (
-              <div className="relative h-[260px] md:h-[320px] rounded-2xl overflow-hidden shadow-lg ring-1 ring-slate-200/80 bg-gradient-to-br from-red-800 to-red-700">
+              <div className="relative rounded-2xl overflow-hidden shadow-lg ring-1 ring-slate-200/80 bg-gradient-to-br from-red-800 to-red-700" style={{ height: heroH }}>
                 {section.imageUrl && (
                   <img src={section.imageUrl} className="absolute inset-0 w-full h-full object-cover opacity-30" alt={section.title} />
                 )}
@@ -509,7 +518,7 @@ export default function PageContent({ page }: PageContentProps) {
             )}
 
             {section.type === 'text' && (
-              <div className="max-w-3xl">
+              <div className="max-w-3xl" style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
                 <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6 border-l-4 border-red-800 pl-6">{section.title}</h3>
                 <div
                   className="prose prose-slate max-w-none text-lg leading-relaxed"
@@ -521,7 +530,7 @@ export default function PageContent({ page }: PageContentProps) {
             {section.type === 'image-text' && (() => {
               const { wrapper, image } = imageLayoutClasses(section.style);
               return (
-                <div className={wrapper}>
+                <div className={wrapper} style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
                   {section.imageUrl && (
                     <div className={`rounded-2xl overflow-hidden shadow-xl ring-1 ring-slate-900/10 bg-slate-100 aspect-[4/3] ${image}`}>
                       <img src={section.imageUrl} className="w-full h-full object-cover" alt={section.title} />
@@ -539,7 +548,7 @@ export default function PageContent({ page }: PageContentProps) {
             })()}
 
             {section.type === 'gallery' && (
-              <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm ring-1 ring-slate-900/5">
+              <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm ring-1 ring-slate-900/5" style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
                 <h3 className="text-2xl font-bold text-slate-900 mb-8 border-l-4 border-red-800 pl-6">{section.title}</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {section.content.split('•').filter(Boolean).map((item, i) => (
@@ -551,10 +560,14 @@ export default function PageContent({ page }: PageContentProps) {
               </div>
             )}
 
-            {section.type === 'contact' && <ContactSection section={section} />}
+            {section.type === 'contact' && (
+              <div style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
+                <ContactSection section={section} />
+              </div>
+            )}
 
             {section.type === 'schedule' && (
-              <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm ring-1 ring-slate-900/5">
+              <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm ring-1 ring-slate-900/5" style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
                 <h3 className="text-2xl font-bold text-slate-900 text-center mb-4 flex items-center justify-center gap-3">
                   <div className="p-2 bg-slate-100 rounded-lg">
                     <Calendar className="text-slate-700" size={24}/>
@@ -595,7 +608,7 @@ export default function PageContent({ page }: PageContentProps) {
             )}
 
             {section.type === 'table' && section.tableData && (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
                 {section.title && <h3 className="text-2xl font-bold text-slate-900 mb-4 border-l-4 border-red-800 pl-6">{section.title}</h3>}
                 <table className="w-full border border-slate-300 text-left">
                   <thead>
@@ -627,7 +640,8 @@ export default function PageContent({ page }: PageContentProps) {
             })()}
             </div>
           </section>
-        ))}
+          );
+        })}
       </div>
 
       {/* Sidebar Area */}

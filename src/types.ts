@@ -33,14 +33,20 @@ export interface SectionStyle {
   imageSize?: 'small' | 'medium' | 'large';
 }
 
+export type PageSectionType = 'hero' | 'text' | 'image-text' | 'gallery' | 'contact' | 'schedule' | 'table' | 'separator';
+
 export interface PageSection {
   id: string;
-  type: 'hero' | 'text' | 'image-text' | 'gallery' | 'contact' | 'schedule' | 'table' | 'separator';
+  type: PageSectionType;
   title: string;
   content: string;
   imageUrl?: string;
   /** Optional preset styling for this block. */
   style?: SectionStyle;
+  /** Min height in px (0 = auto). */
+  minHeight?: number;
+  /** Max width as percentage of container (25–100). */
+  maxWidth?: number;
   /** For type === 'table': headers and rows. */
   tableData?: { headers: string[]; rows: string[][] };
   /** For type === 'separator'. */
