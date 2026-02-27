@@ -19,7 +19,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { PageSection, PageSectionType, PageConfig, GalleryEvent, GalleryMediaItem, DownloadItem, DownloadGroup, DownloadLink, PerformanceItem } from '@/types';
-import { ChevronDown, ChevronRight, Trash2, Plus, Upload, X, GripVertical, Image as ImageIcon, Video, ArrowRightLeft } from 'lucide-react';
+import { ChevronDown, ChevronRight, Trash2, Plus, Upload, X, GripVertical, Image as ImageIcon, Video, ArrowRightLeft, HelpCircle } from 'lucide-react';
 import { RichTextEditor } from '@/components/cms/RichTextEditor';
 import { uploadImage, uploadRecording, uploadDocument } from '@/app/actions/upload';
 
@@ -145,6 +145,107 @@ function MoveSectionDropdown({
       )}
       {open && panelContent && createPortal(panelContent, document.body)}
     </div>
+  );
+}
+
+const SECTION_HELP_ID = 'section-help-tooltip';
+
+function SectionHelpTooltip() {
+  const [visible, setVisible] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  const show = () => {
+    if (hideTimer.current) { clearTimeout(hideTimer.current); hideTimer.current = null; }
+    setVisible(true);
+  };
+  const scheduleHide = () => {
+    hideTimer.current = setTimeout(() => setVisible(false), 150);
+  };
+
+  useEffect(() => {
+    if (!visible || !triggerRef.current) { setPos(null); return; }
+    const rect = triggerRef.current.getBoundingClientRect();
+    setPos({ top: rect.bottom + 6, left: rect.left });
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setVisible(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [visible]);
+
+  const bubble = visible && pos ? createPortal(
+    <div
+      id={SECTION_HELP_ID}
+      role="tooltip"
+      className="fixed z-50 w-80 bg-white rounded-xl shadow-xl border border-slate-200 p-4 space-y-3"
+      style={{ top: pos.top, left: Math.min(pos.left, window.innerWidth - 340) }}
+      onMouseEnter={show}
+      onMouseLeave={scheduleHide}
+    >
+      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Section controls</p>
+
+      {/* Mock row */}
+      <div className="border border-slate-200 rounded-lg bg-white pointer-events-none">
+        <div className="flex items-center justify-between px-3 py-2.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="shrink-0 px-2 py-1 text-[10px] font-semibold text-slate-600 border border-slate-200 rounded-md bg-slate-50">
+              Drag
+            </span>
+            <span className="text-sm font-medium text-slate-800">Example Section</span>
+            <span className="text-[11px] text-slate-400">(Text)</span>
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+            <span className="text-slate-400"><ChevronDown size={14} /></span>
+            <span className="p-1 text-slate-400"><ArrowRightLeft size={14} /></span>
+            <span className="p-1 text-red-400"><Trash2 size={14} /></span>
+          </div>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <ul className="space-y-1.5 text-xs text-slate-600">
+        <li className="flex items-start gap-2">
+          <span className="shrink-0 px-1.5 py-0.5 text-[9px] font-semibold text-slate-600 border border-slate-200 rounded bg-slate-50 mt-px">Drag</span>
+          <span>Click and drag to reorder sections.</span>
+        </li>
+        <li className="flex items-start gap-2">
+          <span className="shrink-0 mt-0.5 text-slate-500"><ChevronDown size={13} /></span>
+          <span>Click the row to expand or collapse settings.</span>
+        </li>
+        <li className="flex items-start gap-2">
+          <span className="shrink-0 mt-0.5 text-slate-500"><ArrowRightLeft size={13} /></span>
+          <span>Move section to a different page.</span>
+        </li>
+        <li className="flex items-start gap-2">
+          <span className="shrink-0 mt-0.5 text-red-400"><Trash2 size={13} /></span>
+          <span>Delete the section.</span>
+        </li>
+      </ul>
+    </div>,
+    document.body,
+  ) : null;
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        className="p-0.5 rounded-full text-slate-400 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+        aria-label="Page section controls help"
+        aria-describedby={visible ? SECTION_HELP_ID : undefined}
+        onMouseEnter={show}
+        onMouseLeave={scheduleHide}
+        onFocus={show}
+        onBlur={scheduleHide}
+      >
+        <HelpCircle size={14} />
+      </button>
+      {bubble}
+    </>
   );
 }
 
@@ -1160,9 +1261,12 @@ export function SectionEditor({ sections, onChange, currentPageId, allPages, onM
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-bold text-slate-600 uppercase tracking-widest">
-          Page sections
-        </h3>
+        <div className="flex items-center gap-1.5">
+          <h3 className="text-xs font-bold text-slate-600 uppercase tracking-widest">
+            Page sections
+          </h3>
+          <SectionHelpTooltip />
+        </div>
         <div className="relative">
           <button
             type="button"
