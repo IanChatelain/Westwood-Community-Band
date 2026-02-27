@@ -1,11 +1,184 @@
 'use client';
 
-import React from 'react';
-import type { BuilderBlock, ButtonBlock, ImageBlock, RichTextBlock, SeparatorBlock, SpacerBlock } from '@/types';
+import React, { useState } from 'react';
+import type { BuilderBlock, BlockWrapperStyle, BorderPreset, ButtonBlock, ImageBlock, RichTextBlock, SeparatorBlock, SpacerBlock } from '@/types';
 import { useAppContext } from '@/context/AppContext';
+import { ChevronDown } from 'lucide-react';
 
 interface BlockInspectorProps {
   pageId: string;
+}
+
+function AppearanceFields({ block, pageId }: { block: BuilderBlock; pageId: string }) {
+  const { pageBuilderActions } = useAppContext();
+  const [open, setOpen] = useState(false);
+  const style = block.wrapperStyle ?? {};
+
+  const update = (updates: Partial<BlockWrapperStyle>) => {
+    pageBuilderActions.updateBlock(pageId, block.id, (prev) => ({
+      ...prev,
+      wrapperStyle: { ...(prev.wrapperStyle ?? {}), ...updates },
+    } as BuilderBlock));
+  };
+
+  const inputClass = 'w-full p-2 text-xs border border-slate-300 rounded bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500';
+  const selectClass = 'w-full p-2 text-xs border border-slate-300 rounded bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500';
+
+  return (
+    <div className="border-t border-slate-200 pt-2 mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-1 w-full text-[10px] font-bold text-slate-500 uppercase tracking-widest hover:text-slate-700"
+      >
+        <ChevronDown size={12} className={open ? 'rotate-0' : '-rotate-90'} />
+        Appearance
+      </button>
+      {open && (
+        <div className="mt-2 space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase">Width</label>
+              <select
+                className={selectClass}
+                value={typeof style.maxWidth === 'number' ? 'custom' : (style.maxWidth ?? 'content')}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  update({ maxWidth: v === 'custom' ? (typeof style.maxWidth === 'number' ? style.maxWidth : 640) : v as BlockWrapperStyle['maxWidth'] });
+                }}
+              >
+                <option value="full">Full</option>
+                <option value="content">Content</option>
+                <option value="narrow">Narrow</option>
+                <option value="custom">Custom (px)</option>
+              </select>
+            </div>
+            {typeof style.maxWidth === 'number' && (
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase">Max (px)</label>
+                <input
+                  type="number"
+                  min={200}
+                  max={1200}
+                  className={inputClass}
+                  value={style.maxWidth}
+                  onChange={(e) => update({ maxWidth: Number(e.target.value) })}
+                />
+              </div>
+            )}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase">Height (min px)</label>
+              <input
+                type="number"
+                min={0}
+                placeholder="auto"
+                className={inputClass}
+                value={style.minHeight ?? ''}
+                onChange={(e) => update({ minHeight: e.target.value ? Number(e.target.value) : undefined })}
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase">Padding</label>
+              <select
+                className={selectClass}
+                value={style.padding ?? ''}
+                onChange={(e) => update({ padding: (e.target.value || undefined) as BlockWrapperStyle['padding'] })}
+              >
+                <option value="">Default</option>
+                <option value="none">None</option>
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 items-end">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase">Bg</label>
+              <input
+                type="color"
+                className="w-full h-8 p-1 border border-slate-300 rounded cursor-pointer block"
+                value={style.backgroundColor ?? '#ffffff'}
+                onChange={(e) => update({ backgroundColor: e.target.value })}
+                aria-label="Background"
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-[10px] font-bold text-slate-500 uppercase">Border</label>
+              <select
+                className={selectClass}
+                value={style.borderPreset ?? 'none'}
+                onChange={(e) => update({ borderPreset: e.target.value as BorderPreset })}
+              >
+                <option value="none">None</option>
+                <option value="subtle">Subtle</option>
+                <option value="muted">Muted</option>
+                <option value="default">Default</option>
+                <option value="accent">Accent (red)</option>
+                <option value="strong">Strong</option>
+                <option value="ring">Ring (Shadcn)</option>
+                <option value="custom">Custom…</option>
+              </select>
+            </div>
+            {style.borderPreset === 'custom' && (
+              <>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase">Width</label>
+                  <select
+                    className={selectClass}
+                    value={style.borderWidth ?? 1}
+                    onChange={(e) => update({ borderWidth: Number(e.target.value) as BlockWrapperStyle['borderWidth'] })}
+                  >
+                    <option value={0}>None</option>
+                    <option value={1}>1px</option>
+                    <option value={2}>2px</option>
+                    <option value={4}>4px</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase">Color</label>
+                  <input
+                    type="color"
+                    className="w-full h-8 p-1 border border-slate-300 rounded cursor-pointer block"
+                    value={style.borderColor ?? '#e2e8f0'}
+                    onChange={(e) => update({ borderColor: e.target.value })}
+                    aria-label="Border color"
+                  />
+                </div>
+              </>
+            )}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase">Radius</label>
+              <select
+                className={selectClass}
+                value={style.borderRadius ?? ''}
+                onChange={(e) => update({ borderRadius: (e.target.value || undefined) as BlockWrapperStyle['borderRadius'] })}
+              >
+                <option value="">Default</option>
+                <option value="none">None</option>
+                <option value="sm">Small</option>
+                <option value="md">Medium</option>
+                <option value="lg">Large</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase">Shadow</label>
+              <select
+                className={selectClass}
+                value={style.shadow ?? 'none'}
+                onChange={(e) => update({ shadow: e.target.value as BlockWrapperStyle['shadow'] })}
+              >
+                <option value="none">None</option>
+                <option value="sm">Small</option>
+                <option value="md">Medium</option>
+                <option value="lg">Large</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function InspectorFields({ block, pageId }: { block: BuilderBlock; pageId: string }) {
@@ -37,6 +210,23 @@ function InspectorFields({ block, pageId }: { block: BuilderBlock; pageId: strin
             <option value="hero">Hero</option>
           </select>
         </div>
+        {displayStyle === 'hero' && (
+          <div>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              Hero height (px)
+            </label>
+            <input
+              type="number"
+              min={80}
+              max={600}
+              className={inputClass}
+              value={b.heroHeightPx ?? 260}
+              onChange={(e) => update({ heroHeightPx: Number(e.target.value) } as Partial<RichTextBlock>)}
+              placeholder="260"
+            />
+            <p className="text-[10px] text-slate-400 mt-0.5">160–200 for compact, 260 default</p>
+          </div>
+        )}
         {(displayStyle === 'header' || displayStyle === 'hero') && (
           <div>
             <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
@@ -343,6 +533,7 @@ export function BlockInspector({ pageId }: BlockInspectorProps) {
             {block.type === 'button' && 'Button'}
           </div>
           <InspectorFields block={block} pageId={pageId} />
+          <AppearanceFields block={block} pageId={pageId} />
         </div>
       )}
     </aside>

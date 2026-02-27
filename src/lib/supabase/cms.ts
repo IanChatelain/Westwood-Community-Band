@@ -89,8 +89,13 @@ export async function saveSettings(settings: SiteSettings): Promise<boolean> {
       secondary_color: settings.secondaryColor,
       footer_text: settings.footerText,
     }).eq('id', 1);
-    return !error;
-  } catch {
+    if (error) {
+      console.error('saveSettings failed:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('saveSettings failed:', err);
     return false;
   }
 }
@@ -111,8 +116,13 @@ export async function savePage(page: PageConfig): Promise<boolean> {
       nav_label: page.navLabel ?? null,
     };
     const { error } = await supabase.from('pages').upsert(row, { onConflict: 'id' });
-    return !error;
-  } catch {
+    if (error) {
+      console.error('savePage failed:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('savePage failed:', err);
     return false;
   }
 }
@@ -143,8 +153,13 @@ export async function savePages(pages: PageConfig[]): Promise<boolean> {
       nav_label: p.navLabel ?? null,
     }));
     const { error } = await supabase.from('pages').upsert(rows, { onConflict: 'id' });
-    return !error;
-  } catch {
+    if (error) {
+      console.error('savePages failed:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('savePages failed:', err);
     return false;
   }
 }

@@ -104,9 +104,37 @@ export type BuilderBlockType =
   | 'spacer'
   | 'button';
 
+/** Tailwind-style border presets – applied via classes. 'custom' uses raw width+color. */
+export type BorderPreset =
+  | 'none'
+  | 'subtle'   // border-slate-200/60
+  | 'default' // border-slate-300
+  | 'muted'   // border-slate-200
+  | 'accent'  // border-red-800/60
+  | 'strong'  // border-2 slate-400
+  | 'ring'    // ring-1 ring-slate-900/5 (shadcn card style)
+  | 'custom'; // raw borderWidth + borderColor
+
+/** Wrapper styling for blocks – size, color, border presets, shadow. */
+export interface BlockWrapperStyle {
+  maxWidth?: 'full' | 'content' | 'narrow' | number;
+  minHeight?: number;
+  backgroundColor?: string;
+  padding?: 'none' | 'small' | 'medium' | 'large';
+  /** Named border preset (Tailwind/Shadcn style). */
+  borderPreset?: BorderPreset;
+  /** Only used when borderPreset is 'custom'. */
+  borderWidth?: 0 | 1 | 2 | 4;
+  borderColor?: string;
+  borderRadius?: 'none' | 'sm' | 'md' | 'lg';
+  shadow?: 'none' | 'sm' | 'md' | 'lg';
+}
+
 export interface BuilderBlockBase {
   id: string;
   type: BuilderBlockType;
+  /** Optional wrapper appearance (applied to the block container). */
+  wrapperStyle?: BlockWrapperStyle;
 }
 
 export interface RichTextBlock extends BuilderBlockBase {
@@ -118,6 +146,8 @@ export interface RichTextBlock extends BuilderBlockBase {
   title?: string;
   /** Background image for hero style. */
   imageUrl?: string;
+  /** Hero section height in px (e.g. 160, 200, 260). Default 260. */
+  heroHeightPx?: number;
 }
 
 export interface ImageBlock extends BuilderBlockBase {

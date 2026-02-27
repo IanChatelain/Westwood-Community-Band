@@ -25,7 +25,7 @@ import PageContent from '@/components/ui/PageContent';
 
 interface PageEditorProps {
   page: PageConfig;
-  onSave: (updatedPage: PageConfig) => void;
+  onSave: (updatedPage: PageConfig) => Promise<boolean>;
 }
 
 const SIDEBAR_BLOCK_TYPES: { value: SidebarBlockType; label: string }[] = [
@@ -50,6 +50,8 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
     return p;
   });
   const [showSavedFeedback, setShowSavedFeedback] = React.useState(false);
+  const [saveError, setSaveError] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
   const [sidebarEditorOpen, setSidebarEditorOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -67,20 +69,38 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
     revertPage(page.id, saved);
   };
 
+  const builderPage = state.pageBuilder.pages[page.id];
+  const blocks = builderPage?.blocks ?? page.blocks ?? [];
+  const currentBlocks = builderPage?.blocks ?? page.blocks ?? editedPage.blocks;
+
   const isSectionBased = (editedPage.sections?.length ?? 0) > 0 && (!editedPage.blocks || editedPage.blocks.length === 0);
   const effectivePage: PageConfig = isSectionBased
     ? { ...editedPage, blocks: undefined }
-    : { ...editedPage, blocks: page.blocks ?? editedPage.blocks };
-  const hasUnsavedChanges = !pageConfigEqual(editedPage, page);
+    : { ...editedPage, blocks: currentBlocks ?? editedPage.blocks };
+  const currentForCompare: PageConfig = isSectionBased
+    ? editedPage
+    : { ...editedPage, blocks: currentBlocks ?? editedPage.blocks };
+  const hasUnsavedChanges = !pageConfigEqual(currentForCompare, lastSavedRef.current);
 
-  const builderPage = state.pageBuilder.pages[page.id];
-  const blocks = builderPage?.blocks ?? page.blocks ?? [];
-
-  const handleSave = () => {
-    onSave(editedPage);
-    lastSavedRef.current = editedPage;
-    setShowSavedFeedback(true);
-    window.setTimeout(() => setShowSavedFeedback(false), 3000);
+  const handleSave = async () => {
+    setSaving(true);
+    const toSave: PageConfig = {
+      ...editedPage,
+      blocks: currentBlocks ?? editedPage.blocks,
+    };
+    const ok = await onSave(toSave);
+    setSaving(false);
+    if (ok) {
+      lastSavedRef.current = toSave;
+      setShowSavedFeedback(true);
+      setSaveError(false);
+    } else {
+      setSaveError(true);
+    }
+    window.setTimeout(() => {
+      setShowSavedFeedback(false);
+      setSaveError(false);
+    }, 3000);
   };
 
   const sidebarBlocks = editedPage.sidebarBlocks ?? [];
@@ -256,6 +276,9 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
         {showSavedFeedback && (
           <span className="text-[10px] font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">Saved</span>
         )}
+        {saveError && (
+          <span className="text-[10px] font-medium text-red-700 bg-red-100 px-2 py-0.5 rounded">Save failed</span>
+        )}
         {hasUnsavedChanges && (
           <button
             type="button"
@@ -269,11 +292,11 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
         )}
         <button
           onClick={handleSave}
-          disabled={!hasUnsavedChanges}
+          disabled={!hasUnsavedChanges || saving}
           className="px-4 py-2 rounded-lg font-bold text-sm bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white flex items-center gap-1.5"
         >
           <Save size={16} />
-          Save
+          {saving ? 'Saving…' : 'Save'}
         </button>
       </div>
     </div>

@@ -23,11 +23,11 @@ interface AppContextType {
   state: AppState;
   setState: React.Dispatch<React.SetStateAction<AppState>>;
   logout: () => void;
-  updatePage: (updatedPage: PageConfig) => void;
+  updatePage: (updatedPage: PageConfig) => Promise<boolean>;
   addPage: (title: string, slug: string, addToNav?: boolean) => PageConfig;
   removePage: (pageId: string) => void;
   /** Persist current state to storage. Call explicitly after Save/Apply—no auto-save. */
-  persist: () => void;
+  persist: () => Promise<boolean>;
   /** Revert a page to a previous version (e.g. discard unsaved edits). */
   revertPage: (pageId: string, savedPage: PageConfig) => void;
   isAdminMode: boolean;
@@ -70,14 +70,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  const persist = useCallback(() => {
+  const persist = useCallback(async (): Promise<boolean> => {
     const s = stateRef.current;
     if (!SUPABASE_ENABLED) {
       db.save(s);
-    } else {
-      saveSettings(s.settings);
-      savePages(s.pages);
+      return true;
     }
+    const [settingsOk, pagesOk] = await Promise.all([
+      saveSettings(s.settings),
+      savePages(s.pages),
+    ]);
+    return settingsOk && pagesOk;
   }, []);
 
   const revertPage = useCallback((pageId: string, savedPage: PageConfig) => {
@@ -184,7 +187,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setIsAdminMode(false);
   }, []);
 
-  const updatePage = (updatedPage: PageConfig) => {
+  const updatePage = useCallback(async (updatedPage: PageConfig): Promise<boolean> => {
     setState(prev => {
       const existing = prev.pages.find(p => p.id === updatedPage.id);
       const merged: PageConfig = existing
@@ -195,8 +198,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         pages: prev.pages.map(p => (p.id === merged.id ? merged : p)),
       };
     });
-    setTimeout(persist, 0);
-  };
+    return new Promise<boolean>((resolve) => {
+      setTimeout(async () => {
+        const ok = await persist();
+        resolve(ok);
+      }, 0);
+    });
+  }, [persist]);
 
   const addPage = (title: string, slug: string, addToNav = true): PageConfig => {
     const normalizedSlug = slug.startsWith('/') ? slug : `/${slug}`;

@@ -1,8 +1,71 @@
 'use client';
 
 import React, { useState } from 'react';
-import { PageConfig, SidebarBlock, PageSection, SectionStyle, BuilderBlock } from '@/types';
+import { PageConfig, SidebarBlock, PageSection, SectionStyle, BuilderBlock, BlockWrapperStyle } from '@/types';
 import { DEFAULT_SIDEBAR_BLOCKS } from '@/constants';
+
+export function blockWrapperClassesAndStyle(s?: BlockWrapperStyle): { className: string; style: React.CSSProperties } {
+  if (!s) return { className: '', style: {} };
+  const classes: string[] = [];
+  const style: React.CSSProperties = {};
+  // Width
+  if (s.maxWidth === 'full') classes.push('w-full');
+  else if (s.maxWidth === 'content') classes.push('max-w-4xl mx-auto w-full');
+  else if (s.maxWidth === 'narrow') classes.push('max-w-2xl mx-auto w-full');
+  else if (typeof s.maxWidth === 'number') {
+    style.maxWidth = `${s.maxWidth}px`;
+    style.marginLeft = 'auto';
+    style.marginRight = 'auto';
+  }
+  // Height
+  if (s.minHeight != null && s.minHeight > 0) style.minHeight = `${s.minHeight}px`;
+  // Background
+  if (s.backgroundColor) style.backgroundColor = s.backgroundColor;
+  // Padding (when bg/border, content needs breathing room)
+  const hasBorder = s.borderPreset === 'custom' ? (s.borderWidth ?? 0) > 0 : !!(s.borderPreset && s.borderPreset !== 'none');
+  const hasBorderOrBg = s.backgroundColor || hasBorder;
+  if (s.padding === 'none') classes.push('p-0');
+  else if (s.padding === 'small') classes.push('p-4');
+  else if (s.padding === 'medium') classes.push('p-6');
+  else if (s.padding === 'large') classes.push('p-8');
+  else if (!s.padding && (s.backgroundColor || hasBorderOrBg)) {
+    classes.push('p-6'); // default padding when styled
+  }
+  // Border: preset Tailwind classes or custom inline (fallback: old borderWidth = custom)
+  const preset = s.borderPreset ?? ((s.borderWidth != null && s.borderWidth > 0) ? 'custom' : 'none');
+  if (preset === 'custom') {
+    const bw = s.borderWidth ?? 0;
+    if (bw === 0) classes.push('border-0');
+    else {
+      style.borderWidth = `${bw}px`;
+      style.borderStyle = 'solid';
+      style.borderColor = s.borderColor ?? '#e2e8f0';
+    }
+  } else {
+    const presetMap: Record<string, string> = {
+      none: 'border-0',
+      subtle: 'border border-slate-200/60',
+      default: 'border border-slate-300',
+      muted: 'border border-slate-200',
+      accent: 'border-2 border-red-800/60',
+      strong: 'border-2 border-slate-400',
+      ring: 'ring-1 ring-slate-900/5 ring-inset',
+    };
+    if (presetMap[preset]) classes.push(presetMap[preset]);
+  }
+  // Border radius
+  if (s.borderRadius === 'none') classes.push('rounded-none');
+  else if (s.borderRadius === 'sm') classes.push('rounded-lg');
+  else if (s.borderRadius === 'md') classes.push('rounded-xl');
+  else if (s.borderRadius === 'lg') classes.push('rounded-2xl');
+  else if (!s.borderRadius && (s.backgroundColor || hasBorderOrBg)) classes.push('rounded-xl'); // default when styled
+  // Shadow
+  if (s.shadow === 'sm') classes.push('shadow-sm');
+  else if (s.shadow === 'md') classes.push('shadow-md');
+  else if (s.shadow === 'lg') classes.push('shadow-lg');
+  else if (s.shadow === 'none') classes.push('shadow-none');
+  return { className: classes.join(' ').trim(), style };
+}
 import { Calendar, ArrowRight, Mail, MapPin, Clock, Send } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -245,9 +308,13 @@ export function BuilderBlockView({ block }: { block: BuilderBlock }) {
   if (block.type === 'richText') {
     const style = block.displayStyle ?? 'text';
     if (style === 'hero') {
+      const heroH = block.heroHeightPx ?? 260;
       return (
         <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="relative h-[260px] md:h-[320px] rounded-2xl overflow-hidden shadow-lg ring-1 ring-slate-200/80 bg-gradient-to-br from-red-800 to-red-700">
+          <div
+            className="relative rounded-2xl overflow-hidden shadow-lg ring-1 ring-slate-200/80 bg-gradient-to-br from-red-800 to-red-700"
+            style={{ minHeight: heroH, height: heroH }}
+          >
             {block.imageUrl && (
               <img src={block.imageUrl} className="absolute inset-0 w-full h-full object-cover opacity-30" alt={block.title ?? ''} />
             )}
@@ -392,9 +459,14 @@ export default function PageContent({ page }: PageContentProps) {
         className="flex-grow space-y-16"
         style={{ width: page.layout === 'full' ? '100%' : `${100 - page.sidebarWidth}%` }}
       >
-        {hasBlocks && page.blocks!.map((block) => (
-          <BuilderBlockView key={block.id} block={block} />
-        ))}
+        {hasBlocks && page.blocks!.map((block) => {
+          const { className, style } = blockWrapperClassesAndStyle(block.wrapperStyle);
+          return (
+            <div key={block.id} className={className || undefined} style={Object.keys(style).length ? style : undefined}>
+              <BuilderBlockView block={block} />
+            </div>
+          );
+        })}
 
         {!hasBlocks && page.sections.map((section) => (
           <section key={section.id} className="animate-in fade-in slide-in-from-bottom-4 duration-700">

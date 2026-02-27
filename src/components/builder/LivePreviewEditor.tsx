@@ -6,7 +6,7 @@ import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import type { BuilderBlock, PageConfig } from '@/types';
 import { useAppContext } from '@/context/AppContext';
-import { BuilderBlockView } from '@/components/ui/PageContent';
+import { BuilderBlockView, blockWrapperClassesAndStyle } from '@/components/ui/PageContent';
 import { GripVertical, Trash2, ChevronUp, ChevronDown, Copy } from 'lucide-react';
 import { DEFAULT_SIDEBAR_BLOCKS } from '@/constants';
 import { SidebarBlockContent } from '@/components/ui/PageContent';
@@ -119,7 +119,14 @@ function SortablePreviewBlock({ block, pageId, index, totalBlocks }: {
           <Trash2 size={14} />
         </button>
       </div>
-      <BuilderBlockView block={block} />
+      {(() => {
+        const { className, style } = blockWrapperClassesAndStyle(block.wrapperStyle);
+        return (
+          <div className={className || undefined} style={Object.keys(style).length ? style : undefined}>
+            <BuilderBlockView block={block} />
+          </div>
+        );
+      })()}
     </div>
   );
 }
