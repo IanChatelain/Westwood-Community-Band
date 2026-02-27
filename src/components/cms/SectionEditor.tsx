@@ -145,6 +145,35 @@ function SortableSectionItem({
         >
           <div>
             <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+              Section type
+            </label>
+            <select
+              className={inputClass}
+              value={section.type}
+              onChange={(e) => {
+                const newType = e.target.value as PageSectionType;
+                const oldDefault = DEFAULT_HEIGHTS[section.type];
+                const newDefault = DEFAULT_HEIGHTS[newType];
+                const heightMatchesOldDefault =
+                  section.minHeight != null && oldDefault != null && section.minHeight === oldDefault;
+                const updates: Partial<PageSection> = { type: newType };
+                if (heightMatchesOldDefault && newDefault != null) {
+                  updates.minHeight = newDefault;
+                } else if (heightMatchesOldDefault && newDefault == null) {
+                  updates.minHeight = undefined;
+                }
+                onUpdate(updates);
+              }}
+            >
+              {SECTION_TYPE_OPTIONS.map(({ value, label }) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
               Title
             </label>
             <input
