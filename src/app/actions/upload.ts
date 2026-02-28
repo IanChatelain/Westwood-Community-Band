@@ -6,9 +6,11 @@ const BUCKET = 'cms-uploads';
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const MAX_RECORDING_SIZE = 50 * 1024 * 1024;
 const MAX_DOCUMENT_SIZE = 20 * 1024 * 1024;
+const MAX_VIDEO_SIZE = 250 * 1024 * 1024;
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const AUDIO_TYPES = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/webm', 'audio/ogg', 'audio/flac', 'audio/aac', 'audio/mp4'];
+const VIDEO_TYPES = ['video/mp4', 'video/webm'];
 const DOCUMENT_TYPES = [
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -82,6 +84,20 @@ export async function uploadDocument(
   if (!DOCUMENT_TYPES.includes(file.type)) return { url: null, fileSize: null, error: 'Invalid document type' };
 
   const result = await authenticatedUpload(file, 'documents');
+  if (result.error) return { url: null, fileSize: null, error: result.error };
+
+  return { url: result.url, fileSize: formatFileSize(file.size), error: null };
+}
+
+export async function uploadVideo(
+  formData: FormData,
+): Promise<{ url: string | null; fileSize: string | null; error: string | null }> {
+  const file = formData.get('file') as File | null;
+  if (!file || !file.size) return { url: null, fileSize: null, error: 'No file provided' };
+  if (file.size > MAX_VIDEO_SIZE) return { url: null, fileSize: null, error: 'File too large (max 250MB)' };
+  if (!VIDEO_TYPES.includes(file.type)) return { url: null, fileSize: null, error: 'Invalid video type (use MP4 or WebM)' };
+
+  const result = await authenticatedUpload(file, 'videos');
   if (result.error) return { url: null, fileSize: null, error: result.error };
 
   return { url: result.url, fileSize: formatFileSize(file.size), error: null };

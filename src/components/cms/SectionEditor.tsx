@@ -21,7 +21,7 @@ import { CSS } from '@dnd-kit/utilities';
 import type { PageSection, PageSectionType, PageConfig, GalleryEvent, GalleryMediaItem, DownloadItem, DownloadGroup, DownloadLink, PerformanceItem } from '@/types';
 import { ChevronDown, ChevronRight, Trash2, Plus, Upload, X, GripVertical, Image as ImageIcon, Video, ArrowRightLeft, HelpCircle } from 'lucide-react';
 import { RichTextEditor } from '@/components/cms/RichTextEditor';
-import { uploadImage, uploadRecording, uploadDocument } from '@/app/actions/upload';
+import { uploadImage, uploadRecording, uploadDocument, uploadVideo } from '@/app/actions/upload';
 
 const SECTION_TYPE_OPTIONS: { value: PageSectionType; label: string }[] = [
   { value: 'hero', label: 'Hero Banner' },
@@ -701,7 +701,9 @@ function GalleryMediaEditor({
   inputClass: string;
 }) {
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const [addingImage, setAddingImage] = useState(false);
+  const [addingVideo, setAddingVideo] = useState(false);
   const [addImageError, setAddImageError] = useState<string | null>(null);
 
   const handleAddImage = async (file: File) => {
@@ -721,6 +723,26 @@ function GalleryMediaEditor({
       setAddImageError('Upload failed');
     } finally {
       setAddingImage(false);
+    }
+  };
+
+  const handleAddVideoFile = async (file: File) => {
+    setAddImageError(null);
+    setAddingVideo(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const result = await uploadVideo(fd);
+      if (result.error) {
+        setAddImageError(result.error);
+      } else if (result.url) {
+        const id = Math.random().toString(36).substring(2, 11);
+        onChange([...items, { id, type: 'video', url: result.url, caption: '' }]);
+      }
+    } catch {
+      setAddImageError('Upload failed');
+    } finally {
+      setAddingVideo(false);
     }
   };
 
@@ -761,11 +783,25 @@ function GalleryMediaEditor({
               e.target.value = '';
             }}
           />
+          <input
+            ref={videoInputRef}
+            type="file"
+            accept="video/mp4,video/webm"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleAddVideoFile(f);
+              e.target.value = '';
+            }}
+          />
           <button type="button" disabled={addingImage} onClick={() => imageInputRef.current?.click()} className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 disabled:opacity-50 transition-colors">
             <ImageIcon size={10} /> {addingImage ? 'Uploading...' : 'Image'}
           </button>
+          <button type="button" disabled={addingVideo} onClick={() => videoInputRef.current?.click()} className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 disabled:opacity-50 transition-colors">
+            <Upload size={10} /> {addingVideo ? 'Uploading...' : 'Video File'}
+          </button>
           <button type="button" onClick={addVideo} className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 transition-colors">
-            <Video size={10} /> Video
+            <Video size={10} /> Video URL
           </button>
         </div>
       </div>

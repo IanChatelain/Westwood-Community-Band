@@ -40,3 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# import artifacts
+scripts/wordpress-export.xml
+scripts/import-unassigned-manifest.json
