@@ -19,6 +19,13 @@ function parseVideoEmbedUrl(url: string): string | null {
   return null;
 }
 
+function isDirectVideoUrl(url: string): boolean {
+  try {
+    const ext = new URL(url).pathname.split('.').pop()?.toLowerCase();
+    return ['mp4', 'webm', 'ogg', 'mov', 'm4v'].includes(ext || '');
+  } catch { return false; }
+}
+
 interface GalleryEventPageProps {
   event: GalleryEvent;
   parentSlug: string;
@@ -93,6 +100,24 @@ export default function GalleryEventPage({ event, parentSlug }: GalleryEventPage
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                     />
+                  </div>
+                );
+              }
+              if (isDirectVideoUrl(item.url)) {
+                return (
+                  <div key={item.id} className="col-span-2 rounded-xl overflow-hidden border border-slate-200 bg-black">
+                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                    <video
+                      src={item.url}
+                      controls
+                      preload="metadata"
+                      className="w-full"
+                    />
+                    {item.caption && (
+                      <div className="px-4 py-2 bg-slate-900">
+                        <p className="text-sm text-white/80">{item.caption}</p>
+                      </div>
+                    )}
                   </div>
                 );
               }

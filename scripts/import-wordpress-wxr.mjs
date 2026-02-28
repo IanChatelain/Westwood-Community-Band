@@ -34,6 +34,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 const BUCKET = 'cms-uploads';
+const OLD_SITE_ARCHIVE_BASE = 'https://www.westwoodcommunityband.ca/old-site-archive/';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -48,6 +49,7 @@ function uid() {
 function cdata(val) {
   if (val == null) return '';
   if (typeof val === 'string') return val.trim();
+  if (typeof val === 'object' && '__cdata' in val) return String(val['__cdata']).trim();
   if (typeof val === 'object' && '#text' in val) return String(val['#text']).trim();
   return String(val).trim();
 }
@@ -61,9 +63,11 @@ function formatFileSize(bytes) {
 function mimeFromUrl(url) {
   const ext = url.split('.').pop()?.split('?')[0]?.toLowerCase();
   const map = {
-    jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp',
+    jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', bmp: 'image/bmp',
     mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', flac: 'audio/flac',
-    mp4: 'video/mp4', webm: 'video/webm',
+    wma: 'audio/x-ms-wma', m4a: 'audio/mp4', aac: 'audio/aac', aiff: 'audio/aiff', mid: 'audio/midi', midi: 'audio/midi',
+    mp4: 'video/mp4', webm: 'video/webm', m4v: 'video/mp4', mov: 'video/quicktime', avi: 'video/x-msvideo',
+    wmv: 'video/x-ms-wmv', mkv: 'video/x-matroska', flv: 'video/x-flv',
     pdf: 'application/pdf', xls: 'application/vnd.ms-excel',
     xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     doc: 'application/msword',
@@ -98,17 +102,44 @@ function isLayoutImage(filename) {
   return false;
 }
 
-function getFullSizeCandidateUrl(imgUrl) {
+/** Skip layout/nav images by path (for 2006–2008 pages that use same structure). */
+function isLayoutImagePath(pathname) {
+  const lower = pathname.toLowerCase();
+  return (
+    lower.includes('menu_items') ||
+    lower.includes('menu_top') ||
+    lower.includes('menu_bottom') ||
+    lower.endsWith('spacer.gif') ||
+    lower.endsWith('title.jpg')
+  );
+}
+
+function getFullSizeCandidates(imgUrl) {
+  const candidates = [];
   try {
     const u = new URL(imgUrl);
-    // Match ...WW1s.jpg → ...WW1.jpg (or .JPG)
-    const m = u.pathname.match(/^(.*?)([sS])(\.[^.]+)$/);
-    if (!m) return null;
-    u.pathname = m[1] + m[3];
-    return u.href;
-  } catch {
-    return null;
-  }
+    const patterns = [
+      // WW1s.jpg → WW1.jpg
+      { re: /^(.*?)([sS])(\.[^.]+)$/, replace: '$1$3' },
+      // photo_s.jpg → photo.jpg
+      { re: /^(.*?)_[sS](\.[^.]+)$/, replace: '$1$2' },
+      // photo_thumb.jpg → photo.jpg
+      { re: /^(.*?)_thumb(\.[^.]+)$/i, replace: '$1$2' },
+      // photo-thumbnail.jpg → photo.jpg
+      { re: /^(.*?)-thumbnail(\.[^.]+)$/i, replace: '$1$2' },
+      // photo-small.jpg → photo.jpg
+      { re: /^(.*?)-small(\.[^.]+)$/i, replace: '$1$2' },
+    ];
+    for (const { re, replace } of patterns) {
+      const m = u.pathname.match(re);
+      if (m) {
+        const c = new URL(u.href);
+        c.pathname = u.pathname.replace(re, replace);
+        candidates.push(c.href);
+      }
+    }
+  } catch { /* not a valid URL */ }
+  return candidates;
 }
 
 async function downloadBuffer(url, retries = 3) {
@@ -205,6 +236,13 @@ function parseWXR(xmlString) {
 
 // ─── crawl old-site-archive photo pages ──────────────────────────────────────
 
+function isImageUrl(url) {
+  try {
+    const ext = new URL(url).pathname.split('.').pop()?.toLowerCase();
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext);
+  } catch { return false; }
+}
+
 async function crawlPhotoPage(pageUrl) {
   console.log(`  Crawling ${pageUrl} ...`);
   try {
@@ -212,16 +250,36 @@ async function crawlPhotoPage(pageUrl) {
     if (!res.ok) { console.warn(`  ⚠ HTTP ${res.status} for ${pageUrl}`); return []; }
     const html = await res.text();
     const $ = cheerio.load(html);
-    const images = [];
+    const baseUrl = pageUrl.startsWith(OLD_SITE_ARCHIVE_BASE) ? OLD_SITE_ARCHIVE_BASE : pageUrl;
+    const seen = new Set();
+    const results = [];
+
     $('img').each((_, el) => {
       let src = $(el).attr('src');
       if (!src) return;
       if (src.startsWith('/') || !src.startsWith('http')) {
-        try { src = new URL(src, pageUrl).href; } catch { return; }
+        try { src = new URL(src, baseUrl).href; } catch { return; }
       }
-      images.push(src);
+      if (seen.has(src)) return;
+      seen.add(src);
+
+      let fullUrl = null;
+      const parentA = $(el).closest('a');
+      if (parentA.length) {
+        let href = parentA.attr('href');
+        if (href) {
+          if (href.startsWith('/') || !href.startsWith('http')) {
+            try { href = new URL(href, baseUrl).href; } catch { href = null; }
+          }
+          if (href && isImageUrl(href)) {
+            fullUrl = href;
+          }
+        }
+      }
+
+      results.push({ src, fullUrl });
     });
-    return [...new Set(images)];
+    return results;
   } catch (err) {
     console.warn(`  ⚠ Failed to crawl ${pageUrl}: ${err.message}`);
     return [];
@@ -327,31 +385,34 @@ async function main() {
   const photoGalleryEvents = [];
 
   for (const archivePage of photoArchivePages) {
-    const imgUrls = await crawlPhotoPage(archivePage.url);
-    console.log(`  Found ${imgUrls.length} images for "${archivePage.title}"`);
+    const crawled = await crawlPhotoPage(archivePage.url);
+    console.log(`  Found ${crawled.length} images for "${archivePage.title}"`);
 
     const mediaItems = [];
-    for (const imgUrl of imgUrls) {
-      // imgUrl is the thumbnail URL found in the old HTML.
-      // Prefer to download the full-size version (without the trailing "s")
-      // when available (e.g., WW1s.jpg → WW1.jpg).
+    for (const { src: imgUrl, fullUrl: parentFullUrl } of crawled) {
       if (urlMap.has(imgUrl)) {
         mediaItems.push({ id: uid(), type: 'image', url: urlMap.get(imgUrl), caption: '' });
         continue;
       }
 
-      const rawThumbFilename = path.basename(new URL(imgUrl).pathname);
-      if (isLayoutImage(rawThumbFilename)) continue;
+      const parsed = new URL(imgUrl);
+      const rawThumbFilename = path.basename(parsed.pathname);
+      if (isLayoutImage(rawThumbFilename) || isLayoutImagePath(parsed.pathname)) continue;
 
-      const fullCandidate = getFullSizeCandidateUrl(imgUrl);
+      // Build priority list: parent <a href> first, then naming-heuristic candidates, then original src
+      const candidates = [];
+      if (parentFullUrl) candidates.push(parentFullUrl);
+      candidates.push(...getFullSizeCandidates(imgUrl));
+
       let downloadUrl = imgUrl;
       let buf = null;
 
-      if (fullCandidate) {
-        console.log(`    ↓ (full) ${fullCandidate}`);
-        buf = await downloadBuffer(fullCandidate);
+      for (const candidate of candidates) {
+        console.log(`    ↓ (full) ${candidate}`);
+        buf = await downloadBuffer(candidate);
         if (buf) {
-          downloadUrl = fullCandidate;
+          downloadUrl = candidate;
+          break;
         }
       }
 
@@ -368,8 +429,6 @@ async function main() {
       console.log(`    ↑ ${storagePath}`);
       const publicUrl = await uploadToStorage(buf, storagePath, mime);
       if (publicUrl) {
-        // Map the original HTML URL to the stored public URL, so repeated runs
-        // or other crawls can reuse it.
         urlMap.set(imgUrl, publicUrl);
         mediaItems.push({ id: uid(), type: 'image', url: publicUrl, caption: '' });
       }
@@ -482,10 +541,8 @@ async function main() {
   // ── Media page: videos gallery + recording downloads ──
   const videoMediaItems = [];
   for (const v of videoAttachments) {
-    const pub = urlMap.get(v.attachmentUrl);
-    if (pub) {
-      videoMediaItems.push({ id: uid(), type: 'video', url: pub, caption: v.title || '' });
-    }
+    const pub = urlMap.get(v.attachmentUrl) || v.attachmentUrl;
+    videoMediaItems.push({ id: uid(), type: 'video', url: pub, caption: v.title || '' });
   }
 
   const recordingDownloadItems = audioAttachments.map(a => {
@@ -511,7 +568,7 @@ async function main() {
   });
 
   const mediaSections = [
-    { id: 'm1', type: 'hero', title: 'Media & Resources', content: 'Watch, listen, and access band resources \u2014 recordings, documents, and more.', imageUrl: '/images/media.jpg' },
+    { id: 'm1', type: 'hero', title: 'Media & Resources', content: 'Browse photos, watch concert videos, and listen to recordings from the Westwood Community Band.', imageUrl: heroImageUrl },
   ];
 
   if (videoMediaItems.length > 0) {
@@ -536,7 +593,18 @@ async function main() {
     });
   }
 
-  // keep IMC text section
+  if (photoGalleryEvents.length > 0) {
+    const highlightEvents = photoGalleryEvents.slice(0, 6).map(ev => ({
+      ...ev,
+      id: `m-photo-${ev.slug}`,
+    }));
+    mediaSections.push({
+      id: 'm-photos', type: 'gallery', title: 'Photo Highlights', content: 'A selection of photos from our events. Visit the Photos page for the full gallery.',
+      galleryColumns: 3, galleryCardSize: 'md', galleryThumbnailAspect: 'landscape', galleryShowDescription: true,
+      galleryEvents: highlightEvents,
+    });
+  }
+
   mediaSections.push({
     id: 'm5', type: 'text', title: 'International Music Camp',
     content: 'The <a href="http://www.internationalmusiccamp.com/" target="_blank" rel="noopener noreferrer">International Music Camp</a> is an annual event for students and adults that takes place at the International Peace Gardens on the border between Manitoba and North Dakota.\n\nThe adult camp is a 4-day event. Every year a significant number of Westwood Band members make the trek to attend. In 2006, Westwood were guest performers at IMC for our 25th anniversary. We loved performing for such an amazing audience. The performance was recorded and several of the tracks are available above in our Sample Recordings section.',
