@@ -7,6 +7,7 @@ import AdminSidebar from '@/components/cms/AdminSidebar';
 import PageEditor from '@/components/cms/PageEditor';
 import DashboardOverview from '@/components/cms/admin/DashboardOverview';
 import PageListTab from '@/components/cms/admin/PageListTab';
+import PageNavBar from '@/components/cms/admin/PageNavBar';
 import ArchiveTab from '@/components/cms/admin/ArchiveTab';
 import SettingsTab from '@/components/cms/admin/SettingsTab';
 import UsersTab from '@/components/cms/admin/UsersTab';
@@ -296,12 +297,24 @@ export default function AdminDashboard() {
         )}
 
         {adminTab.startsWith('edit-page-') && (
-          <PageEditor
-            page={state.pages.find((p) => `edit-page-${p.id}` === adminTab)!}
-            onSave={updatePage}
-            onDirtyChange={handleEditorDirtyChange}
-            onRegisterSave={handleRegisterSave}
-          />
+          <>
+            <div className="mb-4">
+              <PageNavBar
+                pages={state.pages}
+                currentPageId={adminTab.replace('edit-page-', '')}
+                onAddPage={addPage}
+                onRemovePage={removePage}
+                onSetAdminTab={guardedSetTab}
+                onArchivePage={handleArchivePage}
+              />
+            </div>
+            <PageEditor
+              page={state.pages.find((p) => `edit-page-${p.id}` === adminTab)!}
+              onSave={updatePage}
+              onDirtyChange={handleEditorDirtyChange}
+              onRegisterSave={handleRegisterSave}
+            />
+          </>
         )}
 
         {adminTab === 'settings' && (
