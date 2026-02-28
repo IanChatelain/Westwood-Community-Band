@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
 import { login } from '@/app/actions/auth';
+import type { User } from '@/types';
 import { Lock, ArrowRight, X } from 'lucide-react';
 
 export default function LoginModal() {
@@ -27,7 +28,7 @@ export default function LoginModal() {
       return;
     }
     if (result.user) {
-      setState((prev) => ({ ...prev, currentUser: result.user ?? null }));
+      setState((prev) => ({ ...prev, currentUser: result.user as User }));
     }
     setIsLoginModalOpen(false);
     setEmail('');
