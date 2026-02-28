@@ -14,8 +14,8 @@ export async function uploadToR2(
 ): Promise<{ url: string; fileSize: string; error: null } | { url: null; fileSize: null; error: string }> {
   const ticket = await requestUploadUrl(file.name, file.type, file.size, folder);
 
-  if (ticket.error) {
-    return { url: null, fileSize: null, error: ticket.error };
+  if (ticket.error || !ticket.uploadUrl || !ticket.publicUrl) {
+    return { url: null, fileSize: null, error: ticket.error ?? 'No upload URL returned' };
   }
 
   try {
