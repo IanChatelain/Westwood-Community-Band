@@ -30,6 +30,7 @@ export interface Database {
           show_in_nav: boolean | null;
           nav_order: number | null;
           nav_label: string | null;
+          is_archived: boolean;
           created_at: string;
           updated_at: string;
         };

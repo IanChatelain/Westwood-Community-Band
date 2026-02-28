@@ -207,7 +207,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       if (data) {
-        setState(prev => ({ ...prev, currentUser: profileToUser(data) }));
+        const user = profileToUser(data);
+        setState(prev => ({ ...prev, currentUser: user }));
+        if (user.role === UserRole.ADMIN || user.role === UserRole.EDITOR) {
+          loadCmsState().then((loaded) => {
+            if (loaded?.pages) {
+              setState(prev => ({
+                ...prev,
+                pages: loaded.pages!,
+                pageBuilder: createInitialBuilderState(loaded.pages!),
+              }));
+            }
+          });
+        }
       } else {
         setState(prev => ({ ...prev, currentUser: null }));
       }
@@ -233,6 +245,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setState(prev => ({ ...prev, currentUser: null }));
     setIsAdminMode(false);
+    if (SUPABASE_ENABLED) {
+      loadCmsState().then((loaded) => {
+        if (loaded?.pages) {
+          setState(prev => ({
+            ...prev,
+            pages: loaded.pages!,
+            pageBuilder: createInitialBuilderState(loaded.pages!),
+          }));
+        }
+      });
+    }
   }, []);
 
   const updatePage = useCallback(async (updatedPage: PageConfig): Promise<boolean> => {

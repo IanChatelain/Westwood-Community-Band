@@ -6,7 +6,7 @@ import { PageConfig, NavLink } from '@/types';
  */
 export function getNavFromPages(pages: PageConfig[]): NavLink[] {
   return pages
-    .filter((p) => p.showInNav !== false)
+    .filter((p) => p.showInNav !== false && p.isArchived !== true)
     .sort((a, b) => (a.navOrder ?? 999) - (b.navOrder ?? 999))
     .map((p, index) => ({
       id: p.id,

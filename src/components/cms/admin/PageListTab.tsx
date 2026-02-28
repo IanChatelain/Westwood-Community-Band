@@ -2,13 +2,14 @@
 
 import React, { useState } from 'react';
 import { PageConfig } from '@/types';
-import { Plus, Trash2, ArrowRight, X } from 'lucide-react';
+import { Plus, Trash2, ArrowRight, X, Archive } from 'lucide-react';
 
 interface PageListTabProps {
   pages: PageConfig[];
   onAddPage: (title: string, slug: string, addToNav: boolean) => PageConfig;
   onRemovePage: (pageId: string) => void;
   onSetAdminTab: (tab: string) => void;
+  onArchivePage?: (pageId: string) => void;
 }
 
 export default function PageListTab({
@@ -16,7 +17,9 @@ export default function PageListTab({
   onAddPage,
   onRemovePage,
   onSetAdminTab,
+  onArchivePage,
 }: PageListTabProps) {
+  const activePages = pages.filter((p) => p.isArchived !== true);
   const [showAddPage, setShowAddPage] = useState(false);
   const [newPageTitle, setNewPageTitle] = useState('');
   const [newPageSlug, setNewPageSlug] = useState('');
@@ -51,7 +54,7 @@ export default function PageListTab({
           <Plus size={18} /> Add page
         </button>
         <div className="flex flex-wrap gap-2 p-1 bg-slate-200 rounded-xl w-fit">
-          {pages.map((p) => (
+          {activePages.map((p) => (
             <div key={p.id} className="flex items-center gap-1 bg-white rounded-lg shadow-sm ring-1 ring-slate-900/5 overflow-hidden">
               <button
                 onClick={() => onSetAdminTab(`edit-page-${p.id}`)}
@@ -59,9 +62,20 @@ export default function PageListTab({
               >
                 {p.title} <ArrowRight size={14} />
               </button>
+              {onArchivePage && (
+                <button
+                  onClick={() => onArchivePage(p.id)}
+                  disabled={p.slug === '/'}
+                  className="p-2 text-slate-400 hover:text-amber-600 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  aria-label={`Archive ${p.title}`}
+                  title="Archive page"
+                >
+                  <Archive size={16} />
+                </button>
+              )}
               <button
                 onClick={() => setDeleteConfirmId(p.id)}
-                disabled={pages.length <= 1 || p.slug === '/'}
+                disabled={activePages.length <= 1 || p.slug === '/'}
                 className="p-2 text-slate-500 hover:text-red-800 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-red-500 rounded-r-lg"
                 aria-label={`Delete ${p.title}`}
               >

@@ -144,6 +144,8 @@ export interface PageConfig {
   navOrder?: number;
   /** Menu label; if absent, use title. */
   navLabel?: string;
+  /** When true, page is hidden from the public site and only visible in admin. */
+  isArchived?: boolean;
 }
 
 export interface SiteSettings {

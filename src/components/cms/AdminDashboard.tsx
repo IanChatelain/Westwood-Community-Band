@@ -7,6 +7,7 @@ import AdminSidebar from '@/components/cms/AdminSidebar';
 import PageEditor from '@/components/cms/PageEditor';
 import DashboardOverview from '@/components/cms/admin/DashboardOverview';
 import PageListTab from '@/components/cms/admin/PageListTab';
+import ArchiveTab from '@/components/cms/admin/ArchiveTab';
 import SettingsTab from '@/components/cms/admin/SettingsTab';
 import UsersTab from '@/components/cms/admin/UsersTab';
 import { ShieldCheck, HelpCircle, X, LogIn, AlertTriangle, Save, Trash2 } from 'lucide-react';
@@ -151,6 +152,18 @@ export default function AdminDashboard() {
     router.push('/');
   };
 
+  const handleArchivePage = async (pageId: string) => {
+    const page = state.pages.find((p) => p.id === pageId);
+    if (!page || page.slug === '/') return;
+    await updatePage({ ...page, isArchived: true, showInNav: false });
+  };
+
+  const handleRestorePage = async (pageId: string) => {
+    const page = state.pages.find((p) => p.id === pageId);
+    if (!page) return;
+    await updatePage({ ...page, isArchived: false });
+  };
+
   if (!state.currentUser) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100">
@@ -261,7 +274,7 @@ export default function AdminDashboard() {
         )}
 
         {adminTab === 'overview' && (
-          <DashboardOverview pageCount={state.pages.length} userCount={state.users.length} />
+          <DashboardOverview pageCount={state.pages.filter(p => !p.isArchived).length} userCount={state.users.length} />
         )}
 
         {adminTab === 'pages' && (
@@ -269,6 +282,15 @@ export default function AdminDashboard() {
             pages={state.pages}
             onAddPage={addPage}
             onRemovePage={removePage}
+            onSetAdminTab={guardedSetTab}
+            onArchivePage={handleArchivePage}
+          />
+        )}
+
+        {adminTab === 'archive' && (
+          <ArchiveTab
+            pages={state.pages}
+            onRestorePage={handleRestorePage}
             onSetAdminTab={guardedSetTab}
           />
         )}

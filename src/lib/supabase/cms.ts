@@ -110,6 +110,7 @@ function rowToPage(row: {
   show_in_nav: boolean | null;
   nav_order: number | null;
   nav_label: string | null;
+  is_archived?: boolean | null;
 }): PageConfig {
   const sectionsData = Array.isArray(row.sections) ? row.sections : [];
   const storedAsBlocks = isBuilderBlocks(sectionsData as object[]);
@@ -125,6 +126,7 @@ function rowToPage(row: {
     showInNav: row.show_in_nav ?? true,
     navOrder: row.nav_order ?? 999,
     navLabel: row.nav_label ?? undefined,
+    isArchived: row.is_archived ?? false,
   };
 }
 
@@ -184,6 +186,7 @@ export async function savePage(page: PageConfig): Promise<boolean> {
       show_in_nav: page.showInNav ?? true,
       nav_order: page.navOrder ?? 999,
       nav_label: page.navLabel ?? null,
+      is_archived: page.isArchived ?? false,
     };
     const { error } = await supabase.from('pages').upsert(row, { onConflict: 'id' });
     if (error) {
@@ -221,6 +224,7 @@ export async function savePages(pages: PageConfig[]): Promise<boolean> {
       show_in_nav: p.showInNav ?? true,
       nav_order: p.navOrder ?? 999,
       nav_label: p.navLabel ?? null,
+      is_archived: p.isArchived ?? false,
     }));
     const { error } = await supabase.from('pages').upsert(rows, { onConflict: 'id' });
     if (error) {

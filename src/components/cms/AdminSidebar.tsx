@@ -11,7 +11,8 @@ import {
   Music,
   ExternalLink,
   PanelLeftClose,
-  PanelLeft
+  PanelLeft,
+  Archive
 } from 'lucide-react';
 import { User } from '@/types';
 
@@ -38,6 +39,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const menuItems = [
     { id: 'overview', label: 'Dashboard', icon: <LayoutDashboard size={20}/>, roles: ['ADMIN', 'EDITOR'] },
     { id: 'pages', label: 'Page Content', icon: <FileText size={20}/>, roles: ['ADMIN', 'EDITOR'] },
+    { id: 'archive', label: 'Archive', icon: <Archive size={20}/>, roles: ['ADMIN', 'EDITOR'] },
     { id: 'users', label: 'Team & RBAC', icon: <Users size={20}/>, roles: ['ADMIN'] },
     { id: 'settings', label: 'Site Settings', icon: <Settings size={20}/>, roles: ['ADMIN'] },
   ];

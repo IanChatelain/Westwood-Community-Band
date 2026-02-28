@@ -373,6 +373,7 @@ export function createEmptyPage(title: string, slug: string, navOrder: number = 
     sidebarWidth: 25,
     showInNav: true,
     navOrder,
+    isArchived: false,
     sections: [
       {
         id: Math.random().toString(36).substring(2, 11),
