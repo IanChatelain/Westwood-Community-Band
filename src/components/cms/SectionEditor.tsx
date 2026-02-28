@@ -21,7 +21,7 @@ import { CSS } from '@dnd-kit/utilities';
 import type { PageSection, PageSectionType, PageConfig, GalleryEvent, GalleryMediaItem, DownloadItem, DownloadGroup, DownloadLink, PerformanceItem } from '@/types';
 import { ChevronDown, ChevronRight, Trash2, Plus, Upload, X, GripVertical, Image as ImageIcon, Video, ArrowRightLeft, HelpCircle } from 'lucide-react';
 import { RichTextEditor } from '@/components/cms/RichTextEditor';
-import { uploadImage, uploadRecording, uploadDocument, uploadVideo } from '@/app/actions/upload';
+import { uploadToR2 } from '@/lib/upload';
 
 const SECTION_TYPE_OPTIONS: { value: PageSectionType; label: string }[] = [
   { value: 'hero', label: 'Hero Banner' },
@@ -710,9 +710,7 @@ function GalleryMediaEditor({
     setAddImageError(null);
     setAddingImage(true);
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const result = await uploadImage(fd);
+      const result = await uploadToR2(file, 'images');
       if (result.error) {
         setAddImageError(result.error);
       } else if (result.url) {
@@ -730,9 +728,7 @@ function GalleryMediaEditor({
     setAddImageError(null);
     setAddingVideo(true);
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const result = await uploadVideo(fd);
+      const result = await uploadToR2(file, 'videos');
       if (result.error) {
         setAddImageError(result.error);
       } else if (result.url) {
@@ -959,9 +955,7 @@ function DownloadItemUploadButton({
     setUploading(true);
     try {
       const duration = await getAudioDuration(file);
-      const fd = new FormData();
-      fd.append('file', file);
-      const result = await uploadRecording(fd);
+      const result = await uploadToR2(file, 'recordings');
       if (result.error) { setError(result.error); }
       else if (result.url) {
         onUploaded(idx, {
@@ -978,9 +972,7 @@ function DownloadItemUploadButton({
     setError(null);
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const result = await uploadDocument(fd);
+      const result = await uploadToR2(file, 'documents');
       if (result.error) { setError(result.error); }
       else if (result.url) {
         onUploaded(idx, {
@@ -1206,9 +1198,7 @@ function ImageUploadField({
     setError(null);
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const result = await uploadImage(fd);
+      const result = await uploadToR2(file, 'images');
       if (result.error) {
         setError(result.error);
       } else if (result.url) {

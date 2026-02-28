@@ -3,13 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { User, UserRole } from '@/types';
 import { useAppContext } from '@/context/AppContext';
-import { createClient } from '@/lib/supabase/client';
-import { updateProfileRole } from '@/app/actions/profiles';
+import { updateProfileRole, listProfiles } from '@/app/actions/profiles';
 import { X } from 'lucide-react';
-
-function profileToUser(p: { id: string; username: string; role: string; email: string | null }): User {
-  return { id: p.id, username: p.username, role: p.role as UserRole, email: p.email ?? '' };
-}
 
 export default function UsersTab() {
   const { state } = useAppContext();
@@ -24,12 +19,16 @@ export default function UsersTab() {
   const isAdmin = currentUser?.role === UserRole.ADMIN;
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.from('profiles').select('id, username, role, email').order('username').then(({ data, error: e }) => {
+    listProfiles().then((data) => {
       setLoading(false);
-      if (!e && data) setUsers(data.map(profileToUser));
+      setUsers(data.map((p) => ({
+        id: p.id,
+        username: p.username,
+        role: p.role as UserRole,
+        email: p.email,
+      })));
     });
-  }, [editUser]); // refetch when modal closes after save
+  }, [editUser]);
 
   const handleSaveRole = async () => {
     if (!editUser) return;

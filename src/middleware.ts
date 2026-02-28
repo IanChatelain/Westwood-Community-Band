@@ -1,37 +1,33 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { jwtVerify } from 'jose';
+
+const COOKIE_NAME = 'session_token';
 
 export async function middleware(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) {
+  if (!request.nextUrl.pathname.startsWith('/admin')) {
     return NextResponse.next();
   }
 
-  let response = NextResponse.next({ request });
-
-  const supabase = createServerClient(url, key, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          response.cookies.set(name, value, options);
-        });
-      },
-    },
-  });
-
-  const { data: { session } } = await supabase.auth.getSession();
-
-  if (request.nextUrl.pathname.startsWith('/admin') && !session) {
+  const token = request.cookies.get(COOKIE_NAME)?.value;
+  if (!token) {
     const redirect = new URL('/', request.url);
     redirect.searchParams.set('login', '1');
     return NextResponse.redirect(redirect);
   }
 
-  return response;
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) {
+    return NextResponse.next();
+  }
+
+  try {
+    await jwtVerify(token, new TextEncoder().encode(secret));
+    return NextResponse.next();
+  } catch {
+    const redirect = new URL('/', request.url);
+    redirect.searchParams.set('login', '1');
+    return NextResponse.redirect(redirect);
+  }
 }
 
 export const config = {

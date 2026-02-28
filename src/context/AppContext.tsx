@@ -17,8 +17,8 @@ import { db } from '@/services/db';
 import { createEmptyPage, DEFAULT_SETTINGS, INITIAL_USERS } from '@/constants';
 import { cloneBlock } from '@/lib/builder/factory';
 import { createInitialBuilderState } from '@/lib/builder/state';
-import { createClient } from '@/lib/supabase/client';
-import { loadCmsState, saveSettings, savePages, savePage, deletePage } from '@/lib/supabase/cms';
+import { loadCmsState, saveSettings, savePages, savePage, deletePage } from '@/lib/cms';
+import { getCurrentUser, logout as logoutAction } from '@/app/actions/auth';
 
 interface AppContextType {
   state: AppState;
@@ -27,11 +27,8 @@ interface AppContextType {
   updatePage: (updatedPage: PageConfig) => Promise<boolean>;
   addPage: (title: string, slug: string, addToNav?: boolean) => PageConfig;
   removePage: (pageId: string) => void;
-  /** Persist current state to storage. Call explicitly after Save/Apply—no auto-save. */
   persist: () => Promise<boolean>;
-  /** Revert a page to a previous version (e.g. discard unsaved edits). */
   revertPage: (pageId: string, savedPage: PageConfig) => void;
-  /** Move a section from one page to another. */
   moveSectionToPage: (sectionId: string, fromPageId: string, toPageId: string) => Promise<boolean>;
   isAdminMode: boolean;
   setIsAdminMode: React.Dispatch<React.SetStateAction<boolean>>;
@@ -41,22 +38,21 @@ interface AppContextType {
   setIsLoginModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   pageBuilder: PageBuilderState;
   pageBuilderActions: PageBuilderActions;
-  /** True while initial data is being fetched from Supabase. */
   loading: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-function profileToUser(profile: { id: string; username: string; role: string; email: string | null }): User {
+function profileToUser(profile: { id: string; username: string; role: string; email: string }): User {
   return {
     id: profile.id,
     username: profile.username,
     role: profile.role as UserRole,
-    email: profile.email ?? '',
+    email: profile.email,
   };
 }
 
-const SUPABASE_ENABLED = typeof process !== 'undefined' && !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const DB_ENABLED = typeof process !== 'undefined' && !!process.env.NEXT_PUBLIC_TURSO_ENABLED;
 
 function PageLoadingSkeleton() {
   return (
@@ -97,36 +93,25 @@ function PageLoadingSkeleton() {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(() => {
-    if (SUPABASE_ENABLED) {
-      // Supabase-backed mode: start with lightweight placeholders and hydrate from Supabase only.
-      return {
-        settings: DEFAULT_SETTINGS,
-        pages: [],
-        users: INITIAL_USERS,
-        currentUser: null,
-        pageBuilder: createInitialBuilderState([]),
-      };
-    }
-
-    // Local mode (no Supabase): fall back to browser storage + defaults.
-    const base = db.load();
     return {
-      ...base,
-      pageBuilder: createInitialBuilderState(base.pages),
-      currentUser: base.currentUser,
-    } as AppState;
+      settings: DEFAULT_SETTINGS,
+      pages: [],
+      users: INITIAL_USERS,
+      currentUser: null,
+      pageBuilder: createInitialBuilderState([]),
+    };
   });
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
   const [adminTab, setAdminTab] = useState<string>('overview');
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
   const [mounted, setMounted] = useState(false);
-  const [loading, setLoading] = useState(SUPABASE_ENABLED);
+  const [loading, setLoading] = useState(true);
   const stateRef = useRef(state);
   stateRef.current = state;
 
   const persist = useCallback(async (): Promise<boolean> => {
     const s = stateRef.current;
-    if (!SUPABASE_ENABLED) {
+    if (!DB_ENABLED) {
       db.save(s);
       return true;
     }
@@ -158,58 +143,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
-    if (SUPABASE_ENABLED) {
-      loadCmsState().then((loaded) => {
-        if (loaded) {
-          setState(prev => {
-            const nextPages = loaded.pages ?? prev.pages;
-            return {
-              ...prev,
-              settings: loaded.settings ?? prev.settings,
-              pages: nextPages,
-              users: loaded.users ?? prev.users,
-              pageBuilder: createInitialBuilderState(nextPages),
-            };
-          });
-        }
-        setLoading(false);
-      });
-    } else {
-      const base = db.load();
-      setState({
-        ...base,
-        pageBuilder: createInitialBuilderState(base.pages),
-      });
+
+    loadCmsState().then((loaded) => {
+      if (loaded) {
+        setState(prev => {
+          const nextPages = loaded.pages ?? prev.pages;
+          return {
+            ...prev,
+            settings: loaded.settings ?? prev.settings,
+            pages: nextPages,
+            users: loaded.users ?? prev.users,
+            pageBuilder: createInitialBuilderState(nextPages),
+          };
+        });
+      }
       setLoading(false);
-    }
+    });
   }, []);
 
-  // No auto-save: persistence happens only when user explicitly Saves or Applies.
-
-  // Supabase auth: sync session and profile to state.currentUser.
-  // The profile (and its role) is always the single source of truth.
+  // Auth: check for existing session on mount and after login/logout
   useEffect(() => {
-    if (!mounted || !SUPABASE_ENABLED) return;
-    const supabase = createClient();
+    if (!mounted) return;
 
-    const loadProfile = async (sessionUser: { id: string; email?: string | null }) => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, username, role, email')
-        .eq('id', sessionUser.id)
-        .single();
-
-      if (error) {
-        // If there's no profile or RLS blocks access, treat as unauthenticated for now.
-        console.error('Error loading profile for user', sessionUser.id, error);
-        setState(prev => ({ ...prev, currentUser: null }));
-        return;
-      }
-
-      if (data) {
-        const user = profileToUser(data);
-        setState(prev => ({ ...prev, currentUser: user }));
-        if (user.role === UserRole.ADMIN || user.role === UserRole.EDITOR) {
+    getCurrentUser().then((user) => {
+      if (user) {
+        setState(prev => ({ ...prev, currentUser: profileToUser(user) }));
+        if (user.role === 'ADMIN' || user.role === 'EDITOR') {
           loadCmsState().then((loaded) => {
             if (loaded?.pages) {
               setState(prev => ({
@@ -223,39 +182,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } else {
         setState(prev => ({ ...prev, currentUser: null }));
       }
-    };
-
-    const clearUser = () => setState(prev => ({ ...prev, currentUser: null }));
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) loadProfile(session.user);
-      else clearUser();
     });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) loadProfile(session.user);
-      else clearUser();
-    });
-
-    return () => subscription.unsubscribe();
   }, [mounted]);
 
   const logout = useCallback(async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await logoutAction();
     setState(prev => ({ ...prev, currentUser: null }));
     setIsAdminMode(false);
-    if (SUPABASE_ENABLED) {
-      loadCmsState().then((loaded) => {
-        if (loaded?.pages) {
-          setState(prev => ({
-            ...prev,
-            pages: loaded.pages!,
-            pageBuilder: createInitialBuilderState(loaded.pages!),
-          }));
-        }
-      });
-    }
+    loadCmsState().then((loaded) => {
+      if (loaded?.pages) {
+        setState(prev => ({
+          ...prev,
+          pages: loaded.pages!,
+          pageBuilder: createInitialBuilderState(loaded.pages!),
+        }));
+      }
+    });
   }, []);
 
   const updatePage = useCallback(async (updatedPage: PageConfig): Promise<boolean> => {
@@ -310,7 +252,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         pageBuilder: createInitialBuilderState(pages),
       };
     });
-    if (SUPABASE_ENABLED) deletePage(pageId);
+    deletePage(pageId);
     setTimeout(persist, 0);
   };
 

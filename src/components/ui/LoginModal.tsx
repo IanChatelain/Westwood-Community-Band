@@ -3,12 +3,12 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
-import { createClient } from '@/lib/supabase/client';
+import { login } from '@/app/actions/auth';
 import { Lock, ArrowRight, X } from 'lucide-react';
 
 export default function LoginModal() {
   const router = useRouter();
-  const { isLoginModalOpen, setIsLoginModalOpen } = useAppContext();
+  const { isLoginModalOpen, setIsLoginModalOpen, setState } = useAppContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -20,17 +20,20 @@ export default function LoginModal() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    const result = await login(email, password);
     setLoading(false);
-    if (signInError) {
-      setError(signInError.message);
+    if (result.error) {
+      setError(result.error);
       return;
+    }
+    if (result.user) {
+      setState((prev) => ({ ...prev, currentUser: result.user ?? null }));
     }
     setIsLoginModalOpen(false);
     setEmail('');
     setPassword('');
     router.push('/admin');
+    router.refresh();
   };
 
   return (
@@ -93,7 +96,7 @@ export default function LoginModal() {
           </button>
         </form>
         <p className="text-center text-xs text-slate-500 mt-6">
-          Authorized access only. Use your Supabase Auth account.
+          Authorized access only.
         </p>
       </div>
     </div>

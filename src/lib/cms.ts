@@ -1,6 +1,8 @@
-'use client';
+'use server';
 
-import { createClient } from '@/lib/supabase/client';
+import { db } from '@/db';
+import { siteSettings, pages } from '@/db/schema';
+import { eq, asc } from 'drizzle-orm';
 import type { AppState, SiteSettings, PageConfig, PageSection, BuilderBlockType } from '@/types';
 import { DEFAULT_SETTINGS, INITIAL_PAGES, INITIAL_USERS } from '@/constants';
 
@@ -12,7 +14,6 @@ function isBuilderBlocks(arr: unknown[]): boolean {
   );
 }
 
-/** Convert legacy builder blocks back to PageSection[] so the section editor can handle them. */
 function blocksToSections(blocks: any[]): PageSection[] {
   return blocks
     .filter((b) => b && typeof b === 'object' && b.type)
@@ -89,29 +90,17 @@ function blocksToSections(blocks: any[]): PageSection[] {
     });
 }
 
-function rowToSettings(row: { band_name: string; logo_url: string; primary_color: string; secondary_color: string; footer_text: string }): SiteSettings {
+function rowToSettings(row: typeof siteSettings.$inferSelect): SiteSettings {
   return {
-    bandName: row.band_name,
-    logoUrl: row.logo_url,
-    primaryColor: row.primary_color,
-    secondaryColor: row.secondary_color,
-    footerText: row.footer_text,
+    bandName: row.bandName,
+    logoUrl: row.logoUrl,
+    primaryColor: row.primaryColor,
+    secondaryColor: row.secondaryColor,
+    footerText: row.footerText,
   };
 }
 
-function rowToPage(row: {
-  id: string;
-  title: string;
-  slug: string;
-  layout: string;
-  sidebar_width: number;
-  sections: unknown;
-  sidebar_blocks: unknown;
-  show_in_nav: boolean | null;
-  nav_order: number | null;
-  nav_label: string | null;
-  is_archived?: boolean | null;
-}): PageConfig {
+function rowToPage(row: typeof pages.$inferSelect): PageConfig {
   const sectionsData = Array.isArray(row.sections) ? row.sections : [];
   const storedAsBlocks = isBuilderBlocks(sectionsData as object[]);
 
@@ -120,51 +109,48 @@ function rowToPage(row: {
     title: row.title,
     slug: row.slug,
     layout: row.layout as PageConfig['layout'],
-    sidebarWidth: row.sidebar_width,
+    sidebarWidth: row.sidebarWidth,
     sections: storedAsBlocks ? blocksToSections(sectionsData) : (sectionsData as PageConfig['sections']),
-    sidebarBlocks: row.sidebar_blocks ? (Array.isArray(row.sidebar_blocks) ? row.sidebar_blocks as PageConfig['sidebarBlocks'] : undefined) : undefined,
-    showInNav: row.show_in_nav ?? true,
-    navOrder: row.nav_order ?? 999,
-    navLabel: row.nav_label ?? undefined,
-    isArchived: row.is_archived ?? false,
+    sidebarBlocks: row.sidebarBlocks ? (Array.isArray(row.sidebarBlocks) ? row.sidebarBlocks as PageConfig['sidebarBlocks'] : undefined) : undefined,
+    showInNav: row.showInNav ?? true,
+    navOrder: row.navOrder ?? 999,
+    navLabel: row.navLabel ?? undefined,
+    isArchived: row.isArchived ?? false,
   };
 }
 
 export async function loadCmsState(): Promise<Partial<AppState> | null> {
   try {
-    const supabase = createClient();
-    const [settingsRes, pagesRes] = await Promise.all([
-      supabase.from('site_settings').select('*').eq('id', 1).single(),
-      supabase.from('pages').select('*').order('nav_order', { ascending: true }),
+    const [settingsRows, pageRows] = await Promise.all([
+      db.select().from(siteSettings).where(eq(siteSettings.id, 1)),
+      db.select().from(pages).orderBy(asc(pages.navOrder)),
     ]);
-    if (settingsRes.error || pagesRes.error) return null;
-    const settings = settingsRes.data ? rowToSettings(settingsRes.data) : DEFAULT_SETTINGS;
-    const pages = pagesRes.data?.length ? pagesRes.data.map(rowToPage) : INITIAL_PAGES;
+
+    const settings = settingsRows.length > 0 ? rowToSettings(settingsRows[0]) : DEFAULT_SETTINGS;
+    const pageList = pageRows.length > 0 ? pageRows.map(rowToPage) : INITIAL_PAGES;
+
     return {
       settings,
-      pages,
+      pages: pageList,
       users: INITIAL_USERS,
       currentUser: null,
     };
-  } catch {
+  } catch (err) {
+    console.error('loadCmsState failed:', err);
     return null;
   }
 }
 
 export async function saveSettings(settings: SiteSettings): Promise<boolean> {
   try {
-    const supabase = createClient();
-    const { error } = await supabase.from('site_settings').update({
-      band_name: settings.bandName,
-      logo_url: settings.logoUrl,
-      primary_color: settings.primaryColor,
-      secondary_color: settings.secondaryColor,
-      footer_text: settings.footerText,
-    }).eq('id', 1);
-    if (error) {
-      console.error('saveSettings failed:', error);
-      return false;
-    }
+    await db.update(siteSettings).set({
+      bandName: settings.bandName,
+      logoUrl: settings.logoUrl,
+      primaryColor: settings.primaryColor,
+      secondaryColor: settings.secondaryColor,
+      footerText: settings.footerText,
+      updatedAt: new Date().toISOString(),
+    }).where(eq(siteSettings.id, 1));
     return true;
   } catch (err) {
     console.error('saveSettings failed:', err);
@@ -174,25 +160,35 @@ export async function saveSettings(settings: SiteSettings): Promise<boolean> {
 
 export async function savePage(page: PageConfig): Promise<boolean> {
   try {
-    const supabase = createClient();
-    const row = {
+    await db.insert(pages).values({
       id: page.id,
       title: page.title,
       slug: page.slug,
       layout: page.layout,
-      sidebar_width: page.sidebarWidth,
-      sections: page.sections,
-      sidebar_blocks: page.sidebarBlocks ?? null,
-      show_in_nav: page.showInNav ?? true,
-      nav_order: page.navOrder ?? 999,
-      nav_label: page.navLabel ?? null,
-      is_archived: page.isArchived ?? false,
-    };
-    const { error } = await supabase.from('pages').upsert(row, { onConflict: 'id' });
-    if (error) {
-      console.error('savePage failed:', error);
-      return false;
-    }
+      sidebarWidth: page.sidebarWidth,
+      sections: page.sections as unknown[],
+      sidebarBlocks: (page.sidebarBlocks ?? null) as unknown[] | null,
+      showInNav: page.showInNav ?? true,
+      navOrder: page.navOrder ?? 999,
+      navLabel: page.navLabel ?? null,
+      isArchived: page.isArchived ?? false,
+      updatedAt: new Date().toISOString(),
+    }).onConflictDoUpdate({
+      target: pages.id,
+      set: {
+        title: page.title,
+        slug: page.slug,
+        layout: page.layout,
+        sidebarWidth: page.sidebarWidth,
+        sections: page.sections as unknown[],
+        sidebarBlocks: (page.sidebarBlocks ?? null) as unknown[] | null,
+        showInNav: page.showInNav ?? true,
+        navOrder: page.navOrder ?? 999,
+        navLabel: page.navLabel ?? null,
+        isArchived: page.isArchived ?? false,
+        updatedAt: new Date().toISOString(),
+      },
+    });
     return true;
   } catch (err) {
     console.error('savePage failed:', err);
@@ -202,34 +198,45 @@ export async function savePage(page: PageConfig): Promise<boolean> {
 
 export async function deletePage(pageId: string): Promise<boolean> {
   try {
-    const supabase = createClient();
-    const { error } = await supabase.from('pages').delete().eq('id', pageId);
-    return !error;
+    await db.delete(pages).where(eq(pages.id, pageId));
+    return true;
   } catch {
     return false;
   }
 }
 
-export async function savePages(pages: PageConfig[]): Promise<boolean> {
+export async function savePages(pageList: PageConfig[]): Promise<boolean> {
   try {
-    const supabase = createClient();
-    const rows = pages.map(p => ({
-      id: p.id,
-      title: p.title,
-      slug: p.slug,
-      layout: p.layout,
-      sidebar_width: p.sidebarWidth,
-      sections: p.sections,
-      sidebar_blocks: p.sidebarBlocks ?? null,
-      show_in_nav: p.showInNav ?? true,
-      nav_order: p.navOrder ?? 999,
-      nav_label: p.navLabel ?? null,
-      is_archived: p.isArchived ?? false,
-    }));
-    const { error } = await supabase.from('pages').upsert(rows, { onConflict: 'id' });
-    if (error) {
-      console.error('savePages failed:', error);
-      return false;
+    for (const page of pageList) {
+      await db.insert(pages).values({
+        id: page.id,
+        title: page.title,
+        slug: page.slug,
+        layout: page.layout,
+        sidebarWidth: page.sidebarWidth,
+        sections: page.sections as unknown[],
+        sidebarBlocks: (page.sidebarBlocks ?? null) as unknown[] | null,
+        showInNav: page.showInNav ?? true,
+        navOrder: page.navOrder ?? 999,
+        navLabel: page.navLabel ?? null,
+        isArchived: page.isArchived ?? false,
+        updatedAt: new Date().toISOString(),
+      }).onConflictDoUpdate({
+        target: pages.id,
+        set: {
+          title: page.title,
+          slug: page.slug,
+          layout: page.layout,
+          sidebarWidth: page.sidebarWidth,
+          sections: page.sections as unknown[],
+          sidebarBlocks: (page.sidebarBlocks ?? null) as unknown[] | null,
+          showInNav: page.showInNav ?? true,
+          navOrder: page.navOrder ?? 999,
+          navLabel: page.navLabel ?? null,
+          isArchived: page.isArchived ?? false,
+          updatedAt: new Date().toISOString(),
+        },
+      });
     }
     return true;
   } catch (err) {

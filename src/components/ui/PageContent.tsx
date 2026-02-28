@@ -78,7 +78,7 @@ export function blockWrapperClassesAndStyle(s?: BlockWrapperStyle): { className:
 }
 import { Calendar, ArrowRight, Mail, MapPin, Clock, Send, FileDown, ExternalLink, Music } from 'lucide-react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { submitContactMessage } from '@/app/actions/contact';
 
 function sectionWrapperClasses(style?: SectionStyle): string {
   if (!style) return '';
@@ -176,17 +176,21 @@ function ContactSection({ section }: { section: PageSection }) {
 
     try {
       setIsSubmitting(true);
-      const supabase = createClient();
       const selected = recipients.find((r) => r.id === recipientId);
-      await supabase.from('contact_messages').insert({
-        sender_name: name.trim(),
-        sender_email: email.trim(),
+      const result = await submitContactMessage({
+        senderName: name.trim(),
+        senderEmail: email.trim(),
         subject: subject.trim() || null,
         message: message.trim(),
-        recipient_label: selected?.label ?? recipientId,
-        recipient_id: recipientId,
-        user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+        recipientLabel: selected?.label ?? recipientId,
+        recipientId,
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
       });
+
+      if (result.error) {
+        setSubmitError(result.error);
+        return;
+      }
 
       setName('');
       setEmail('');
