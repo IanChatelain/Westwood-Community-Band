@@ -48,6 +48,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
   const [revisions, setRevisions] = React.useState<PageRevisionSummary[]>([]);
   const [loadingHistory, setLoadingHistory] = React.useState(false);
   const [restoringId, setRestoringId] = React.useState<string | null>(null);
+  const [lastRestoredRevisionId, setLastRestoredRevisionId] = React.useState<string | null>(null);
 
   const normalizedSlug = newPageSlug.trim() ? `/${newPageSlug.replace(/^\//, '')}` : '';
   const slugConflict = normalizedSlug ? state.pages.some(p => p.slug === normalizedSlug) : false;
@@ -156,9 +157,11 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
       const p = { ...restored, blocks: undefined };
       setEditedPage(p);
       lastSavedRef.current = p;
-      setHistoryOpen(false);
+      setLastRestoredRevisionId(revisionId);
       setShowSavedFeedback(true);
       window.setTimeout(() => setShowSavedFeedback(false), 3000);
+      const list = await getPageRevisions(page.id);
+      setRevisions(list);
     }
   };
 
@@ -362,18 +365,31 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
                 {revisions.map((rev) => {
                   const date = new Date(rev.createdAt.endsWith('Z') ? rev.createdAt : rev.createdAt + 'Z');
                   const isRestoring = restoringId === rev.id;
+                  const isRestoredTarget = rev.id === lastRestoredRevisionId;
                   return (
                     <div
                       key={rev.id}
-                      className="flex items-center justify-between gap-3 p-3 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-colors"
+                      className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${
+                        rev.isCurrent
+                          ? 'bg-emerald-50 border-emerald-200'
+                          : isRestoredTarget
+                            ? 'bg-blue-50 border-blue-200'
+                            : 'hover:bg-slate-50 border-transparent hover:border-slate-200'
+                      }`}
                     >
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-slate-900">
+                        <p className="text-sm font-medium text-slate-900 flex items-center gap-2">
                           {date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                           {' '}
                           <span className="text-slate-500 font-normal">
                             {date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                           </span>
+                          {rev.isCurrent && (
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">Current</span>
+                          )}
+                          {isRestoredTarget && !rev.isCurrent && (
+                            <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">Restored to this version</span>
+                          )}
                         </p>
                         {rev.label && (
                           <p className="text-xs text-slate-500 truncate">{rev.label}</p>
@@ -381,11 +397,11 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
                       </div>
                       <button
                         onClick={() => handleRestore(rev.id)}
-                        disabled={isRestoring || restoringId !== null}
+                        disabled={rev.isCurrent || isRestoring || restoringId !== null}
                         className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-300 text-slate-700 hover:border-red-400 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
                       >
                         <RotateCcw size={13} className={isRestoring ? 'animate-spin' : ''} />
-                        {isRestoring ? 'Restoring...' : 'Restore'}
+                        {isRestoring ? 'Restoring...' : rev.isCurrent ? 'Current' : 'Restore'}
                       </button>
                     </div>
                   );

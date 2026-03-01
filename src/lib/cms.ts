@@ -300,22 +300,77 @@ export interface PageRevisionSummary {
   pageId: string;
   createdAt: string;
   label: string | null;
+  isCurrent: boolean;
+}
+
+const SNAPSHOT_KEYS = [
+  'id', 'title', 'slug', 'layout', 'sidebarWidth', 'sections',
+  'sidebarBlocks', 'showInNav', 'navOrder', 'navLabel', 'isArchived',
+] as const;
+
+function buildSnapshotFingerprint(obj: Record<string, unknown>): string {
+  const normalized: Record<string, unknown> = {};
+  for (const key of SNAPSHOT_KEYS) {
+    const v = obj[key];
+    normalized[key] = v === undefined ? null : v;
+  }
+  return JSON.stringify(normalized);
 }
 
 export async function getPageRevisions(pageId: string): Promise<PageRevisionSummary[]> {
   try {
-    const rows = await db
-      .select({
-        id: pageRevisions.id,
-        pageId: pageRevisions.pageId,
-        createdAt: pageRevisions.createdAt,
-        label: pageRevisions.label,
-      })
-      .from(pageRevisions)
-      .where(eq(pageRevisions.pageId, pageId))
-      .orderBy(desc(pageRevisions.createdAt))
-      .limit(MAX_REVISIONS_PER_PAGE);
-    return rows;
+    const [currentRows, revisionRows] = await Promise.all([
+      db.select().from(pages).where(eq(pages.id, pageId)),
+      db
+        .select({
+          id: pageRevisions.id,
+          pageId: pageRevisions.pageId,
+          createdAt: pageRevisions.createdAt,
+          label: pageRevisions.label,
+          snapshot: pageRevisions.snapshot,
+        })
+        .from(pageRevisions)
+        .where(eq(pageRevisions.pageId, pageId))
+        .orderBy(desc(pageRevisions.createdAt))
+        .limit(MAX_REVISIONS_PER_PAGE),
+    ]);
+
+    let currentFingerprint: string | null = null;
+    if (currentRows.length > 0) {
+      const row = currentRows[0];
+      currentFingerprint = buildSnapshotFingerprint({
+        id: row.id,
+        title: row.title,
+        slug: row.slug,
+        layout: row.layout,
+        sidebarWidth: row.sidebarWidth,
+        sections: row.sections,
+        sidebarBlocks: row.sidebarBlocks,
+        showInNav: row.showInNav,
+        navOrder: row.navOrder,
+        navLabel: row.navLabel,
+        isArchived: row.isArchived,
+      });
+    }
+
+    let foundCurrent = false;
+    return revisionRows.map((rev) => {
+      let isCurrent = false;
+      if (!foundCurrent && currentFingerprint !== null) {
+        const revFingerprint = buildSnapshotFingerprint(rev.snapshot as Record<string, unknown>);
+        if (revFingerprint === currentFingerprint) {
+          isCurrent = true;
+          foundCurrent = true;
+        }
+      }
+      return {
+        id: rev.id,
+        pageId: rev.pageId,
+        createdAt: rev.createdAt,
+        label: rev.label,
+        isCurrent,
+      };
+    });
   } catch (err) {
     console.error('getPageRevisions failed:', err);
     return [];
