@@ -1,0 +1,11 @@
+[
+  {
+    "AllowedOrigins": [
+      "https://your-vercel-app.vercel.app",
+      "http://localhost:3000"
+    ],
+    "AllowedMethods": ["GET", "PUT", "POST", "DELETE", "HEAD"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["ETag"]
+  }
+]
