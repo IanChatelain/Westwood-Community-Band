@@ -1,17 +1,21 @@
 #!/usr/bin/env node
 /**
- * Seed DB (Turso cloud or local file): site_settings (id=1) and one admin profile.
+ * Seed DB (Turso cloud or local file): site_settings (id=1), one admin profile, and optionally initial pages.
  * Requires: TURSO_DATABASE_URL; TURSO_AUTH_TOKEN only for libsql://; SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD
+ * Optional: SEED_INITIAL_PAGES=1 to seed pages from scripts/initial-pages.json when DB has no pages.
  */
 import { fileURLToPath } from 'url';
 import path from 'path';
+import fs from 'fs';
 import dotenv from 'dotenv';
 import { createClient } from '@libsql/client';
 import bcrypt from 'bcryptjs';
 
 // Load .env from project root (parent of scripts/)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
+const root = path.resolve(__dirname, '..');
+dotenv.config({ path: path.join(root, '.env') });
+dotenv.config({ path: path.join(root, '.env.local'), override: true });
 
 const rawUrl = process.env.TURSO_DATABASE_URL?.replace(/^TURSO_DATABASE_URL=/, '').trim();
 const url = rawUrl || process.env.TURSO_DATABASE_URL;
@@ -58,6 +62,43 @@ async function seed() {
     args: [seedAdminId, adminEmail, passwordHash, now],
   });
   console.log('Admin profile: ok (id:', seedAdminId + ', email:', adminEmail + ')');
+
+  // 3. Optional: seed initial pages when DB has none (e.g. fresh local/production)
+  const seedPages = process.env.SEED_INITIAL_PAGES === '1' || process.env.SEED_INITIAL_PAGES === 'true';
+  if (seedPages) {
+    const countResult = await client.execute({ sql: 'SELECT COUNT(*) as n FROM pages' });
+    const pageCount = countResult.rows[0]?.n ?? 0;
+    if (pageCount === 0) {
+      const pagesPath = path.join(__dirname, 'initial-pages.json');
+      if (fs.existsSync(pagesPath)) {
+        const pages = JSON.parse(fs.readFileSync(pagesPath, 'utf-8'));
+        for (const p of pages) {
+          await client.execute({
+            sql: `INSERT INTO pages (id, title, slug, layout, sidebar_width, sections, sidebar_blocks, show_in_nav, nav_order, nav_label, is_archived, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
+            args: [
+              p.id,
+              p.title,
+              p.slug,
+              p.layout || 'full',
+              p.sidebarWidth ?? 25,
+              JSON.stringify(p.sections || []),
+              p.sidebarBlocks ? JSON.stringify(p.sidebarBlocks) : null,
+              p.showInNav !== false ? 1 : 0,
+              p.navOrder ?? 999,
+              p.navLabel ?? null,
+              now,
+            ],
+          });
+        }
+        console.log('Initial pages: ok (' + pages.length + ' pages)');
+      } else {
+        console.log('Initial pages: skipped (initial-pages.json not found)');
+      }
+    } else {
+      console.log('Initial pages: skipped (pages already exist)');
+    }
+  }
 
   console.log('Seed done.');
 }

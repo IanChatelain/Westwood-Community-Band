@@ -1,0 +1,141 @@
+[
+  {
+    "id": "home",
+    "title": "Home",
+    "slug": "/",
+    "layout": "full",
+    "sidebarWidth": 25,
+    "showInNav": true,
+    "navOrder": 0,
+    "sections": [
+      {
+        "id": "h1",
+        "type": "hero",
+        "title": "Forty-five Years of Making Music",
+        "content": "The Westwood Community Band is based in Winnipeg, Manitoba, Canada. Since 1980, we have been bringing quality music to our local community.",
+        "imageUrl": "/images/band-hero.jpg"
+      },
+      {
+        "id": "h2",
+        "type": "text",
+        "title": "Our History",
+        "content": "In 1980, the band director of Sansome School challenged the parents of his band students to form their own group, with the purpose of leading by example. A number of these parents responded and their on-going dedication, boosted by a steady input of new members, has blossomed into the Westwood Community Band. Some of those original parents are still enthusiastic members!"
+      },
+      {
+        "id": "h3",
+        "type": "text",
+        "title": "Our Mission",
+        "content": "The Band's objectives are to play good music and offer musical entertainment to the wider community. The Band welcomes adults, beginners through to accomplished musicians, who play woodwind, brass, or percussion instruments. We practice from September – June, Thursday nights at John Taylor Collegiate."
+      },
+      {
+        "id": "h4",
+        "type": "text",
+        "title": "Join Us",
+        "content": "This is a friendly environment. New members are welcome to sit in for a couple of nights with no commitment necessary. You will soon feel at home! If you are considering joining us or if you would like to book Westwood Community Band to play at an event, please contact us."
+      }
+    ]
+  },
+  {
+    "id": "performances",
+    "title": "Performances 2024/25",
+    "slug": "/performances",
+    "layout": "full",
+    "sidebarWidth": 25,
+    "showInNav": true,
+    "navOrder": 1,
+    "navLabel": "Performances",
+    "sections": [
+      {
+        "id": "p1",
+        "type": "hero",
+        "title": "Upcoming Performances",
+        "content": "Join us at our upcoming concerts and events throughout the 2024/25 season.",
+        "imageUrl": "/images/performance.jpg"
+      },
+      {
+        "id": "p2",
+        "type": "performances",
+        "title": "Concert Schedule",
+        "content": "",
+        "performanceItems": [
+          { "id": "perf-1", "date": "March 15, 2025", "title": "Spring Concert", "venue": "John Taylor Collegiate", "time": "7:00 PM", "description": "Join us for an evening of classic and contemporary concert band music." },
+          { "id": "perf-2", "date": "May 20, 2025", "title": "Community Showcase", "venue": "Assiniboine Park Bandstand", "time": "2:00 PM", "description": "A free outdoor performance for the whole community." },
+          { "id": "perf-3", "date": "June 12, 2025", "title": "Season Finale", "venue": "John Taylor Collegiate", "time": "7:00 PM", "description": "Celebrate the end of our 2024/25 season with a grand finale concert." }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "media",
+    "title": "Media",
+    "slug": "/media",
+    "layout": "full",
+    "sidebarWidth": 25,
+    "showInNav": true,
+    "navOrder": 2,
+    "sections": [
+      {
+        "id": "m1",
+        "type": "hero",
+        "title": "Photos, Recordings & Videos",
+        "content": "Browse photos from our concerts, listen to recordings, and watch videos of the Westwood Community Band.",
+        "imageUrl": "/images/media.jpg"
+      },
+      { "id": "m2-photos", "type": "gallery", "title": "Photos", "content": "", "galleryEvents": [], "galleryColumns": 3, "galleryCardSize": "md", "galleryThumbnailAspect": "landscape", "galleryShowDescription": true },
+      { "id": "m2-recordings", "type": "audio-playlist", "title": "Recordings", "content": "", "audioItems": [] },
+      { "id": "m2-videos", "type": "video-gallery", "title": "Videos", "content": "", "videoItems": [] },
+      {
+        "id": "m3",
+        "type": "text",
+        "title": "International Music Camp",
+        "content": "The <a href=\"http://www.internationalmusiccamp.com/\" target=\"_blank\" rel=\"noopener noreferrer\">International Music Camp</a> is an annual event for students and adults that takes place at the International Peace Gardens on the border between Manitoba and North Dakota."
+      }
+    ]
+  },
+  {
+    "id": "join",
+    "title": "Join Us",
+    "slug": "/join",
+    "layout": "sidebar-right",
+    "sidebarWidth": 35,
+    "showInNav": true,
+    "navOrder": 5,
+    "sidebarBlocks": [
+      { "id": "sb-rehearsals", "type": "rehearsals", "order": 0 },
+      { "id": "sb-fees", "type": "fees", "order": 1 },
+      { "id": "sb-contact", "type": "contact", "order": 2 }
+    ],
+    "sections": [
+      { "id": "j1", "type": "text", "title": "Welcome New Members", "content": "The Band welcomes adults, beginners through to accomplished musicians. New members are welcome to sit-in for a couple of nights with no commitment necessary." },
+      { "id": "j2", "type": "text", "title": "Rehearsals", "content": "Thursday Evenings, 7:15 to 9:15 p.m.\n\nThe Band Room\nJohn Taylor Collegiate\\n470 Hamilton Avenue\\nWinnipeg, Manitoba" },
+      { "id": "j3", "type": "text", "title": "Membership", "content": "Band Season is from September to June.\nAnnual fee $100.00\nStudents $50.00" }
+    ]
+  },
+  {
+    "id": "contact",
+    "title": "Contact",
+    "slug": "/contact",
+    "layout": "sidebar-right",
+    "sidebarWidth": 40,
+    "showInNav": true,
+    "navOrder": 6,
+    "sidebarBlocks": [
+      { "id": "sb-rehearsals", "type": "rehearsals", "order": 0 },
+      { "id": "sb-fees", "type": "fees", "order": 1 },
+      { "id": "sb-contact", "type": "contact", "order": 2 }
+    ],
+    "sections": [
+      {
+        "id": "c1",
+        "type": "contact",
+        "title": "Contact the Band",
+        "content": "If you have questions about the band, use the form to contact us!",
+        "contactRecipients": [
+          { "id": "president", "label": "President" },
+          { "id": "music-director", "label": "Music Director" },
+          { "id": "booking", "label": "Booking" }
+        ]
+      }
+    ]
+  }
+]

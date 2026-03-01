@@ -736,16 +736,28 @@ function GallerySection({ section, pageSlug }: { section: PageSection; pageSlug:
 
 type SectionBlock = { type: 'single'; section: PageSection } | { type: 'group'; sections: PageSection[] };
 
-/** Groups consecutive sections that share a tabGroup into a single tab group; others stay as single sections. */
+const MEDIA_SECTION_TYPES = ['gallery', 'audio-playlist', 'video-gallery'] as const;
+const DEFAULT_TAB_LABELS: Record<string, string> = {
+  gallery: 'Photos',
+  'audio-playlist': 'Recordings',
+  'video-gallery': 'Videos',
+};
+
+function getMediaSectionTabLabel(section: PageSection): string {
+  if (section.title?.trim()) return section.title.trim();
+  return DEFAULT_TAB_LABELS[section.type] ?? section.type ?? 'Tab';
+}
+
+/** Groups consecutive sections of type gallery | audio-playlist | video-gallery into a single tab group; others stay as single sections. */
 function groupSectionsIntoTabGroups(sections: PageSection[]): SectionBlock[] {
   const result: SectionBlock[] = [];
   let i = 0;
   while (i < sections.length) {
     const section = sections[i];
-    if (section.tabGroup && section.tabGroup.trim() !== '') {
+    const isMediaType = MEDIA_SECTION_TYPES.some((t) => section.type === t);
+    if (isMediaType) {
       const group: PageSection[] = [];
-      const groupName = section.tabGroup.trim();
-      while (i < sections.length && sections[i].tabGroup?.trim() === groupName) {
+      while (i < sections.length && MEDIA_SECTION_TYPES.some((t) => sections[i].type === t)) {
         group.push(sections[i]);
         i++;
       }
@@ -761,7 +773,7 @@ function groupSectionsIntoTabGroups(sections: PageSection[]): SectionBlock[] {
 function TabGroupContainer({ sections, page, renderSectionContent }: { sections: PageSection[]; page: PageConfig; renderSectionContent: (section: PageSection) => React.ReactNode }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const active = sections[activeIndex];
-  const tabs = sections.map((s, idx) => ({ label: s.tabLabel?.trim() || s.title || 'Tab', index: idx }));
+  const tabs = sections.map((s, idx) => ({ label: getMediaSectionTabLabel(s), index: idx }));
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">

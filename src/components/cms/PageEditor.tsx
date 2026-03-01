@@ -43,20 +43,30 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
   const [sidebarEditorOpen, setSidebarEditorOpen] = React.useState(false);
   const [moveToNewPageSectionId, setMoveToNewPageSectionId] = React.useState<string | null>(null);
   const [newPageTitle, setNewPageTitle] = React.useState('');
-  const [newPageSlug, setNewPageSlug] = React.useState('');
   const [historyOpen, setHistoryOpen] = React.useState(false);
   const [revisions, setRevisions] = React.useState<PageRevisionSummary[]>([]);
   const [loadingHistory, setLoadingHistory] = React.useState(false);
   const [restoringId, setRestoringId] = React.useState<string | null>(null);
   const [lastRestoredRevisionId, setLastRestoredRevisionId] = React.useState<string | null>(null);
 
-  const normalizedSlug = newPageSlug.trim() ? `/${newPageSlug.replace(/^\//, '')}` : '';
-  const slugConflict = normalizedSlug ? state.pages.some(p => p.slug === normalizedSlug) : false;
+  function slugify(text: string): string {
+    return text
+      .toLowerCase()
+      .replace(/['']/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
 
   const handleMoveToNewPage = async () => {
-    if (!moveToNewPageSectionId || slugConflict) return;
+    if (!moveToNewPageSectionId) return;
     const title = newPageTitle.trim() || 'New Page';
-    const slug = normalizedSlug || `/${Math.random().toString(36).slice(2, 8)}`;
+    let baseSlug = slugify(title) || 'page';
+    let slug = `/${baseSlug}`;
+    let suffix = 1;
+    while (state.pages.some(p => p.slug === slug)) {
+      slug = `/${baseSlug}-${suffix}`;
+      suffix++;
+    }
     const newPage = addPage(title, slug, true);
     const ok = await moveSectionToPage(moveToNewPageSectionId, page.id, newPage.id);
     if (ok) {
@@ -67,7 +77,6 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
     }
     setMoveToNewPageSectionId(null);
     setNewPageTitle('');
-    setNewPageSlug('');
     setAdminTab(`edit-page-${newPage.id}`);
   };
 
@@ -336,7 +345,6 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
             onMoveSectionToNewPage={(sectionId) => {
               setMoveToNewPageSectionId(sectionId);
               setNewPageTitle('');
-              setNewPageSlug('');
             }}
           />
         </div>
@@ -431,25 +439,12 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
                 autoFocus
               />
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">URL path</label>
-              <input
-                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-slate-900"
-                value={newPageSlug}
-                onChange={(e) => setNewPageSlug(e.target.value.replace(/\s/g, '').toLowerCase())}
-                placeholder="e.g. about (becomes /about)"
-              />
-              <p className="text-xs text-slate-500 mt-1">
-                Page URL will be /{newPageSlug || '\u2026'}.
-              </p>
-              {slugConflict && (
-                <p className="text-xs text-red-600 mt-1">A page with this URL already exists.</p>
-              )}
-            </div>
+            <p className="text-xs text-slate-500">
+              URL will be /{newPageTitle.trim() ? (slugify(newPageTitle.trim()) || '\u2026') : '\u2026'}
+            </p>
             <div className="flex gap-2 pt-1">
               <button
                 onClick={handleMoveToNewPage}
-                disabled={slugConflict}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg"
               >
                 Create page &amp; move section

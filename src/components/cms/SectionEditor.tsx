@@ -314,13 +314,11 @@ function SortableSectionItem({
   const currentH = section.minHeight ?? defaultH;
   const panelId = `${section.id}-panel`;
 
-  const hasTabGroup = section.tabGroup != null && section.tabGroup.trim() !== '';
-
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`border border-slate-200 rounded-lg overflow-hidden bg-white ${hasTabGroup ? 'border-l-4 border-l-blue-500' : ''}`}
+      className="border border-slate-200 rounded-lg overflow-hidden bg-white"
       role="listitem"
       aria-label={`${displayTitle} (${typeLabel}) section`}
     >
@@ -424,29 +422,6 @@ function SortableSectionItem({
               onChange={(e) => onUpdate({ title: e.target.value })}
               placeholder="Section title"
             />
-          </div>
-          <div className="pt-2 border-t border-slate-100 space-y-2">
-            <p className="text-[10px] font-bold text-slate-700 uppercase">Tab group</p>
-            <div>
-              <label className="block text-[10px] text-slate-600 mb-0.5">Group name</label>
-              <input
-                type="text"
-                className={inputClass}
-                value={section.tabGroup ?? ''}
-                onChange={(e) => onUpdate({ tabGroup: e.target.value.trim() || undefined })}
-                placeholder="e.g. media (sections with same name become tabs)"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] text-slate-600 mb-0.5">Tab label</label>
-              <input
-                type="text"
-                className={inputClass}
-                value={section.tabLabel ?? ''}
-                onChange={(e) => onUpdate({ tabLabel: e.target.value.trim() || undefined })}
-                placeholder="Label on tab (defaults to title)"
-              />
-            </div>
           </div>
           {section.type !== 'gallery' && section.type !== 'separator' && (
             <div>
@@ -706,18 +681,10 @@ function GalleryEventsEditor({
                     value={ev.title}
                     onChange={(e) => {
                       const title = e.target.value;
-                      const updates: Partial<GalleryEvent> = { title };
-                      if (ev.slug === slugify(ev.title) || !ev.slug || ev.slug === 'new-event') {
-                        updates.slug = slugify(title);
-                      }
-                      updateEvent(ev.id, updates);
+                      updateEvent(ev.id, { title, slug: slugify(title) || 'untitled' });
                     }}
                     placeholder="Event title"
                   />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-700 uppercase mb-0.5">Slug</label>
-                  <input type="text" className={inputClass} value={ev.slug} onChange={(e) => updateEvent(ev.id, { slug: slugify(e.target.value) })} placeholder="event-slug" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-slate-700 uppercase mb-0.5">Description</label>

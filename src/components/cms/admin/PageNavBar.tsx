@@ -24,20 +24,30 @@ export default function PageNavBar({
   const activePages = pages.filter((p) => p.isArchived !== true);
   const [showAddPage, setShowAddPage] = useState(false);
   const [newPageTitle, setNewPageTitle] = useState('');
-  const [newPageSlug, setNewPageSlug] = useState('');
+  const [addToNav, setAddToNav] = useState(true);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  function slugify(text: string): string {
+    return text
+      .toLowerCase()
+      .replace(/['']/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
 
   const handleAddPage = () => {
     const title = newPageTitle.trim() || 'New Page';
-    const slug = newPageSlug.trim() ? `/${newPageSlug.replace(/^\//, '')}` : `/${Math.random().toString(36).slice(2, 8)}`;
-    if (pages.some((p) => p.slug === slug)) {
-      alert('A page with this URL already exists. Choose a different path.');
-      return;
+    let baseSlug = slugify(title) || 'page';
+    let slug = `/${baseSlug}`;
+    let suffix = 1;
+    while (pages.some((p) => p.slug === slug)) {
+      slug = `/${baseSlug}-${suffix}`;
+      suffix++;
     }
-    const newPage = onAddPage(title, slug, true);
+    const newPage = onAddPage(title, slug, addToNav);
     setShowAddPage(false);
     setNewPageTitle('');
-    setNewPageSlug('');
+    setAddToNav(true);
     onSetAdminTab(`edit-page-${newPage.id}`);
   };
 
@@ -46,7 +56,6 @@ export default function PageNavBar({
       <button
         onClick={() => {
           setNewPageTitle('');
-          setNewPageSlug('');
           setShowAddPage(true);
         }}
         className="px-4 py-2 rounded-lg text-sm font-bold text-white bg-red-600 hover:bg-red-700 shadow-sm flex items-center gap-2"
@@ -105,17 +114,19 @@ export default function PageNavBar({
               onChange={(e) => setNewPageTitle(e.target.value)}
               placeholder="e.g. About Us"
             />
+            <p className="text-xs text-slate-500 mt-1">
+              URL will be /{newPageTitle.trim() ? slugify(newPageTitle.trim()) || '…' : '…'}
+            </p>
           </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">URL path</label>
+          <label className="flex items-center gap-2 cursor-pointer">
             <input
-              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-slate-900"
-              value={newPageSlug}
-              onChange={(e) => setNewPageSlug(e.target.value.replace(/\s/g, '').toLowerCase())}
-              placeholder="e.g. about (becomes /about)"
+              type="checkbox"
+              checked={addToNav}
+              onChange={(e) => setAddToNav(e.target.checked)}
+              className="rounded border-slate-300 text-red-600 focus:ring-red-500"
             />
-            <p className="text-xs text-slate-500 mt-1">Letters and numbers only. Page URL will be /{newPageSlug || '…'}.</p>
-          </div>
+            <span className="text-sm text-slate-700">Show in navigation</span>
+          </label>
           <div className="flex gap-2">
             <button onClick={handleAddPage} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg">
               Add page

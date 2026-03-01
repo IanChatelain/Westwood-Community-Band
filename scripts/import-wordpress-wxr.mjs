@@ -1,40 +1,93 @@
 #!/usr/bin/env node
-import 'dotenv/config';
-
 /**
- * WordPress WXR → Supabase CMS Import
+ * WordPress WXR → Turso + R2 CMS Import
  *
- * Downloads every attachment, uploads it to the cms-uploads bucket using
- * the same folder convention the CMS uses (images/, recordings/, videos/,
- * documents/), then updates the pages table with section JSON that
- * references the new Storage URLs.
+ * Downloads every attachment, uploads it to R2 using the same folder convention
+ * the CMS uses (images/, recordings/, videos/, documents/), then upserts the
+ * media pages into Turso with section JSON referencing the new R2 URLs.
  *
  * Usage:
  *   node scripts/import-wordpress-wxr.mjs [path-to-wxr.xml]
  *
- * Required env vars (from .env.local or shell):
- *   NEXT_PUBLIC_SUPABASE_URL
- *   SUPABASE_SERVICE_ROLE_KEY          (bypasses RLS)
+ * Required env vars (from .env or shell):
+ *   TURSO_DATABASE_URL      (libsql://... or file:.data/local.db)
+ *   TURSO_AUTH_TOKEN        (required for cloud Turso; omit for file:)
+ *   R2_ACCOUNT_ID
+ *   R2_ACCESS_KEY_ID
+ *   R2_SECRET_ACCESS_KEY
+ *   R2_BUCKET_NAME
+ *   R2_PUBLIC_URL
  */
 
+import dotenv from 'dotenv';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { XMLParser } from 'fast-xml-parser';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@libsql/client';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import * as cheerio from 'cheerio';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(__dirname, '..');
+dotenv.config({ path: path.join(root, '.env') });
+dotenv.config({ path: path.join(root, '.env.local'), override: true });
+const OLD_SITE_ARCHIVE_BASE = 'https://www.westwoodcommunityband.ca/old-site-archive/';
+
 // ─── env ─────────────────────────────────────────────────────────────────────
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!SUPABASE_URL || !SERVICE_KEY) {
-  console.error('Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
+const rawUrl = (process.env.TURSO_DATABASE_URL || '').replace(/^TURSO_DATABASE_URL=/, '').trim();
+const tursoUrl = rawUrl || process.env.TURSO_DATABASE_URL;
+const tursoToken = process.env.TURSO_AUTH_TOKEN;
+const isLocalFile = tursoUrl?.startsWith('file:');
+
+const r2AccountId = process.env.R2_ACCOUNT_ID;
+const r2AccessKey = process.env.R2_ACCESS_KEY_ID;
+const r2SecretKey = process.env.R2_SECRET_ACCESS_KEY;
+const r2Bucket = process.env.R2_BUCKET_NAME || 'cms-uploads';
+const r2PublicUrl = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '');
+const s3Endpoint = process.env.S3_ENDPOINT || process.env.R2_LOCAL_ENDPOINT;
+
+if (!tursoUrl) {
+  console.error('Set TURSO_DATABASE_URL');
   process.exit(1);
 }
-const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
-const BUCKET = 'cms-uploads';
-const OLD_SITE_ARCHIVE_BASE = 'https://www.westwoodcommunityband.ca/old-site-archive/';
+if (!isLocalFile && !tursoToken) {
+  console.error('TURSO_AUTH_TOKEN is required for cloud Turso (libsql://...)');
+  process.exit(1);
+}
+if (!s3Endpoint && (!r2AccountId || !r2AccessKey || !r2SecretKey)) {
+  console.error('Set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY for cloud R2');
+  process.exit(1);
+}
+if (!r2PublicUrl) {
+  console.error('Set R2_PUBLIC_URL (base URL for public object access)');
+  process.exit(1);
+}
+
+// Turso client
+const turso = createClient(
+  isLocalFile ? { url: tursoUrl } : { url: tursoUrl, authToken: tursoToken }
+);
+
+// R2/S3 client
+let s3Client;
+if (s3Endpoint) {
+  s3Client = new S3Client({
+    region: 'us-east-1',
+    endpoint: s3Endpoint,
+    credentials: {
+      accessKeyId: r2AccessKey || process.env.MINIO_ROOT_USER,
+      secretAccessKey: r2SecretKey || process.env.MINIO_ROOT_PASSWORD,
+    },
+    forcePathStyle: true,
+  });
+} else {
+  s3Client = new S3Client({
+    region: 'auto',
+    endpoint: `https://${r2AccountId}.r2.cloudflarestorage.com`,
+    credentials: { accessKeyId: r2AccessKey, secretAccessKey: r2SecretKey },
+  });
+}
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -157,16 +210,20 @@ async function downloadBuffer(url, retries = 3) {
 }
 
 async function uploadToStorage(buffer, storagePath, contentType) {
-  const { error } = await supabase.storage.from(BUCKET).upload(storagePath, buffer, {
-    contentType,
-    upsert: true,
-  });
-  if (error) {
-    console.error(`  ✗ upload failed ${storagePath}: ${error.message}`);
+  try {
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: r2Bucket,
+        Key: storagePath,
+        Body: buffer,
+        ContentType: contentType,
+      })
+    );
+    return `${r2PublicUrl}/${storagePath}`;
+  } catch (err) {
+    console.error(`  ✗ upload failed ${storagePath}: ${err.message}`);
     return null;
   }
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(storagePath);
-  return data.publicUrl;
 }
 
 function sanitizeFilename(name) {
@@ -692,26 +749,53 @@ async function main() {
     console.log(`\nWrote unassigned manifest: ${manifestPath} (${unassigned.length} items)`);
   }
 
-  // ─── Upsert into Supabase ──────────────────────────────────────────────────
+  // ─── Upsert into Turso ─────────────────────────────────────────────────────
 
-  console.log('\n═══ Upserting media pages into Supabase ═══');
+  console.log('\n═══ Upserting media pages into Turso ═══');
 
   // IMPORTANT:
   // Only upsert pages whose primary content is media (photos, media, documents).
   // Do NOT touch text-heavy pages (home, join, contact, imc, performances),
   // so that any edits made through the CMS are preserved.
   const pageUpserts = [
-    { id: 'media', title: 'Media', slug: '/media', layout: 'full', sidebar_width: 25, sections: mediaSections, show_in_nav: true, nav_order: 2, nav_label: null },
-    { id: 'photos', title: 'Photos', slug: '/photos', layout: 'full', sidebar_width: 25, sections: photosSections, show_in_nav: true, nav_order: 4, nav_label: null },
-    { id: 'documents', title: 'Documents', slug: '/documents', layout: 'full', sidebar_width: 25, sections: documentsSections, show_in_nav: false, nav_order: 9, nav_label: null },
+    { id: 'media', title: 'Media', slug: '/media', layout: 'full', sidebar_width: 25, sections: mediaSections, show_in_nav: 1, nav_order: 2, nav_label: null },
+    { id: 'photos', title: 'Photos', slug: '/photos', layout: 'full', sidebar_width: 25, sections: photosSections, show_in_nav: 1, nav_order: 4, nav_label: null },
+    { id: 'documents', title: 'Documents', slug: '/documents', layout: 'full', sidebar_width: 25, sections: documentsSections, show_in_nav: 0, nav_order: 9, nav_label: null },
   ];
 
+  const now = new Date().toISOString();
   for (const page of pageUpserts) {
-    const { error } = await supabase.from('pages').upsert(page, { onConflict: 'id' });
-    if (error) {
-      console.error(`  ✗ Failed to upsert page "${page.id}": ${error.message}`);
-    } else {
+    try {
+      const sectionsJson = JSON.stringify(page.sections);
+      await turso.execute({
+        sql: `INSERT INTO pages (id, title, slug, layout, sidebar_width, sections, show_in_nav, nav_order, nav_label, is_archived, updated_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+              ON CONFLICT(id) DO UPDATE SET
+                title = excluded.title,
+                slug = excluded.slug,
+                layout = excluded.layout,
+                sidebar_width = excluded.sidebar_width,
+                sections = excluded.sections,
+                show_in_nav = excluded.show_in_nav,
+                nav_order = excluded.nav_order,
+                nav_label = excluded.nav_label,
+                updated_at = excluded.updated_at`,
+        args: [
+          page.id,
+          page.title,
+          page.slug,
+          page.layout,
+          page.sidebar_width,
+          sectionsJson,
+          page.show_in_nav,
+          page.nav_order,
+          page.nav_label,
+          now,
+        ],
+      });
       console.log(`  ✓ ${page.id} (${page.title})`);
+    } catch (err) {
+      console.error(`  ✗ Failed to upsert page "${page.id}": ${err.message}`);
     }
   }
 
