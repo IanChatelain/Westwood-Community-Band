@@ -33,7 +33,7 @@ export interface SectionStyle {
   imageSize?: 'small' | 'medium' | 'large';
 }
 
-export type PageSectionType = 'hero' | 'text' | 'image-text' | 'gallery' | 'contact' | 'schedule' | 'performances' | 'table' | 'separator' | 'downloads' | 'media-hub';
+export type PageSectionType = 'hero' | 'text' | 'image-text' | 'gallery' | 'contact' | 'schedule' | 'performances' | 'table' | 'separator' | 'downloads' | 'audio-playlist' | 'video-gallery';
 
 export interface PerformanceItem {
   id: string;
@@ -116,12 +116,14 @@ export interface PageSection {
   downloadGroups?: DownloadGroup[];
   /** For type === 'performances': structured performance/concert entries. */
   performanceItems?: PerformanceItem[];
-  /** For type === 'media-hub': photo album events (reuses GalleryEvent). */
-  mediaPhotos?: GalleryEvent[];
-  /** For type === 'media-hub': audio recordings. */
-  mediaRecordings?: GalleryMediaItem[];
-  /** For type === 'media-hub': video items. */
-  mediaVideos?: GalleryMediaItem[];
+  /** Tab grouping: sections with the same tabGroup render as tabs. */
+  tabGroup?: string;
+  /** Label shown on the tab (defaults to section title). */
+  tabLabel?: string;
+  /** For type === 'audio-playlist': list of audio items. */
+  audioItems?: GalleryMediaItem[];
+  /** For type === 'video-gallery': list of video items. */
+  videoItems?: GalleryMediaItem[];
 }
 
 export type SidebarBlockType = 'rehearsals' | 'fees' | 'contact' | 'custom';

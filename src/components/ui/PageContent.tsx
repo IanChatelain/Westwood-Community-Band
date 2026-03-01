@@ -463,8 +463,6 @@ export function BuilderBlockView({ block }: { block: BuilderBlock }) {
   return null;
 }
 
-type MediaHubTab = 'photos' | 'recordings' | 'videos';
-
 function MediaHubAudioPlayer({ item }: { item: GalleryMediaItem }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -548,22 +546,8 @@ function isDirectVideoUrl(url: string): boolean {
   } catch { return false; }
 }
 
-function MediaHubSection({ section, pageSlug }: { section: PageSection; pageSlug: string }) {
-  const photos = section.mediaPhotos ?? [];
-  const recordings = section.mediaRecordings ?? [];
-  const videos = section.mediaVideos ?? [];
-
-  const tabs: { key: MediaHubTab; label: string; icon: React.ReactNode; count: number }[] = [];
-  if (photos.length > 0) tabs.push({ key: 'photos', label: 'Photos', icon: <ImageIcon size={18} />, count: photos.reduce((n, ev) => n + ev.media.filter(m => m.type === 'image').length, 0) || photos.length });
-  if (recordings.length > 0) tabs.push({ key: 'recordings', label: 'Recordings', icon: <Music size={18} />, count: recordings.length });
-  if (videos.length > 0) tabs.push({ key: 'videos', label: 'Videos', icon: <Video size={18} />, count: videos.length });
-
-  const defaultTab = tabs.length > 0 ? tabs[0].key : 'photos';
-  const [activeTab, setActiveTab] = useState<MediaHubTab>(defaultTab);
-
-  const basePath = pageSlug === '/' ? '' : pageSlug;
-  const hasAny = photos.length > 0 || recordings.length > 0 || videos.length > 0;
-
+function AudioPlaylistSection({ section }: { section: PageSection }) {
+  const items = section.audioItems ?? [];
   return (
     <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm ring-1 ring-slate-900/5" style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
       {section.title && (
@@ -572,117 +556,80 @@ function MediaHubSection({ section, pageSlug }: { section: PageSection; pageSlug
       {section.content && (
         <p className="text-slate-600 mb-6 pl-6 ml-1">{section.content}</p>
       )}
-
-      {!hasAny && (
+      {items.length > 0 ? (
+        <div className="space-y-3 max-w-3xl">
+          {items.map((item) => (
+            <MediaHubAudioPlayer key={item.id} item={item} />
+          ))}
+        </div>
+      ) : (
         <div className="text-center py-12 text-slate-400">
           <Music className="mx-auto mb-3 opacity-50" size={36} />
-          <p className="text-sm">No media yet. Add photos, recordings, or videos via the admin panel.</p>
+          <p className="text-sm">No recordings yet. Add audio via the admin panel.</p>
         </div>
       )}
+    </div>
+  );
+}
 
-      {hasAny && (
-        <>
-          {/* Tab bar */}
-          {tabs.length > 1 && (
-            <div className="mb-8">
-              <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
-                {tabs.map((tab) => (
-                  <button key={tab.key} type="button" onClick={() => setActiveTab(tab.key)} className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === tab.key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}>
-                    {tab.icon}
-                    {tab.label}
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.key ? 'bg-red-800 text-white' : 'bg-slate-200 text-slate-600'}`}>{tab.count}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Photos tab: grid of album cards */}
-          {activeTab === 'photos' && photos.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {photos.map((ev) => (
-                <Link key={ev.id} href={`${basePath}/${ev.slug}`} className="group block rounded-xl overflow-hidden border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all bg-white">
-                  <div className="aspect-[4/3] bg-slate-100 overflow-hidden">
-                    {ev.coverImageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={ev.coverImageUrl} alt={ev.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                    ) : ev.media.length > 0 && ev.media[0].type === 'image' && ev.media[0].url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={ev.media[0].url} alt={ev.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-300">
-                        <ImageIcon size={48} />
-                      </div>
-                    )}
+function VideoGallerySection({ section }: { section: PageSection }) {
+  const videos = section.videoItems ?? [];
+  return (
+    <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm ring-1 ring-slate-900/5" style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
+      {section.title && (
+        <h3 className="text-2xl font-bold text-slate-900 mb-2 border-l-4 border-red-800 pl-6">{section.title}</h3>
+      )}
+      {section.content && (
+        <p className="text-slate-600 mb-6 pl-6 ml-1">{section.content}</p>
+      )}
+      {videos.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {videos.map((item) => {
+            const embedUrl = parseVideoEmbedUrl(item.url);
+            if (embedUrl) {
+              return (
+                <div key={item.id} className="rounded-xl overflow-hidden border border-slate-200 bg-black shadow-sm">
+                  <div className="aspect-video">
+                    <iframe src={embedUrl} title={item.caption || 'Video'} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
                   </div>
-                  <div className="p-4">
-                    <h4 className="font-semibold text-slate-900 group-hover:text-red-800 transition-colors">{ev.title}</h4>
-                    {ev.description && <p className="text-sm text-slate-500 mt-1 line-clamp-2">{ev.description}</p>}
-                    {ev.media.length > 0 && (
-                      <p className="text-xs text-slate-400 mt-2">{ev.media.filter(m => m.type === 'image').length} photos</p>
-                    )}
+                  {item.caption && (
+                    <div className="px-4 py-3 bg-white border-t border-slate-200">
+                      <p className="text-sm font-medium text-slate-800">{item.caption}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            if (isDirectVideoUrl(item.url)) {
+              return (
+                <div key={item.id} className="rounded-xl overflow-hidden border border-slate-200 bg-black shadow-sm">
+                  {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                  <video src={item.url} controls preload="metadata" className="w-full aspect-video" />
+                  {item.caption && (
+                    <div className="px-4 py-3 bg-white border-t border-slate-200">
+                      <p className="text-sm font-medium text-slate-800">{item.caption}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            return (
+              <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer" className="group relative aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all flex items-center justify-center">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                    <Play size={28} className="text-white/80 group-hover:text-white transition-colors ml-1" />
                   </div>
-                </Link>
-              ))}
-            </div>
-          )}
-
-          {/* Recordings tab: audio players */}
-          {activeTab === 'recordings' && recordings.length > 0 && (
-            <div className="space-y-3 max-w-3xl">
-              {recordings.map((item) => (
-                <MediaHubAudioPlayer key={item.id} item={item} />
-              ))}
-            </div>
-          )}
-
-          {/* Videos tab: video embeds */}
-          {activeTab === 'videos' && videos.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {videos.map((item) => {
-                const embedUrl = parseVideoEmbedUrl(item.url);
-                if (embedUrl) {
-                  return (
-                    <div key={item.id} className="rounded-xl overflow-hidden border border-slate-200 bg-black shadow-sm">
-                      <div className="aspect-video">
-                        <iframe src={embedUrl} title={item.caption || 'Video'} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
-                      </div>
-                      {item.caption && (
-                        <div className="px-4 py-3 bg-white border-t border-slate-200">
-                          <p className="text-sm font-medium text-slate-800">{item.caption}</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
-                if (isDirectVideoUrl(item.url)) {
-                  return (
-                    <div key={item.id} className="rounded-xl overflow-hidden border border-slate-200 bg-black shadow-sm">
-                      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                      <video src={item.url} controls preload="metadata" className="w-full aspect-video" />
-                      {item.caption && (
-                        <div className="px-4 py-3 bg-white border-t border-slate-200">
-                          <p className="text-sm font-medium text-slate-800">{item.caption}</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
-                return (
-                  <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer" className="group relative aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all flex items-center justify-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                        <Play size={28} className="text-white/80 group-hover:text-white transition-colors ml-1" />
-                      </div>
-                      {item.caption && <p className="text-sm text-white/80 mt-2">{item.caption}</p>}
-                    </div>
-                  </a>
-                );
-              })}
-            </div>
-          )}
-
-        </>
+                  {item.caption && <p className="text-sm text-white/80 mt-2">{item.caption}</p>}
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="text-center py-12 text-slate-400">
+          <Video className="mx-auto mb-3 opacity-50" size={36} />
+          <p className="text-sm">No videos yet. Add videos via the admin panel.</p>
+        </div>
       )}
     </div>
   );
@@ -783,6 +730,56 @@ function GallerySection({ section, pageSlug }: { section: PageSection; pageSlug:
   );
 }
 
+type SectionBlock = { type: 'single'; section: PageSection } | { type: 'group'; sections: PageSection[] };
+
+/** Groups consecutive sections that share a tabGroup into a single tab group; others stay as single sections. */
+function groupSectionsIntoTabGroups(sections: PageSection[]): SectionBlock[] {
+  const result: SectionBlock[] = [];
+  let i = 0;
+  while (i < sections.length) {
+    const section = sections[i];
+    if (section.tabGroup && section.tabGroup.trim() !== '') {
+      const group: PageSection[] = [];
+      const groupName = section.tabGroup.trim();
+      while (i < sections.length && sections[i].tabGroup?.trim() === groupName) {
+        group.push(sections[i]);
+        i++;
+      }
+      result.push({ type: 'group', sections: group });
+    } else {
+      result.push({ type: 'single', section });
+      i++;
+    }
+  }
+  return result;
+}
+
+function TabGroupContainer({ sections, page, renderSectionContent }: { sections: PageSection[]; page: PageConfig; renderSectionContent: (section: PageSection) => React.ReactNode }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const active = sections[activeIndex];
+  const tabs = sections.map((s, idx) => ({ label: s.tabLabel?.trim() || s.title || 'Tab', index: idx }));
+
+  return (
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="mb-6">
+        <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
+          {tabs.map((tab) => (
+            <button
+              key={tab.index}
+              type="button"
+              onClick={() => setActiveIndex(tab.index)}
+              className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${activeIndex === tab.index ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {active && <div key={active.id}>{renderSectionContent(active)}</div>}
+    </div>
+  );
+}
+
 interface PageContentProps {
   page: PageConfig;
 }
@@ -806,18 +803,78 @@ export default function PageContent({ page }: PageContentProps) {
           );
         })}
 
-        {!hasBlocks && page.sections.map((section) => {
-          const sectionStyle: React.CSSProperties = {};
-          if (section.maxWidth && section.maxWidth < 100) {
-            sectionStyle.maxWidth = `${section.maxWidth}%`;
-            sectionStyle.marginLeft = 'auto';
-            sectionStyle.marginRight = 'auto';
-            sectionStyle.width = '100%';
-          }
-          const heroH = section.minHeight && section.minHeight > 0 ? section.minHeight : 260;
-          return (
-          <section key={section.id} className="animate-in fade-in slide-in-from-bottom-4 duration-700" style={sectionStyle}>
-            <div className={sectionWrapperClasses(section.style)}>
+        {!hasBlocks && (() => {
+          const groups = groupSectionsIntoTabGroups(page.sections);
+          return groups.map((block) => {
+            if (block.type === 'single') {
+              const section = block.section;
+              const sectionStyle: React.CSSProperties = {};
+              if (section.maxWidth && section.maxWidth < 100) {
+                sectionStyle.maxWidth = `${section.maxWidth}%`;
+                sectionStyle.marginLeft = 'auto';
+                sectionStyle.marginRight = 'auto';
+                sectionStyle.width = '100%';
+              }
+              const heroH = section.minHeight && section.minHeight > 0 ? section.minHeight : 260;
+              return (
+                <section key={section.id} className="animate-in fade-in slide-in-from-bottom-4 duration-700" style={sectionStyle}>
+                  <div className={sectionWrapperClasses(section.style)}>
+                    <SectionInnerContent section={section} page={page} heroH={heroH} />
+                  </div>
+                </section>
+              );
+            }
+            return (
+              <TabGroupContainer
+                key={block.sections[0].id}
+                sections={block.sections}
+                page={page}
+                renderSectionContent={(section) => {
+                  const sectionStyle: React.CSSProperties = {};
+                  if (section.maxWidth && section.maxWidth < 100) {
+                    sectionStyle.maxWidth = `${section.maxWidth}%`;
+                    sectionStyle.marginLeft = 'auto';
+                    sectionStyle.marginRight = 'auto';
+                    sectionStyle.width = '100%';
+                  }
+                  const heroH = section.minHeight && section.minHeight > 0 ? section.minHeight : 260;
+                  return (
+                    <section key={section.id} className="animate-in fade-in slide-in-from-bottom-4 duration-700" style={sectionStyle}>
+                      <div className={sectionWrapperClasses(section.style)}>
+                        <SectionInnerContent section={section} page={page} heroH={heroH} />
+                      </div>
+                    </section>
+                  );
+                }}
+              />
+            );
+          });
+        })()}
+      </div>
+
+      {/* Sidebar Area */}
+      {page.layout !== 'full' && (() => {
+        const blocks = (page.sidebarBlocks && page.sidebarBlocks.length > 0)
+          ? [...page.sidebarBlocks].sort((a, b) => a.order - b.order)
+          : DEFAULT_SIDEBAR_BLOCKS;
+        return (
+          <aside
+            className={`space-y-6 ${page.layout === 'sidebar-left' ? '-order-1' : ''}`}
+            style={{ width: `${page.sidebarWidth}%`, minWidth: '280px' }}
+          >
+            {blocks.map((block) => (
+              <SidebarBlockContent key={block.id} block={block} />
+            ))}
+          </aside>
+        );
+      })()}
+    </div>
+  );
+}
+
+function SectionInnerContent({ section, page, heroH }: { section: PageSection; page: PageConfig; heroH: number }) {
+  return (
+    <>
             {section.type === 'hero' && (
               <div className="relative rounded-2xl overflow-hidden shadow-lg ring-1 ring-slate-200/80 bg-gradient-to-br from-red-800 to-red-700" style={{ height: heroH }}>
                 {section.imageUrl && (
@@ -875,8 +932,12 @@ export default function PageContent({ page }: PageContentProps) {
               <GallerySection section={section} pageSlug={page.slug} />
             )}
 
-            {section.type === 'media-hub' && (
-              <MediaHubSection section={section} pageSlug={page.slug} />
+            {section.type === 'audio-playlist' && (
+              <AudioPlaylistSection section={section} />
+            )}
+
+            {section.type === 'video-gallery' && (
+              <VideoGallerySection section={section} />
             )}
 
             {section.type === 'contact' && (
@@ -1070,28 +1131,6 @@ export default function PageContent({ page }: PageContentProps) {
               if (style === 'dotted') return <hr className={`border-0 border-t-2 border-dotted border-slate-300 ${spacing}`} />;
               return <hr className={`border-0 border-t border-slate-200 ${spacing}`} />;
             })()}
-            </div>
-          </section>
-          );
-        })}
-      </div>
-
-      {/* Sidebar Area */}
-      {page.layout !== 'full' && (() => {
-        const blocks = (page.sidebarBlocks && page.sidebarBlocks.length > 0)
-          ? [...page.sidebarBlocks].sort((a, b) => a.order - b.order)
-          : DEFAULT_SIDEBAR_BLOCKS;
-        return (
-          <aside
-            className={`space-y-6 ${page.layout === 'sidebar-left' ? '-order-1' : ''}`}
-            style={{ width: `${page.sidebarWidth}%`, minWidth: '280px' }}
-          >
-            {blocks.map((block) => (
-              <SidebarBlockContent key={block.id} block={block} />
-            ))}
-          </aside>
-        );
-      })()}
-    </div>
+    </>
   );
 }

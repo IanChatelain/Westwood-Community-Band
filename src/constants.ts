@@ -101,11 +101,13 @@ export const INITIAL_PAGES: PageConfig[] = [
         imageUrl: '/images/media.jpg'
       },
       {
-        id: 'm2',
-        type: 'media-hub',
-        title: '',
+        id: 'm2-photos',
+        type: 'gallery',
+        title: 'Photos',
         content: '',
-        mediaPhotos: [
+        tabGroup: 'media',
+        tabLabel: 'Photos',
+        galleryEvents: [
           { id: 'ph-spring-2025', title: 'Spring Concert 2025', slug: 'spring-concert-2025', description: 'Photos from our Spring 2025 concert.', media: [] },
           { id: 'ph-holiday-2024', title: 'Holiday Concert 2024', slug: 'holiday-concert-2024', description: 'Festive moments from our Holiday 2024 concert.', media: [] },
           { id: 'ph-spring-2024', title: 'Spring Concert 2024', slug: 'spring-concert-2024', description: 'Highlights from our Spring 2024 performance.', media: [] },
@@ -113,7 +115,15 @@ export const INITIAL_PAGES: PageConfig[] = [
           { id: 'ph-rehearsals', title: 'Rehearsals', slug: 'rehearsals', description: 'Behind the scenes at our Thursday night rehearsals.', media: [] },
           { id: 'ph-community-events', title: 'Community Events', slug: 'community-events', description: 'The band out and about in the community.', media: [] },
         ],
-        mediaRecordings: [
+      },
+      {
+        id: 'm2-recordings',
+        type: 'audio-playlist',
+        title: 'Recordings',
+        content: '',
+        tabGroup: 'media',
+        tabLabel: 'Recordings',
+        audioItems: [
           { id: 'r-liberty-bell', type: 'audio', url: '#', caption: 'Liberty Bell', duration: '2:47' },
           { id: 'r-big-band-showcase', type: 'audio', url: '#', caption: 'Big Band Showcase', duration: '8:20' },
           { id: 'r-it-dont-mean-a-thing', type: 'audio', url: '#', caption: 'It Don\'t Mean a Thing', duration: '3:25' },
@@ -123,7 +133,15 @@ export const INITIAL_PAGES: PageConfig[] = [
           { id: 'r-swing-the-mood', type: 'audio', url: '#', caption: 'Swing the Mood', duration: '3:38' },
           { id: 'r-blues-brothers-revue', type: 'audio', url: '#', caption: 'Blues Brothers Revue', duration: '5:12' },
         ],
-        mediaVideos: [],
+      },
+      {
+        id: 'm2-videos',
+        type: 'video-gallery',
+        title: 'Videos',
+        content: '',
+        tabGroup: 'media',
+        tabLabel: 'Videos',
+        videoItems: [],
       },
       {
         id: 'm3',

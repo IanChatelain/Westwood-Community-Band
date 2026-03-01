@@ -34,7 +34,8 @@ const SECTION_TYPE_OPTIONS: { value: PageSectionType; label: string }[] = [
   { value: 'table', label: 'Table' },
   { value: 'separator', label: 'Divider' },
   { value: 'downloads', label: 'Downloads / Link List' },
-  { value: 'media-hub', label: 'Media Hub (Photos / Recordings / Videos)' },
+  { value: 'audio-playlist', label: 'Audio Playlist' },
+  { value: 'video-gallery', label: 'Video Gallery' },
 ];
 
 const SECTION_TYPE_LABELS: Record<string, string> = Object.fromEntries(
@@ -51,7 +52,8 @@ const DEFAULT_HEIGHTS: Partial<Record<PageSectionType, number>> = {
   performances: 260,
   table: 220,
   downloads: 220,
-  'media-hub': 260,
+  'audio-playlist': 260,
+  'video-gallery': 260,
 };
 
 const MOVE_DROPDOWN_PANEL_ID = 'move-section-dropdown-panel';
@@ -312,11 +314,13 @@ function SortableSectionItem({
   const currentH = section.minHeight ?? defaultH;
   const panelId = `${section.id}-panel`;
 
+  const hasTabGroup = section.tabGroup != null && section.tabGroup.trim() !== '';
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="border border-slate-200 rounded-lg overflow-hidden bg-white"
+      className={`border border-slate-200 rounded-lg overflow-hidden bg-white ${hasTabGroup ? 'border-l-4 border-l-blue-500' : ''}`}
       role="listitem"
       aria-label={`${displayTitle} (${typeLabel}) section`}
     >
@@ -420,6 +424,29 @@ function SortableSectionItem({
               onChange={(e) => onUpdate({ title: e.target.value })}
               placeholder="Section title"
             />
+          </div>
+          <div className="pt-2 border-t border-slate-100 space-y-2">
+            <p className="text-[10px] font-bold text-slate-700 uppercase">Tab group</p>
+            <div>
+              <label className="block text-[10px] text-slate-600 mb-0.5">Group name</label>
+              <input
+                type="text"
+                className={inputClass}
+                value={section.tabGroup ?? ''}
+                onChange={(e) => onUpdate({ tabGroup: e.target.value.trim() || undefined })}
+                placeholder="e.g. media (sections with same name become tabs)"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] text-slate-600 mb-0.5">Tab label</label>
+              <input
+                type="text"
+                className={inputClass}
+                value={section.tabLabel ?? ''}
+                onChange={(e) => onUpdate({ tabLabel: e.target.value.trim() || undefined })}
+                placeholder="Label on tab (defaults to title)"
+              />
+            </div>
           </div>
           {section.type !== 'gallery' && section.type !== 'separator' && (
             <div>
@@ -528,11 +555,21 @@ function SortableSectionItem({
             />
           )}
 
-          {section.type === 'media-hub' && (
-            <MediaHubEditor
-              section={section}
-              onUpdate={onUpdate}
+          {section.type === 'audio-playlist' && (
+            <MediaHubItemsEditor
+              items={section.audioItems ?? []}
+              onChange={(audioItems) => onUpdate({ audioItems })}
               inputClass={inputClass}
+              mediaType="audio"
+            />
+          )}
+
+          {section.type === 'video-gallery' && (
+            <MediaHubItemsEditor
+              items={section.videoItems ?? []}
+              onChange={(videoItems) => onUpdate({ videoItems })}
+              inputClass={inputClass}
+              mediaType="video"
             />
           )}
 
@@ -1072,67 +1109,6 @@ function DownloadItemUploadButton({
   );
 }
 
-function MediaHubEditor({
-  section,
-  onUpdate,
-  inputClass,
-}: {
-  section: PageSection;
-  onUpdate: (updates: Partial<PageSection>) => void;
-  inputClass: string;
-}) {
-  const [activeTab, setActiveTab] = useState<'photos' | 'recordings' | 'videos'>('photos');
-
-  const photos = section.mediaPhotos ?? [];
-  const recordings = section.mediaRecordings ?? [];
-  const videos = section.mediaVideos ?? [];
-
-  return (
-    <div className="space-y-3 pb-2">
-      {/* Tab switcher */}
-      <div className="flex gap-1 p-1 bg-slate-100 rounded-lg">
-        {(['photos', 'recordings', 'videos'] as const).map((tab) => {
-          const label = tab === 'photos' ? `Photos (${photos.length})` : tab === 'recordings' ? `Recordings (${recordings.length})` : `Videos (${videos.length})`;
-          return (
-            <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${activeTab === tab ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>
-              {label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Photos tab: gallery events (photo albums) */}
-      {activeTab === 'photos' && (
-        <GalleryEventsEditor
-          events={photos}
-          onChange={(mediaPhotos) => onUpdate({ mediaPhotos })}
-          inputClass={inputClass}
-        />
-      )}
-
-      {/* Recordings tab: audio items */}
-      {activeTab === 'recordings' && (
-        <MediaHubItemsEditor
-          items={recordings}
-          onChange={(mediaRecordings) => onUpdate({ mediaRecordings })}
-          inputClass={inputClass}
-          mediaType="audio"
-        />
-      )}
-
-      {/* Videos tab: video items */}
-      {activeTab === 'videos' && (
-        <MediaHubItemsEditor
-          items={videos}
-          onChange={(mediaVideos) => onUpdate({ mediaVideos })}
-          inputClass={inputClass}
-          mediaType="video"
-        />
-      )}
-    </div>
-  );
-}
-
 function MediaHubItemsEditor({
   items,
   onChange,
@@ -1552,11 +1528,8 @@ export function SectionEditor({ sections, onChange, currentPageId, allPages, onM
       downloadItems: [] as DownloadItem[],
       downloadGroups: [] as DownloadGroup[],
     } : {};
-    const mediaHubDefaults = type === 'media-hub' ? {
-      mediaPhotos: [] as GalleryEvent[],
-      mediaRecordings: [] as GalleryMediaItem[],
-      mediaVideos: [] as GalleryMediaItem[],
-    } : {};
+    const audioPlaylistDefaults = type === 'audio-playlist' ? { audioItems: [] as GalleryMediaItem[] } : {};
+    const videoGalleryDefaults = type === 'video-gallery' ? { videoItems: [] as GalleryMediaItem[] } : {};
     const newSection: PageSection = {
       id,
       type,
@@ -1566,7 +1539,8 @@ export function SectionEditor({ sections, onChange, currentPageId, allPages, onM
       ...galleryDefaults,
       ...performancesDefaults,
       ...downloadsDefaults,
-      ...mediaHubDefaults,
+      ...audioPlaylistDefaults,
+      ...videoGalleryDefaults,
     };
     onChange([...sections, newSection]);
     setExpandedId(id);

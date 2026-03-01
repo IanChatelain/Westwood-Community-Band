@@ -13,6 +13,7 @@
     "db:seed": "node scripts/seed.mjs",
     "db:migrate-from-supabase": "node scripts/migrate-supabase-to-turso.mjs",
     "db:migrate-media-hub": "node scripts/migrate-media-to-media-hub.mjs",
+    "db:migrate-media-hub-to-tabs": "node scripts/migrate-media-hub-to-tabs.mjs",
     "storage:migrate-to-r2": "node scripts/migrate-supabase-storage-to-r2.mjs"
   },
   "dependencies": {

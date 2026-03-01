@@ -13,7 +13,7 @@ import {
   PageBuilderActions,
   PageBuilderState,
 } from '@/types';
-import { createEmptyPage, DEFAULT_SETTINGS, INITIAL_USERS } from '@/constants';
+import { createEmptyPage, DEFAULT_SETTINGS, INITIAL_PAGES, INITIAL_USERS } from '@/constants';
 import { cloneBlock } from '@/lib/builder/factory';
 import { createInitialBuilderState } from '@/lib/builder/state';
 import { loadCmsState, saveSettings, savePages, savePage, deletePage } from '@/lib/cms';
