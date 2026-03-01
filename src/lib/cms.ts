@@ -1,10 +1,13 @@
 'use server';
 
 import { db } from '@/db';
-import { siteSettings, pages } from '@/db/schema';
-import { eq, asc } from 'drizzle-orm';
+import { siteSettings, pages, pageRevisions } from '@/db/schema';
+import { eq, asc, desc } from 'drizzle-orm';
 import type { AppState, SiteSettings, PageConfig, PageSection, BuilderBlockType } from '@/types';
 import { DEFAULT_SETTINGS, INITIAL_PAGES, INITIAL_USERS } from '@/constants';
+import { v4 as uuidv4 } from 'uuid';
+
+const MAX_REVISIONS_PER_PAGE = 50;
 
 const BUILDER_BLOCK_TYPES: BuilderBlockType[] = ['richText', 'image', 'separator', 'spacer', 'button'];
 
@@ -159,8 +162,48 @@ export async function saveSettings(settings: SiteSettings): Promise<boolean> {
   }
 }
 
+async function snapshotCurrentPage(pageId: string): Promise<void> {
+  const existing = await db.select().from(pages).where(eq(pages.id, pageId));
+  if (existing.length === 0) return;
+  const row = existing[0];
+  await db.insert(pageRevisions).values({
+    id: uuidv4(),
+    pageId,
+    snapshot: {
+      id: row.id,
+      title: row.title,
+      slug: row.slug,
+      layout: row.layout,
+      sidebarWidth: row.sidebarWidth,
+      sections: row.sections,
+      sidebarBlocks: row.sidebarBlocks,
+      showInNav: row.showInNav,
+      navOrder: row.navOrder,
+      navLabel: row.navLabel,
+      isArchived: row.isArchived,
+    } as Record<string, unknown>,
+    createdAt: row.updatedAt ?? new Date().toISOString(),
+  });
+  await trimRevisions(pageId);
+}
+
+async function trimRevisions(pageId: string): Promise<void> {
+  const revisions = await db
+    .select({ id: pageRevisions.id })
+    .from(pageRevisions)
+    .where(eq(pageRevisions.pageId, pageId))
+    .orderBy(desc(pageRevisions.createdAt));
+  if (revisions.length > MAX_REVISIONS_PER_PAGE) {
+    const toDelete = revisions.slice(MAX_REVISIONS_PER_PAGE);
+    for (const r of toDelete) {
+      await db.delete(pageRevisions).where(eq(pageRevisions.id, r.id));
+    }
+  }
+}
+
 export async function savePage(page: PageConfig): Promise<boolean> {
   try {
+    await snapshotCurrentPage(page.id);
     await db.insert(pages).values({
       id: page.id,
       title: page.title,
@@ -209,6 +252,7 @@ export async function deletePage(pageId: string): Promise<boolean> {
 export async function savePages(pageList: PageConfig[]): Promise<boolean> {
   try {
     for (const page of pageList) {
+      await snapshotCurrentPage(page.id);
       await db.insert(pages).values({
         id: page.id,
         title: page.title,
@@ -243,5 +287,72 @@ export async function savePages(pageList: PageConfig[]): Promise<boolean> {
   } catch (err) {
     console.error('savePages failed:', err);
     return false;
+  }
+}
+
+export interface PageRevisionSummary {
+  id: string;
+  pageId: string;
+  createdAt: string;
+  label: string | null;
+}
+
+export async function getPageRevisions(pageId: string): Promise<PageRevisionSummary[]> {
+  try {
+    const rows = await db
+      .select({
+        id: pageRevisions.id,
+        pageId: pageRevisions.pageId,
+        createdAt: pageRevisions.createdAt,
+        label: pageRevisions.label,
+      })
+      .from(pageRevisions)
+      .where(eq(pageRevisions.pageId, pageId))
+      .orderBy(desc(pageRevisions.createdAt))
+      .limit(MAX_REVISIONS_PER_PAGE);
+    return rows;
+  } catch (err) {
+    console.error('getPageRevisions failed:', err);
+    return [];
+  }
+}
+
+export async function getPageRevision(revisionId: string): Promise<PageConfig | null> {
+  try {
+    const rows = await db
+      .select()
+      .from(pageRevisions)
+      .where(eq(pageRevisions.id, revisionId));
+    if (rows.length === 0) return null;
+    const snap = rows[0].snapshot as Record<string, unknown>;
+    return {
+      id: snap.id as string,
+      title: snap.title as string,
+      slug: snap.slug as string,
+      layout: (snap.layout as PageConfig['layout']) ?? 'full',
+      sidebarWidth: (snap.sidebarWidth as number) ?? 25,
+      sections: (snap.sections as PageConfig['sections']) ?? [],
+      sidebarBlocks: (snap.sidebarBlocks as PageConfig['sidebarBlocks']) ?? undefined,
+      showInNav: (snap.showInNav as boolean) ?? true,
+      navOrder: (snap.navOrder as number) ?? 999,
+      navLabel: (snap.navLabel as string) ?? undefined,
+      isArchived: (snap.isArchived as boolean) ?? false,
+    };
+  } catch (err) {
+    console.error('getPageRevision failed:', err);
+    return null;
+  }
+}
+
+export async function restorePageRevision(revisionId: string): Promise<PageConfig | null> {
+  try {
+    const restored = await getPageRevision(revisionId);
+    if (!restored) return null;
+    const ok = await savePage(restored);
+    if (!ok) return null;
+    return restored;
+  } catch (err) {
+    console.error('restorePageRevision failed:', err);
+    return null;
   }
 }

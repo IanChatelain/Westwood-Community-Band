@@ -4,9 +4,10 @@ import React from 'react';
 import { PageConfig, SidebarBlock, SidebarBlockType } from '@/types';
 import { DEFAULT_SIDEBAR_BLOCKS } from '@/constants';
 import { useAppContext } from '@/context/AppContext';
-import { Save, Layout as LayoutIcon, ChevronDown, Undo2, X } from 'lucide-react';
+import { Save, Layout as LayoutIcon, ChevronDown, Undo2, X, History, RotateCcw } from 'lucide-react';
 import { SectionEditor } from '@/components/cms/SectionEditor';
 import PageContent from '@/components/ui/PageContent';
+import { getPageRevisions, type PageRevisionSummary } from '@/lib/cms';
 
 interface PageEditorProps {
   page: PageConfig;
@@ -27,7 +28,7 @@ function pageConfigEqual(a: PageConfig, b: PageConfig): boolean {
 }
 
 const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, onRegisterSave }) => {
-  const { revertPage, state, moveSectionToPage, addPage, setAdminTab } = useAppContext();
+  const { revertPage, state, moveSectionToPage, addPage, setAdminTab, restorePageRevision } = useAppContext();
   const lastSavedRef = React.useRef<PageConfig>(page);
   const [editedPage, setEditedPage] = React.useState<PageConfig>(() => {
     const p = { ...page, blocks: undefined };
@@ -43,6 +44,10 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
   const [moveToNewPageSectionId, setMoveToNewPageSectionId] = React.useState<string | null>(null);
   const [newPageTitle, setNewPageTitle] = React.useState('');
   const [newPageSlug, setNewPageSlug] = React.useState('');
+  const [historyOpen, setHistoryOpen] = React.useState(false);
+  const [revisions, setRevisions] = React.useState<PageRevisionSummary[]>([]);
+  const [loadingHistory, setLoadingHistory] = React.useState(false);
+  const [restoringId, setRestoringId] = React.useState<string | null>(null);
 
   const normalizedSlug = newPageSlug.trim() ? `/${newPageSlug.replace(/^\//, '')}` : '';
   const slugConflict = normalizedSlug ? state.pages.some(p => p.slug === normalizedSlug) : false;
@@ -133,6 +138,28 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
 
   const setSections = (sections: typeof editedPage.sections) => {
     setEditedPage((prev) => ({ ...prev, sections: sections ?? [] }));
+  };
+
+  const openHistory = async () => {
+    setHistoryOpen(true);
+    setLoadingHistory(true);
+    const list = await getPageRevisions(page.id);
+    setRevisions(list);
+    setLoadingHistory(false);
+  };
+
+  const handleRestore = async (revisionId: string) => {
+    setRestoringId(revisionId);
+    const restored = await restorePageRevision(revisionId);
+    setRestoringId(null);
+    if (restored) {
+      const p = { ...restored, blocks: undefined };
+      setEditedPage(p);
+      lastSavedRef.current = p;
+      setHistoryOpen(false);
+      setShowSavedFeedback(true);
+      window.setTimeout(() => setShowSavedFeedback(false), 3000);
+    }
   };
 
   return (
@@ -242,6 +269,15 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
           {saveError && (
             <span className="text-[10px] font-medium text-red-700 bg-red-100 px-2 py-0.5 rounded">Save failed</span>
           )}
+          <button
+            type="button"
+            onClick={openHistory}
+            className="px-3 py-2 rounded-lg font-medium text-sm border border-slate-300 text-slate-700 hover:bg-slate-100 flex items-center gap-1.5"
+            title="View page history"
+          >
+            <History size={16} />
+            History
+          </button>
           {hasUnsavedChanges && (
             <button
               type="button"
@@ -302,6 +338,63 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
           />
         </div>
       </div>
+
+      {historyOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setHistoryOpen(false)}>
+          <div className="bg-white rounded-xl shadow-xl ring-1 ring-slate-900/5 p-6 w-full max-w-lg max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h4 className="font-bold text-slate-900 flex items-center gap-2">
+                <History size={18} />
+                Page history
+              </h4>
+              <button onClick={() => setHistoryOpen(false)} className="p-1 text-slate-500 hover:text-slate-700" aria-label="Close">
+                <X size={20} />
+              </button>
+            </div>
+            {loadingHistory ? (
+              <div className="flex-1 flex items-center justify-center py-12">
+                <div className="w-6 h-6 border-2 border-slate-300 border-t-red-600 rounded-full animate-spin" />
+              </div>
+            ) : revisions.length === 0 ? (
+              <p className="text-sm text-slate-500 py-8 text-center">No previous versions saved yet. History is created each time you save.</p>
+            ) : (
+              <div className="flex-1 overflow-y-auto -mx-2 px-2 space-y-1">
+                {revisions.map((rev) => {
+                  const date = new Date(rev.createdAt.endsWith('Z') ? rev.createdAt : rev.createdAt + 'Z');
+                  const isRestoring = restoringId === rev.id;
+                  return (
+                    <div
+                      key={rev.id}
+                      className="flex items-center justify-between gap-3 p-3 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-900">
+                          {date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                          {' '}
+                          <span className="text-slate-500 font-normal">
+                            {date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </p>
+                        {rev.label && (
+                          <p className="text-xs text-slate-500 truncate">{rev.label}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleRestore(rev.id)}
+                        disabled={isRestoring || restoringId !== null}
+                        className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-300 text-slate-700 hover:border-red-400 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
+                      >
+                        <RotateCcw size={13} className={isRestoring ? 'animate-spin' : ''} />
+                        {isRestoring ? 'Restoring...' : 'Restore'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {moveToNewPageSectionId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setMoveToNewPageSectionId(null)}>

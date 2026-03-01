@@ -36,6 +36,14 @@ export const profiles = sqliteTable('profiles', {
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
 });
 
+export const pageRevisions = sqliteTable('page_revisions', {
+  id: text('id').primaryKey(),
+  pageId: text('page_id').notNull(),
+  snapshot: text('snapshot', { mode: 'json' }).notNull().$type<Record<string, unknown>>(),
+  label: text('label'),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+});
+
 export const contactMessages = sqliteTable('contact_messages', {
   id: text('id').primaryKey(),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),

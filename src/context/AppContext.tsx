@@ -16,7 +16,7 @@ import {
 import { createEmptyPage, DEFAULT_SETTINGS, INITIAL_PAGES, INITIAL_USERS } from '@/constants';
 import { cloneBlock } from '@/lib/builder/factory';
 import { createInitialBuilderState } from '@/lib/builder/state';
-import { loadCmsState, saveSettings, savePages, savePage, deletePage } from '@/lib/cms';
+import { loadCmsState, saveSettings, savePages, savePage, deletePage, restorePageRevision as restoreRevisionAction } from '@/lib/cms';
 import { getCurrentUser, logout as logoutAction } from '@/app/actions/auth';
 
 interface AppContextType {
@@ -31,6 +31,7 @@ interface AppContextType {
   refreshCmsState: () => Promise<void>;
   revertPage: (pageId: string, savedPage: PageConfig) => void;
   moveSectionToPage: (sectionId: string, fromPageId: string, toPageId: string) => Promise<boolean>;
+  restorePageRevision: (revisionId: string) => Promise<PageConfig | null>;
   isAdminMode: boolean;
   setIsAdminMode: React.Dispatch<React.SetStateAction<boolean>>;
   adminTab: string;
@@ -311,6 +312,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, [persist]);
 
+  const restorePageRevision = useCallback(async (revisionId: string): Promise<PageConfig | null> => {
+    const restored = await restoreRevisionAction(revisionId);
+    if (!restored) return null;
+    setState(prev => ({
+      ...prev,
+      pages: prev.pages.map(p => (p.id === restored.id ? restored : p)),
+      pageBuilder: createInitialBuilderState(
+        prev.pages.map(p => (p.id === restored.id ? restored : p)),
+      ),
+    }));
+    return restored;
+  }, []);
+
   const pageBuilder: PageBuilderState = state.pageBuilder;
 
   const pageBuilderActions: PageBuilderActions = {
@@ -504,6 +518,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       refreshCmsState,
       revertPage,
       moveSectionToPage,
+      restorePageRevision,
       loading,
     }}>
       {children}
