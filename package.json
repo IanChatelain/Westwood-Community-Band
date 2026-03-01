@@ -10,6 +10,7 @@
     "lint": "eslint",
     "import-wxr": "node scripts/import-wordpress-wxr.mjs",
     "db:push": "drizzle-kit push",
+    "setup:local": "node scripts/setup-local.mjs",
     "db:seed": "node scripts/seed.mjs",
     "db:migrate-from-supabase": "node scripts/migrate-supabase-to-turso.mjs",
     "db:migrate-media-hub": "node scripts/migrate-media-to-media-hub.mjs",

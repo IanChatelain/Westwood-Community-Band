@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, Play, Image as ImageIcon, Music, Video, Pause } from 'lucide-react';
 import type { GalleryEvent, GalleryMediaItem } from '@/types';
@@ -155,11 +156,12 @@ function PhotosGrid({
           onClick={() => onOpenLightbox(item)}
           className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-red-800 focus:ring-offset-2"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={item.url}
             alt={item.caption || eventTitle}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           />
           {item.caption && (
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">

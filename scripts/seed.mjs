@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Seed Turso database: site_settings (id=1) and one admin profile.
- * Requires: TURSO_DATABASE_URL, TURSO_AUTH_TOKEN, SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD
+ * Seed DB (Turso cloud or local file): site_settings (id=1) and one admin profile.
+ * Requires: TURSO_DATABASE_URL; TURSO_AUTH_TOKEN only for libsql://; SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD
  */
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -13,13 +13,19 @@ import bcrypt from 'bcryptjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
-const url = process.env.TURSO_DATABASE_URL;
+const rawUrl = process.env.TURSO_DATABASE_URL?.replace(/^TURSO_DATABASE_URL=/, '').trim();
+const url = rawUrl || process.env.TURSO_DATABASE_URL;
 const authToken = process.env.TURSO_AUTH_TOKEN;
+const isLocalFile = url?.startsWith('file:');
 const adminEmail = process.env.SEED_ADMIN_EMAIL;
 const adminPassword = process.env.SEED_ADMIN_PASSWORD;
 
-if (!url || !authToken) {
-  console.error('Missing TURSO_DATABASE_URL or TURSO_AUTH_TOKEN');
+if (!url) {
+  console.error('Missing TURSO_DATABASE_URL');
+  process.exit(1);
+}
+if (!isLocalFile && !authToken) {
+  console.error('TURSO_AUTH_TOKEN is required when using Turso cloud (libsql://...)');
   process.exit(1);
 }
 
@@ -28,7 +34,7 @@ if (!adminEmail || !adminPassword) {
   process.exit(1);
 }
 
-const client = createClient({ url, authToken });
+const client = createClient(isLocalFile ? { url } : { url, authToken });
 
 async function seed() {
   const now = new Date().toISOString();

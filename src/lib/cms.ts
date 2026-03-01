@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidateTag } from 'next/cache';
 import { db } from '@/db';
 import { siteSettings, pages, pageRevisions } from '@/db/schema';
 import { eq, asc, desc } from 'drizzle-orm';
@@ -155,6 +156,7 @@ export async function saveSettings(settings: SiteSettings): Promise<boolean> {
       footerText: settings.footerText,
       updatedAt: new Date().toISOString(),
     }).where(eq(siteSettings.id, 1));
+    revalidateTag('cms', 'max');
     return true;
   } catch (err) {
     console.error('saveSettings failed:', err);
@@ -233,6 +235,7 @@ export async function savePage(page: PageConfig): Promise<boolean> {
         updatedAt: new Date().toISOString(),
       },
     });
+    revalidateTag('cms', 'max');
     return true;
   } catch (err) {
     console.error('savePage failed:', err);
@@ -243,6 +246,7 @@ export async function savePage(page: PageConfig): Promise<boolean> {
 export async function deletePage(pageId: string): Promise<boolean> {
   try {
     await db.delete(pages).where(eq(pages.id, pageId));
+    revalidateTag('cms', 'max');
     return true;
   } catch {
     return false;
@@ -283,6 +287,7 @@ export async function savePages(pageList: PageConfig[]): Promise<boolean> {
         },
       });
     }
+    revalidateTag('cms', 'max');
     return true;
   } catch (err) {
     console.error('savePages failed:', err);

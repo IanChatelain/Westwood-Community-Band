@@ -49,7 +49,7 @@ export default function DynamicPage() {
   const slugSegments = params?.slug as string[] | undefined;
   const path = (slugSegments === undefined || slugSegments.length === 0) ? '/' : `/${slugSegments.join('/')}`;
 
-  // Refetch CMS data when viewing the public site so changes saved in admin appear here
+  // Optional manual refresh so changes saved in admin can appear after revalidate or on focus
   useEffect(() => {
     refreshCmsState();
   }, [path, refreshCmsState]);

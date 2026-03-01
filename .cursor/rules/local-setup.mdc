@@ -1,0 +1,37 @@
+---
+description: Local Turso + MinIO setup so configuration can be set up by Cursor
+globs: "**/.env*", "**/docker-compose*", "**/scripts/setup*.mjs", "**/scripts/seed.mjs", "docs/LOCAL_DEVELOPMENT.md"
+alwaysApply: false
+---
+
+# Local development (Turso + MinIO)
+
+This project supports **local** database (SQLite file) and **local S3** (MinIO) so dev works without Turso or Cloudflare R2.
+
+## When the user asks to set up local / configure for Cursor
+
+1. **Create or update `.env.local`**  
+   Copy from `.env.local.example` if `.env.local` is missing. Ensure:
+   - `TURSO_DATABASE_URL=file:.data/local.db`
+   - `S3_ENDPOINT=http://127.0.0.1:9000`
+   - `R2_ACCESS_KEY_ID=minioadmin`, `R2_SECRET_ACCESS_KEY=minioadmin`
+   - `R2_BUCKET_NAME=cms-uploads`, `R2_PUBLIC_URL=http://127.0.0.1:9000/cms-uploads`
+   - `AUTH_SECRET` set (any string for local)
+
+2. **Run setup**  
+   - `npm run setup:local` — creates `.data/`, pushes schema to local DB, creates MinIO bucket if MinIO is running.
+   - `docker compose up -d` — start MinIO (run before or after setup; re-run setup:local after to create bucket).
+
+3. **Optional seed**  
+   If the user wants an admin account: set `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` in `.env.local`, then run `npm run db:seed`.
+
+4. **Start app**  
+   `npm run dev`.
+
+## Env behavior
+
+- **DB:** If `TURSO_DATABASE_URL` starts with `file:`, the app uses local SQLite (no `TURSO_AUTH_TOKEN`). Otherwise it uses Turso cloud and requires `TURSO_AUTH_TOKEN`.
+- **Storage:** If `S3_ENDPOINT` or `R2_LOCAL_ENDPOINT` is set, `src/lib/r2.ts` uses that endpoint (MinIO); otherwise it uses Cloudflare R2 with `R2_ACCOUNT_ID` and the rest of the R2_* vars.
+- **Public URL:** `R2_PUBLIC_URL` or `S3_PUBLIC_URL` is the base URL for media (and Next.js `images.remotePatterns`). For MinIO use `http://127.0.0.1:9000/cms-uploads`.
+
+Do not commit `.env` or `.env.local`; only `.env.example` and `.env.local.example` are committed.

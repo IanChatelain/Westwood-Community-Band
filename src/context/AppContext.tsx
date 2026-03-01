@@ -41,6 +41,8 @@ interface AppContextType {
   pageBuilder: PageBuilderState;
   pageBuilderActions: PageBuilderActions;
   loading: boolean;
+  /** When true (admin only), CMS load failed and we show a friendly error instead of fallback content. */
+  cmsLoadError: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -91,8 +93,25 @@ function PageLoadingSkeleton() {
   );
 }
 
-export function AppProvider({ children }: { children: ReactNode }) {
+export interface AppProviderProps {
+  children: ReactNode;
+  /** When provided (e.g. from public layout cached read), used for first paint so client does not call loadCmsState on mount. */
+  initialCmsState?: Partial<AppState> | null;
+}
+
+export function AppProvider({ children, initialCmsState }: AppProviderProps) {
+  const hasInitialState = initialCmsState && (initialCmsState.settings != null || (initialCmsState.pages != null && initialCmsState.pages.length > 0));
   const [state, setState] = useState<AppState>(() => {
+    if (hasInitialState && initialCmsState) {
+      const pages = initialCmsState.pages ?? [];
+      return {
+        settings: initialCmsState.settings ?? DEFAULT_SETTINGS,
+        pages,
+        users: initialCmsState.users ?? INITIAL_USERS,
+        currentUser: initialCmsState.currentUser ?? null,
+        pageBuilder: createInitialBuilderState(pages),
+      };
+    }
     return {
       settings: DEFAULT_SETTINGS,
       pages: [],
@@ -105,7 +124,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [adminTab, setAdminTab] = useState<string>('overview');
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
   const [mounted, setMounted] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [cmsLoadError, setCmsLoadError] = useState(false);
+  const [loading, setLoading] = useState(!hasInitialState);
   const stateRef = useRef(state);
   stateRef.current = state;
 
@@ -121,6 +141,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const refreshCmsState = useCallback(async (): Promise<void> => {
     const loaded = await loadCmsState();
     if (loaded) {
+      setCmsLoadError(false);
       setState((prev) => ({
         ...prev,
         settings: loaded.settings ?? prev.settings,
@@ -152,8 +173,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setMounted(true);
 
+    // When initialCmsState was provided (public route), skip the initial DB call for first paint
+    if (hasInitialState) {
+      setLoading(false);
+      return;
+    }
+
     loadCmsState().then((loaded) => {
       if (loaded) {
+        setCmsLoadError(false);
         setState(prev => {
           const nextPages = loaded.pages ?? prev.pages;
           return {
@@ -165,17 +193,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
           };
         });
       } else {
-        // DB unreachable or empty: show default content so the site still works
-        setState(prev => ({
-          ...prev,
-          settings: DEFAULT_SETTINGS,
-          pages: INITIAL_PAGES,
-          pageBuilder: createInitialBuilderState(INITIAL_PAGES),
-        }));
+        // Admin: show error state so UI can show "database unavailable". Public: fallback to default content.
+        if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
+          setCmsLoadError(true);
+        } else {
+          setState(prev => ({
+            ...prev,
+            settings: DEFAULT_SETTINGS,
+            pages: INITIAL_PAGES,
+            pageBuilder: createInitialBuilderState(INITIAL_PAGES),
+          }));
+        }
       }
       setLoading(false);
     });
-  }, []);
+  }, [hasInitialState]);
 
   // Auth: check for existing session on mount and after login/logout
   useEffect(() => {
@@ -520,6 +552,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       moveSectionToPage,
       restorePageRevision,
       loading,
+      cmsLoadError,
     }}>
       {children}
     </AppContext.Provider>

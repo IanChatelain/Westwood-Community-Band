@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
+import Image from 'next/image';
 import { PageConfig, SidebarBlock, PageSection, SectionStyle, BuilderBlock, BlockWrapperStyle, GalleryEvent, GalleryMediaItem, DownloadItem, DownloadGroup, PerformanceItem } from '@/types';
 import { DEFAULT_SIDEBAR_BLOCKS } from '@/constants';
 
@@ -330,7 +331,7 @@ export function BuilderBlockView({ block }: { block: BuilderBlock }) {
             style={{ minHeight: heroH, height: heroH }}
           >
             {block.imageUrl && (
-              <img src={block.imageUrl} className="absolute inset-0 w-full h-full object-cover opacity-30" alt={block.title ?? ''} />
+              <Image src={block.imageUrl} fill className="object-cover opacity-30" alt={block.title ?? ''} sizes="100vw" />
             )}
             <div className="absolute inset-0 bg-gradient-to-r from-red-900/85 via-red-800/40 to-transparent flex items-center px-6 md:px-12">
               <div className="max-w-xl space-y-3">
@@ -388,10 +389,11 @@ export function BuilderBlockView({ block }: { block: BuilderBlock }) {
           style={{ borderRadius: radius, padding }}
         >
           {block.src && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={block.src}
-              alt={block.alt}
+              alt={block.alt ?? ''}
+              width={800}
+              height={600}
               className="w-full h-auto object-cover rounded-md"
             />
           )}
@@ -681,20 +683,22 @@ function GallerySection({ section, pageSlug }: { section: PageSection; pageSlug:
               href={`${basePath}/${ev.slug}`}
               className="group block rounded-xl overflow-hidden border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all bg-white"
             >
-              <div className={`${aspectClass} bg-slate-100 overflow-hidden`}>
+              <div className={`relative ${aspectClass} bg-slate-100 overflow-hidden`}>
                 {ev.coverImageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={ev.coverImageUrl}
                     alt={ev.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   />
                 ) : ev.media.length > 0 && ev.media[0].type === 'image' && ev.media[0].url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={ev.media[0].url}
                     alt={ev.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-slate-300">
@@ -878,7 +882,7 @@ function SectionInnerContent({ section, page, heroH }: { section: PageSection; p
             {section.type === 'hero' && (
               <div className="relative rounded-2xl overflow-hidden shadow-lg ring-1 ring-slate-200/80 bg-gradient-to-br from-red-800 to-red-700" style={{ height: heroH }}>
                 {section.imageUrl && (
-                  <img src={section.imageUrl} className="absolute inset-0 w-full h-full object-cover opacity-30" alt={section.title} />
+                  <Image src={section.imageUrl} fill className="object-cover opacity-30" alt={section.title} sizes="100vw" />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-r from-red-900/85 via-red-800/40 to-transparent flex items-center px-6 md:px-12">
                   <div className="max-w-xl space-y-3">
@@ -913,8 +917,8 @@ function SectionInnerContent({ section, page, heroH }: { section: PageSection; p
               return (
                 <div className={wrapper} style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
                   {section.imageUrl && (
-                    <div className={`rounded-2xl overflow-hidden shadow-xl ring-1 ring-slate-900/10 bg-slate-100 aspect-[4/3] ${image}`}>
-                      <img src={section.imageUrl} className="w-full h-full object-cover" alt={section.title} />
+                    <div className={`relative rounded-2xl overflow-hidden shadow-xl ring-1 ring-slate-900/10 bg-slate-100 aspect-[4/3] ${image}`}>
+                      <Image src={section.imageUrl} fill className="object-cover" alt={section.title} sizes="(max-width: 768px) 100vw, 50vw" />
                     </div>
                   )}
                   <div className="space-y-5">

@@ -75,7 +75,7 @@ function UnsavedChangesModal({
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { state, setState, logout, updatePage, addPage, removePage, persist, adminTab, setAdminTab, setIsLoginModalOpen } = useAppContext();
+  const { state, setState, logout, updatePage, addPage, removePage, persist, adminTab, setAdminTab, setIsLoginModalOpen, refreshCmsState, cmsLoadError } = useAppContext();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
 
@@ -164,6 +164,36 @@ export default function AdminDashboard() {
     if (!page) return;
     await updatePage({ ...page, isArchived: false });
   };
+
+  if (cmsLoadError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-100">
+        <div className="text-center max-w-sm px-6">
+          <div className="inline-flex p-4 rounded-full bg-amber-100 mb-4">
+            <AlertTriangle size={32} className="text-amber-600" />
+          </div>
+          <h1 className="text-xl font-bold text-slate-900 mb-2">We&apos;re having trouble connecting</h1>
+          <p className="text-slate-600 mb-6">The database is temporarily unavailable. Please try again in a few minutes.</p>
+          <button
+            type="button"
+            onClick={() => refreshCmsState()}
+            className="px-6 py-3 rounded-lg font-semibold text-white bg-red-800 hover:bg-red-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+          >
+            Retry
+          </button>
+          <p className="mt-6 text-sm text-slate-500">
+            <button
+              type="button"
+              onClick={() => router.push('/')}
+              className="text-red-600 hover:underline"
+            >
+              Return to site
+            </button>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!state.currentUser) {
     return (
