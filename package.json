@@ -10,7 +10,9 @@
     "lint": "eslint",
     "import-wxr": "node scripts/import-wordpress-wxr.mjs",
     "db:push": "drizzle-kit push",
-    "db:seed": "node scripts/seed.mjs"
+    "db:seed": "node scripts/seed.mjs",
+    "db:migrate-from-supabase": "node scripts/migrate-supabase-to-turso.mjs",
+    "storage:migrate-to-r2": "node scripts/migrate-supabase-storage-to-r2.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1000.0",

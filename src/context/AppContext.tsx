@@ -13,7 +13,6 @@ import {
   PageBuilderActions,
   PageBuilderState,
 } from '@/types';
-import { db } from '@/services/db';
 import { createEmptyPage, DEFAULT_SETTINGS, INITIAL_USERS } from '@/constants';
 import { cloneBlock } from '@/lib/builder/factory';
 import { createInitialBuilderState } from '@/lib/builder/state';
@@ -28,6 +27,8 @@ interface AppContextType {
   addPage: (title: string, slug: string, addToNav?: boolean) => PageConfig;
   removePage: (pageId: string) => void;
   persist: () => Promise<boolean>;
+  /** Refetch CMS data from the database so the public site shows latest content. */
+  refreshCmsState: () => Promise<void>;
   revertPage: (pageId: string, savedPage: PageConfig) => void;
   moveSectionToPage: (sectionId: string, fromPageId: string, toPageId: string) => Promise<boolean>;
   isAdminMode: boolean;
@@ -51,8 +52,6 @@ function profileToUser(profile: { id: string; username: string; role: string; em
     email: profile.email,
   };
 }
-
-const DB_ENABLED = typeof process !== 'undefined' && !!process.env.NEXT_PUBLIC_TURSO_ENABLED;
 
 function PageLoadingSkeleton() {
   return (
@@ -111,15 +110,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const persist = useCallback(async (): Promise<boolean> => {
     const s = stateRef.current;
-    if (!DB_ENABLED) {
-      db.save(s);
-      return true;
-    }
     const [settingsOk, pagesOk] = await Promise.all([
       saveSettings(s.settings),
       savePages(s.pages),
     ]);
     return settingsOk && pagesOk;
+  }, []);
+
+  const refreshCmsState = useCallback(async (): Promise<void> => {
+    const loaded = await loadCmsState();
+    if (loaded) {
+      setState((prev) => ({
+        ...prev,
+        settings: loaded.settings ?? prev.settings,
+        pages: loaded.pages ?? prev.pages,
+        pageBuilder: createInitialBuilderState(loaded.pages ?? prev.pages),
+      }));
+    }
   }, []);
 
   const revertPage = useCallback((pageId: string, savedPage: PageConfig) => {
@@ -486,6 +493,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       pageBuilder,
       pageBuilderActions,
       persist,
+      refreshCmsState,
       revertPage,
       moveSectionToPage,
       loading,

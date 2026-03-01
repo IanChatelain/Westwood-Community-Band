@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useEffect } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import PageContent from '@/components/ui/PageContent';
 import GalleryEventPage from '@/components/ui/GalleryEventPage';
@@ -43,10 +44,21 @@ function findGalleryEvent(
 }
 
 export default function DynamicPage() {
-  const { state, loading } = useAppContext();
+  const { state, loading, refreshCmsState } = useAppContext();
   const params = useParams();
   const slugSegments = params?.slug as string[] | undefined;
   const path = (slugSegments === undefined || slugSegments.length === 0) ? '/' : `/${slugSegments.join('/')}`;
+
+  // Refetch CMS data when viewing the public site so changes saved in admin appear here
+  useEffect(() => {
+    refreshCmsState();
+  }, [path, refreshCmsState]);
+
+  useEffect(() => {
+    const onFocus = () => refreshCmsState();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [refreshCmsState]);
 
   if (loading) {
     return <ContentSkeleton />;
