@@ -28,7 +28,7 @@ function ContentSkeleton() {
 }
 
 function findGalleryEvent(
-  pages: { slug: string; sections: { type: string; galleryEvents?: GalleryEvent[] }[] }[],
+  pages: { slug: string; sections: { type: string; galleryEvents?: GalleryEvent[]; mediaPhotos?: GalleryEvent[] }[] }[],
   parentSlug: string,
   eventSlug: string,
 ): { event: GalleryEvent; parentSlug: string } | null {
@@ -37,6 +37,10 @@ function findGalleryEvent(
   for (const section of page.sections) {
     if (section.type === 'gallery' && section.galleryEvents) {
       const event = section.galleryEvents.find((ev) => ev.slug === eventSlug);
+      if (event) return { event, parentSlug };
+    }
+    if (section.type === 'media-hub' && section.mediaPhotos) {
+      const event = section.mediaPhotos.find((ev) => ev.slug === eventSlug);
       if (event) return { event, parentSlug };
     }
   }

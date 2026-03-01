@@ -19,7 +19,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { PageSection, PageSectionType, PageConfig, GalleryEvent, GalleryMediaItem, DownloadItem, DownloadGroup, DownloadLink, PerformanceItem } from '@/types';
-import { ChevronDown, ChevronRight, Trash2, Plus, Upload, X, GripVertical, Image as ImageIcon, Video, ArrowRightLeft, HelpCircle } from 'lucide-react';
+import { ChevronDown, ChevronRight, Trash2, Plus, Upload, X, GripVertical, Image as ImageIcon, Video, Music, ArrowRightLeft, HelpCircle } from 'lucide-react';
 import { RichTextEditor } from '@/components/cms/RichTextEditor';
 import { uploadToR2 } from '@/lib/upload';
 
@@ -34,6 +34,7 @@ const SECTION_TYPE_OPTIONS: { value: PageSectionType; label: string }[] = [
   { value: 'table', label: 'Table' },
   { value: 'separator', label: 'Divider' },
   { value: 'downloads', label: 'Downloads / Link List' },
+  { value: 'media-hub', label: 'Media Hub (Photos / Recordings / Videos)' },
 ];
 
 const SECTION_TYPE_LABELS: Record<string, string> = Object.fromEntries(
@@ -50,6 +51,7 @@ const DEFAULT_HEIGHTS: Partial<Record<PageSectionType, number>> = {
   performances: 260,
   table: 220,
   downloads: 220,
+  'media-hub': 260,
 };
 
 const MOVE_DROPDOWN_PANEL_ID = 'move-section-dropdown-panel';
@@ -526,6 +528,14 @@ function SortableSectionItem({
             />
           )}
 
+          {section.type === 'media-hub' && (
+            <MediaHubEditor
+              section={section}
+              onUpdate={onUpdate}
+              inputClass={inputClass}
+            />
+          )}
+
           {/* Size controls */}
           <div className="pt-2 border-t border-slate-100 space-y-3">
             <p className="text-[10px] font-bold text-slate-700 uppercase">Size</p>
@@ -691,6 +701,24 @@ function GalleryEventsEditor({
   );
 }
 
+function getMediaAudioDuration(file: File): Promise<string | null> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const audio = new Audio(url);
+    audio.addEventListener('loadedmetadata', () => {
+      const secs = Math.round(audio.duration);
+      const m = Math.floor(secs / 60);
+      const s = secs % 60;
+      URL.revokeObjectURL(url);
+      resolve(`${m}:${s.toString().padStart(2, '0')}`);
+    });
+    audio.addEventListener('error', () => {
+      URL.revokeObjectURL(url);
+      resolve(null);
+    });
+  });
+}
+
 function GalleryMediaEditor({
   items,
   onChange,
@@ -702,8 +730,10 @@ function GalleryMediaEditor({
 }) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
   const [addingImage, setAddingImage] = useState(false);
   const [addingVideo, setAddingVideo] = useState(false);
+  const [addingAudio, setAddingAudio] = useState(false);
   const [addImageError, setAddImageError] = useState<string | null>(null);
 
   const handleAddImage = async (file: File) => {
@@ -742,6 +772,25 @@ function GalleryMediaEditor({
     }
   };
 
+  const handleAddAudioFile = async (file: File) => {
+    setAddImageError(null);
+    setAddingAudio(true);
+    try {
+      const duration = await getMediaAudioDuration(file);
+      const result = await uploadToR2(file, 'recordings');
+      if (result.error) {
+        setAddImageError(result.error);
+      } else if (result.url) {
+        const id = Math.random().toString(36).substring(2, 11);
+        onChange([...items, { id, type: 'audio', url: result.url, caption: file.name.replace(/\.[^.]+$/, ''), ...(duration ? { duration } : {}) }]);
+      }
+    } catch {
+      setAddImageError('Upload failed');
+    } finally {
+      setAddingAudio(false);
+    }
+  };
+
   const addVideo = () => {
     const id = Math.random().toString(36).substring(2, 11);
     onChange([...items, { id, type: 'video', url: '', caption: '' }]);
@@ -767,7 +816,7 @@ function GalleryMediaEditor({
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <label className="block text-[10px] font-bold text-slate-700 uppercase">Media Items</label>
-        <div className="flex gap-1">
+        <div className="flex gap-1 flex-wrap justify-end">
           <input
             ref={imageInputRef}
             type="file"
@@ -790,8 +839,22 @@ function GalleryMediaEditor({
               e.target.value = '';
             }}
           />
+          <input
+            ref={audioInputRef}
+            type="file"
+            accept="audio/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleAddAudioFile(f);
+              e.target.value = '';
+            }}
+          />
           <button type="button" disabled={addingImage} onClick={() => imageInputRef.current?.click()} className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 disabled:opacity-50 transition-colors">
             <ImageIcon size={10} /> {addingImage ? 'Uploading...' : 'Image'}
+          </button>
+          <button type="button" disabled={addingAudio} onClick={() => audioInputRef.current?.click()} className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 disabled:opacity-50 transition-colors">
+            <Music size={10} /> {addingAudio ? 'Uploading...' : 'Recording'}
           </button>
           <button type="button" disabled={addingVideo} onClick={() => videoInputRef.current?.click()} className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 disabled:opacity-50 transition-colors">
             <Upload size={10} /> {addingVideo ? 'Uploading...' : 'Video File'}
@@ -820,9 +883,17 @@ function GalleryMediaEditor({
               <Video size={16} className="text-slate-400" />
             </div>
           )}
+          {item.type === 'audio' && (
+            <div className="w-12 h-12 rounded bg-red-50 flex items-center justify-center flex-shrink-0">
+              <Music size={16} className="text-red-400" />
+            </div>
+          )}
           <div className="flex-1 space-y-1 min-w-0">
             <div className="flex items-center gap-1">
               <span className="text-[9px] font-bold uppercase text-slate-400">{item.type}</span>
+              {item.type === 'audio' && item.duration && (
+                <span className="text-[9px] text-slate-400">({item.duration})</span>
+              )}
             </div>
             {item.type === 'image' ? (
               <ImageUploadField
@@ -838,7 +909,7 @@ function GalleryMediaEditor({
                 className={inputClass}
                 value={item.url}
                 onChange={(e) => updateItem(item.id, { url: e.target.value })}
-                placeholder="https://youtube.com/watch?v=..."
+                placeholder={item.type === 'audio' ? 'Audio file URL' : 'https://youtube.com/watch?v=...'}
               />
             )}
             <input
@@ -846,7 +917,7 @@ function GalleryMediaEditor({
               className={inputClass}
               value={item.caption ?? ''}
               onChange={(e) => updateItem(item.id, { caption: e.target.value })}
-              placeholder="Caption (optional)"
+              placeholder={item.type === 'audio' ? 'Recording title' : 'Caption (optional)'}
             />
           </div>
           <button type="button" onClick={() => removeItem(item.id)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" aria-label="Remove media item">
@@ -997,6 +1068,186 @@ function DownloadItemUploadButton({
         <Upload size={10} /> {uploading ? 'Uploading...' : 'Document'}
       </button>
       {error && <span className="text-[10px] text-red-600">{error}</span>}
+    </div>
+  );
+}
+
+function MediaHubEditor({
+  section,
+  onUpdate,
+  inputClass,
+}: {
+  section: PageSection;
+  onUpdate: (updates: Partial<PageSection>) => void;
+  inputClass: string;
+}) {
+  const [activeTab, setActiveTab] = useState<'photos' | 'recordings' | 'videos'>('photos');
+
+  const photos = section.mediaPhotos ?? [];
+  const recordings = section.mediaRecordings ?? [];
+  const videos = section.mediaVideos ?? [];
+
+  return (
+    <div className="space-y-3 pb-2">
+      {/* Tab switcher */}
+      <div className="flex gap-1 p-1 bg-slate-100 rounded-lg">
+        {(['photos', 'recordings', 'videos'] as const).map((tab) => {
+          const label = tab === 'photos' ? `Photos (${photos.length})` : tab === 'recordings' ? `Recordings (${recordings.length})` : `Videos (${videos.length})`;
+          return (
+            <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${activeTab === tab ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Photos tab: gallery events (photo albums) */}
+      {activeTab === 'photos' && (
+        <GalleryEventsEditor
+          events={photos}
+          onChange={(mediaPhotos) => onUpdate({ mediaPhotos })}
+          inputClass={inputClass}
+        />
+      )}
+
+      {/* Recordings tab: audio items */}
+      {activeTab === 'recordings' && (
+        <MediaHubItemsEditor
+          items={recordings}
+          onChange={(mediaRecordings) => onUpdate({ mediaRecordings })}
+          inputClass={inputClass}
+          mediaType="audio"
+        />
+      )}
+
+      {/* Videos tab: video items */}
+      {activeTab === 'videos' && (
+        <MediaHubItemsEditor
+          items={videos}
+          onChange={(mediaVideos) => onUpdate({ mediaVideos })}
+          inputClass={inputClass}
+          mediaType="video"
+        />
+      )}
+    </div>
+  );
+}
+
+function MediaHubItemsEditor({
+  items,
+  onChange,
+  inputClass,
+  mediaType,
+}: {
+  items: GalleryMediaItem[];
+  onChange: (items: GalleryMediaItem[]) => void;
+  inputClass: string;
+  mediaType: 'audio' | 'video';
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleFileUpload = async (file: File) => {
+    setError(null);
+    setUploading(true);
+    try {
+      let duration: string | null = null;
+      if (mediaType === 'audio') {
+        duration = await new Promise<string | null>((resolve) => {
+          const url = URL.createObjectURL(file);
+          const audio = new Audio(url);
+          audio.addEventListener('loadedmetadata', () => {
+            const secs = Math.round(audio.duration);
+            const m = Math.floor(secs / 60);
+            const s = secs % 60;
+            URL.revokeObjectURL(url);
+            resolve(`${m}:${s.toString().padStart(2, '0')}`);
+          });
+          audio.addEventListener('error', () => { URL.revokeObjectURL(url); resolve(null); });
+        });
+      }
+      const folder = mediaType === 'audio' ? 'recordings' : 'videos';
+      const result = await uploadToR2(file, folder);
+      if (result.error) {
+        setError(result.error);
+      } else if (result.url) {
+        const id = Math.random().toString(36).substring(2, 11);
+        const caption = file.name.replace(/\.[^.]+$/, '');
+        onChange([...items, { id, type: mediaType, url: result.url, caption, ...(duration ? { duration } : {}) }]);
+      }
+    } catch {
+      setError('Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const addUrlItem = () => {
+    const id = Math.random().toString(36).substring(2, 11);
+    onChange([...items, { id, type: mediaType, url: '', caption: '' }]);
+  };
+
+  const updateItem = (id: string, updates: Partial<GalleryMediaItem>) => {
+    onChange(items.map((m) => (m.id === id ? { ...m, ...updates } : m)));
+  };
+
+  const removeItem = (id: string) => {
+    onChange(items.filter((m) => m.id !== id));
+  };
+
+  const moveItem = (idx: number, dir: -1 | 1) => {
+    const target = idx + dir;
+    if (target < 0 || target >= items.length) return;
+    const next = [...items];
+    [next[idx], next[target]] = [next[target], next[idx]];
+    onChange(next);
+  };
+
+  const acceptType = mediaType === 'audio' ? 'audio/*' : 'video/mp4,video/webm';
+  const iconComp = mediaType === 'audio' ? <Music size={10} /> : <Video size={10} />;
+  const typeLabel = mediaType === 'audio' ? 'Recording' : 'Video';
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <label className="block text-[10px] font-bold text-slate-700 uppercase">{typeLabel}s</label>
+        <div className="flex gap-1">
+          <input ref={fileInputRef} type="file" accept={acceptType} className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ''; }} />
+          <button type="button" disabled={uploading} onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 disabled:opacity-50 transition-colors">
+            {iconComp} {uploading ? 'Uploading...' : `Upload ${typeLabel}`}
+          </button>
+          {mediaType === 'video' && (
+            <button type="button" onClick={addUrlItem} className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 transition-colors">
+              <Video size={10} /> Add URL
+            </button>
+          )}
+        </div>
+      </div>
+      {error && <p className="text-[10px] text-red-600">{error}</p>}
+      {items.length === 0 && <p className="text-[10px] text-slate-500">No {typeLabel.toLowerCase()}s yet.</p>}
+      {items.map((item, idx) => (
+        <div key={item.id} className="flex items-start gap-2 p-2 border border-slate-200 rounded bg-white">
+          <div className="flex flex-col gap-0.5 pt-1">
+            <button type="button" onClick={() => moveItem(idx, -1)} disabled={idx === 0} className="text-slate-400 hover:text-slate-600 disabled:opacity-30 text-[8px]" aria-label="Move up">&#9650;</button>
+            <button type="button" onClick={() => moveItem(idx, 1)} disabled={idx === items.length - 1} className="text-slate-400 hover:text-slate-600 disabled:opacity-30 text-[8px]" aria-label="Move down">&#9660;</button>
+          </div>
+          <div className={`w-12 h-12 rounded flex items-center justify-center flex-shrink-0 ${mediaType === 'audio' ? 'bg-red-50' : 'bg-slate-100'}`}>
+            {mediaType === 'audio' ? <Music size={16} className="text-red-400" /> : <Video size={16} className="text-slate-400" />}
+          </div>
+          <div className="flex-1 space-y-1 min-w-0">
+            <div className="flex items-center gap-1">
+              <span className="text-[9px] font-bold uppercase text-slate-400">{mediaType}</span>
+              {item.duration && <span className="text-[9px] text-slate-400">({item.duration})</span>}
+            </div>
+            <input type="url" className={inputClass} value={item.url} onChange={(e) => updateItem(item.id, { url: e.target.value })} placeholder={mediaType === 'audio' ? 'Audio file URL' : 'https://youtube.com/watch?v=...'} />
+            <input type="text" className={inputClass} value={item.caption ?? ''} onChange={(e) => updateItem(item.id, { caption: e.target.value })} placeholder={mediaType === 'audio' ? 'Recording title' : 'Video title'} />
+          </div>
+          <button type="button" onClick={() => removeItem(item.id)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" aria-label={`Remove ${typeLabel.toLowerCase()}`}>
+            <X size={12} />
+          </button>
+        </div>
+      ))}
     </div>
   );
 }
@@ -1301,6 +1552,11 @@ export function SectionEditor({ sections, onChange, currentPageId, allPages, onM
       downloadItems: [] as DownloadItem[],
       downloadGroups: [] as DownloadGroup[],
     } : {};
+    const mediaHubDefaults = type === 'media-hub' ? {
+      mediaPhotos: [] as GalleryEvent[],
+      mediaRecordings: [] as GalleryMediaItem[],
+      mediaVideos: [] as GalleryMediaItem[],
+    } : {};
     const newSection: PageSection = {
       id,
       type,
@@ -1310,6 +1566,7 @@ export function SectionEditor({ sections, onChange, currentPageId, allPages, onM
       ...galleryDefaults,
       ...performancesDefaults,
       ...downloadsDefaults,
+      ...mediaHubDefaults,
     };
     onChange([...sections, newSection]);
     setExpandedId(id);

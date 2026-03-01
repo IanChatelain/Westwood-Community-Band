@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { PageConfig, SidebarBlock, PageSection, SectionStyle, BuilderBlock, BlockWrapperStyle, GalleryEvent, DownloadItem, DownloadGroup, PerformanceItem } from '@/types';
+import React, { useState, useRef } from 'react';
+import { PageConfig, SidebarBlock, PageSection, SectionStyle, BuilderBlock, BlockWrapperStyle, GalleryEvent, GalleryMediaItem, DownloadItem, DownloadGroup, PerformanceItem } from '@/types';
 import { DEFAULT_SIDEBAR_BLOCKS } from '@/constants';
 
 /** Convert plain text (with \n) to HTML paragraphs. Pass HTML through unchanged. */
@@ -76,7 +76,7 @@ export function blockWrapperClassesAndStyle(s?: BlockWrapperStyle): { className:
   else if (s.shadow === 'none') classes.push('shadow-none');
   return { className: classes.join(' ').trim(), style };
 }
-import { Calendar, ArrowRight, Mail, MapPin, Clock, Send, FileDown, ExternalLink, Music } from 'lucide-react';
+import { Calendar, ArrowRight, Mail, MapPin, Clock, Send, FileDown, ExternalLink, Music, Image as ImageIcon, Video, Play, Pause } from 'lucide-react';
 import Link from 'next/link';
 import { submitContactMessage } from '@/app/actions/contact';
 
@@ -463,6 +463,231 @@ export function BuilderBlockView({ block }: { block: BuilderBlock }) {
   return null;
 }
 
+type MediaHubTab = 'photos' | 'recordings' | 'videos';
+
+function MediaHubAudioPlayer({ item }: { item: GalleryMediaItem }) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState('0:00');
+  const [totalDuration, setTotalDuration] = useState(item.duration || '0:00');
+
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (playing) audioRef.current.pause();
+    else audioRef.current.play();
+    setPlaying(!playing);
+  };
+
+  const handleTimeUpdate = () => {
+    if (!audioRef.current) return;
+    const { currentTime: ct, duration } = audioRef.current;
+    if (duration) {
+      setProgress((ct / duration) * 100);
+      setCurrentTime(formatTime(ct));
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (!audioRef.current) return;
+    setTotalDuration(formatTime(audioRef.current.duration));
+  };
+
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!audioRef.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    audioRef.current.currentTime = pct * audioRef.current.duration;
+  };
+
+  const handleEnded = () => { setPlaying(false); setProgress(0); setCurrentTime('0:00'); };
+
+  return (
+    <div className="group flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all">
+      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+      <audio ref={audioRef} src={item.url} preload="metadata" onTimeUpdate={handleTimeUpdate} onLoadedMetadata={handleLoadedMetadata} onEnded={handleEnded} onPause={() => setPlaying(false)} onPlay={() => setPlaying(true)} />
+      <button type="button" onClick={togglePlay} className="flex-shrink-0 w-11 h-11 rounded-full bg-red-800 hover:bg-red-900 text-white flex items-center justify-center transition-colors shadow-sm" aria-label={playing ? 'Pause' : 'Play'}>
+        {playing ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
+      </button>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-slate-900 truncate">{item.caption || 'Untitled Recording'}</p>
+        <div className="mt-2 flex items-center gap-3">
+          <div className="flex-1 h-1.5 bg-slate-200 rounded-full cursor-pointer group/bar" onClick={handleSeek} role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
+            <div className="h-full bg-red-800 rounded-full transition-[width] duration-150 relative" style={{ width: `${progress}%` }}>
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-red-800 border-2 border-white shadow-sm opacity-0 group-hover/bar:opacity-100 transition-opacity" />
+            </div>
+          </div>
+          <span className="text-[11px] text-slate-500 tabular-nums flex-shrink-0 w-20 text-right">{currentTime} / {totalDuration}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function parseVideoEmbedUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('youtube.com') && u.searchParams.get('v'))
+      return `https://www.youtube.com/embed/${u.searchParams.get('v')}`;
+    if (u.hostname === 'youtu.be')
+      return `https://www.youtube.com/embed${u.pathname}`;
+  } catch { /* ignore */ }
+  return null;
+}
+
+function isDirectVideoUrl(url: string): boolean {
+  try {
+    const ext = new URL(url).pathname.split('.').pop()?.toLowerCase();
+    return ['mp4', 'webm', 'ogg', 'mov', 'm4v'].includes(ext || '');
+  } catch { return false; }
+}
+
+function MediaHubSection({ section, pageSlug }: { section: PageSection; pageSlug: string }) {
+  const photos = section.mediaPhotos ?? [];
+  const recordings = section.mediaRecordings ?? [];
+  const videos = section.mediaVideos ?? [];
+
+  const tabs: { key: MediaHubTab; label: string; icon: React.ReactNode; count: number }[] = [];
+  if (photos.length > 0) tabs.push({ key: 'photos', label: 'Photos', icon: <ImageIcon size={18} />, count: photos.reduce((n, ev) => n + ev.media.filter(m => m.type === 'image').length, 0) || photos.length });
+  if (recordings.length > 0) tabs.push({ key: 'recordings', label: 'Recordings', icon: <Music size={18} />, count: recordings.length });
+  if (videos.length > 0) tabs.push({ key: 'videos', label: 'Videos', icon: <Video size={18} />, count: videos.length });
+
+  const defaultTab = tabs.length > 0 ? tabs[0].key : 'photos';
+  const [activeTab, setActiveTab] = useState<MediaHubTab>(defaultTab);
+
+  const basePath = pageSlug === '/' ? '' : pageSlug;
+  const hasAny = photos.length > 0 || recordings.length > 0 || videos.length > 0;
+
+  return (
+    <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm ring-1 ring-slate-900/5" style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
+      {section.title && (
+        <h3 className="text-2xl font-bold text-slate-900 mb-2 border-l-4 border-red-800 pl-6">{section.title}</h3>
+      )}
+      {section.content && (
+        <p className="text-slate-600 mb-6 pl-6 ml-1">{section.content}</p>
+      )}
+
+      {!hasAny && (
+        <div className="text-center py-12 text-slate-400">
+          <Music className="mx-auto mb-3 opacity-50" size={36} />
+          <p className="text-sm">No media yet. Add photos, recordings, or videos via the admin panel.</p>
+        </div>
+      )}
+
+      {hasAny && (
+        <>
+          {/* Tab bar */}
+          {tabs.length > 1 && (
+            <div className="mb-8">
+              <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
+                {tabs.map((tab) => (
+                  <button key={tab.key} type="button" onClick={() => setActiveTab(tab.key)} className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === tab.key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}>
+                    {tab.icon}
+                    {tab.label}
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.key ? 'bg-red-800 text-white' : 'bg-slate-200 text-slate-600'}`}>{tab.count}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Photos tab: grid of album cards */}
+          {activeTab === 'photos' && photos.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {photos.map((ev) => (
+                <Link key={ev.id} href={`${basePath}/${ev.slug}`} className="group block rounded-xl overflow-hidden border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all bg-white">
+                  <div className="aspect-[4/3] bg-slate-100 overflow-hidden">
+                    {ev.coverImageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={ev.coverImageUrl} alt={ev.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    ) : ev.media.length > 0 && ev.media[0].type === 'image' && ev.media[0].url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={ev.media[0].url} alt={ev.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-300">
+                        <ImageIcon size={48} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <h4 className="font-semibold text-slate-900 group-hover:text-red-800 transition-colors">{ev.title}</h4>
+                    {ev.description && <p className="text-sm text-slate-500 mt-1 line-clamp-2">{ev.description}</p>}
+                    {ev.media.length > 0 && (
+                      <p className="text-xs text-slate-400 mt-2">{ev.media.filter(m => m.type === 'image').length} photos</p>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {/* Recordings tab: audio players */}
+          {activeTab === 'recordings' && recordings.length > 0 && (
+            <div className="space-y-3 max-w-3xl">
+              {recordings.map((item) => (
+                <MediaHubAudioPlayer key={item.id} item={item} />
+              ))}
+            </div>
+          )}
+
+          {/* Videos tab: video embeds */}
+          {activeTab === 'videos' && videos.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {videos.map((item) => {
+                const embedUrl = parseVideoEmbedUrl(item.url);
+                if (embedUrl) {
+                  return (
+                    <div key={item.id} className="rounded-xl overflow-hidden border border-slate-200 bg-black shadow-sm">
+                      <div className="aspect-video">
+                        <iframe src={embedUrl} title={item.caption || 'Video'} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                      </div>
+                      {item.caption && (
+                        <div className="px-4 py-3 bg-white border-t border-slate-200">
+                          <p className="text-sm font-medium text-slate-800">{item.caption}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+                if (isDirectVideoUrl(item.url)) {
+                  return (
+                    <div key={item.id} className="rounded-xl overflow-hidden border border-slate-200 bg-black shadow-sm">
+                      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                      <video src={item.url} controls preload="metadata" className="w-full aspect-video" />
+                      {item.caption && (
+                        <div className="px-4 py-3 bg-white border-t border-slate-200">
+                          <p className="text-sm font-medium text-slate-800">{item.caption}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+                return (
+                  <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer" className="group relative aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                        <Play size={28} className="text-white/80 group-hover:text-white transition-colors ml-1" />
+                      </div>
+                      {item.caption && <p className="text-sm text-white/80 mt-2">{item.caption}</p>}
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          )}
+
+        </>
+      )}
+    </div>
+  );
+}
+
 function GallerySection({ section, pageSlug }: { section: PageSection; pageSlug: string }) {
   const hasEvents = section.galleryEvents && section.galleryEvents.length > 0;
   const basePath = pageSlug === '/' ? '' : pageSlug;
@@ -648,6 +873,10 @@ export default function PageContent({ page }: PageContentProps) {
 
             {section.type === 'gallery' && (
               <GallerySection section={section} pageSlug={page.slug} />
+            )}
+
+            {section.type === 'media-hub' && (
+              <MediaHubSection section={section} pageSlug={page.slug} />
             )}
 
             {section.type === 'contact' && (

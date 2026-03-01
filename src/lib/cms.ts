@@ -136,7 +136,8 @@ export async function loadCmsState(): Promise<Partial<AppState> | null> {
       currentUser: null,
     };
   } catch (err) {
-    console.error('loadCmsState failed:', err);
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('loadCmsState failed:', message, err);
     return null;
   }
 }

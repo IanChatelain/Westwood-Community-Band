@@ -163,6 +163,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
             pageBuilder: createInitialBuilderState(nextPages),
           };
         });
+      } else {
+        // DB unreachable or empty: show default content so the site still works
+        setState(prev => ({
+          ...prev,
+          settings: DEFAULT_SETTINGS,
+          pages: INITIAL_PAGES,
+          pageBuilder: createInitialBuilderState(INITIAL_PAGES),
+        }));
       }
       setLoading(false);
     });
