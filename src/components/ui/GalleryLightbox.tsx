@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { GalleryMediaItem } from '@/types';
 
@@ -81,12 +82,15 @@ export default function GalleryLightbox({ items, activeIndex, onClose, onNavigat
         onClick={(e) => e.stopPropagation()}
       >
         {item.type === 'image' && item.url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={item.url}
-            alt={item.caption || ''}
-            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
-          />
+          <div className="relative w-[90vw] max-w-5xl h-[85vh] min-h-[200px]">
+            <Image
+              src={item.url}
+              alt={item.caption ?? 'Gallery image'}
+              fill
+              className="object-contain rounded-lg shadow-2xl"
+              sizes="(max-width: 1024px) 90vw, 1024px"
+            />
+          </div>
         )}
         {item.caption && (
           <p className="mt-3 text-sm text-white/90 text-center max-w-lg">{item.caption}</p>
