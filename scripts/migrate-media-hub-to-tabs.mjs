@@ -134,25 +134,9 @@ function getDefaultMediaPageSections(existing = {}) {
     galleryEvents: existingPhotos = [],
   } = existing;
 
-  const defaultRecordings = [
-    { id: 'r-liberty-bell', type: 'audio', url: '#', caption: 'Liberty Bell', duration: '2:47' },
-    { id: 'r-big-band-showcase', type: 'audio', url: '#', caption: 'Big Band Showcase', duration: '8:20' },
-    { id: 'r-it-dont-mean-a-thing', type: 'audio', url: '#', caption: "It Don't Mean a Thing", duration: '3:25' },
-    { id: 'r-count-basie-salute', type: 'audio', url: '#', caption: 'Count Basie Salute', duration: '4:17' },
-    { id: 'r-themes-like-old-times', type: 'audio', url: '#', caption: 'Themes Like Old Times', duration: '5:35' },
-    { id: 'r-caravan', type: 'audio', url: '#', caption: 'Caravan', duration: '2:46' },
-    { id: 'r-swing-the-mood', type: 'audio', url: '#', caption: 'Swing the Mood', duration: '3:38' },
-    { id: 'r-blues-brothers-revue', type: 'audio', url: '#', caption: 'Blues Brothers Revue', duration: '5:12' },
-  ];
+  const defaultRecordings = [];
 
-  const defaultPhotos = [
-    { id: 'ph-spring-2025', title: 'Spring Concert 2025', slug: 'spring-concert-2025', description: 'Photos from our Spring 2025 concert.', media: [] },
-    { id: 'ph-holiday-2024', title: 'Holiday Concert 2024', slug: 'holiday-concert-2024', description: 'Festive moments from our Holiday 2024 concert.', media: [] },
-    { id: 'ph-spring-2024', title: 'Spring Concert 2024', slug: 'spring-concert-2024', description: 'Highlights from our Spring 2024 performance.', media: [] },
-    { id: 'ph-holiday-2023', title: 'Holiday Concert 2023', slug: 'holiday-concert-2023', description: 'Scenes from our Holiday 2023 concert.', media: [] },
-    { id: 'ph-rehearsals', title: 'Rehearsals', slug: 'rehearsals', description: 'Behind the scenes at our Thursday night rehearsals.', media: [] },
-    { id: 'ph-community-events', title: 'Community Events', slug: 'community-events', description: 'The band out and about in the community.', media: [] },
-  ];
+  const defaultPhotos = [];
 
   return [
     {
@@ -200,10 +184,7 @@ function getDefaultMediaPageSections(existing = {}) {
       type: 'downloads',
       title: 'Band Documents',
       content: 'Download band resources including the complete music library listing.',
-      downloadItems: [
-        { label: 'Music List (Excel)', url: '#', description: 'Complete listing of music available in the Westwood Music Library.', fileSize: '39.5 KB' },
-        { label: 'Music List (HTML)', url: '#', description: 'View the music list in your browser.' },
-      ],
+      downloadItems: [],
     },
   ];
 }

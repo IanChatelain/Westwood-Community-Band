@@ -11,77 +11,25 @@ SET sections = '[
   {
     "id": "m1",
     "type": "hero",
-    "title": "Videos & Recordings",
-    "content": "Watch and listen to performances by the Westwood Community Band.",
+    "title": "Photos, Recordings & Videos",
+    "content": "Browse photos from our concerts, listen to recordings, and watch videos of the Westwood Community Band.",
     "imageUrl": "/images/media.jpg"
   },
+  {"id":"m2-photos","type":"gallery","title":"Photos","content":"","tabGroup":"media","tabLabel":"Photos","galleryEvents":[]},
+  {"id":"m2-recordings","type":"audio-playlist","title":"Recordings","content":"","tabGroup":"media","tabLabel":"Recordings","audioItems":[]},
+  {"id":"m2-videos","type":"video-gallery","title":"Videos","content":"","tabGroup":"media","tabLabel":"Videos","videoItems":[]},
   {
-    "id": "m2",
-    "type": "gallery",
-    "title": "Featured Recordings",
-    "content": "",
-    "galleryColumns": 3,
-    "galleryCardSize": "md",
-    "galleryThumbnailAspect": "landscape",
-    "galleryShowDescription": true,
-    "galleryEvents": [
-      {
-        "id": "m-liberty-bell",
-        "title": "Liberty Bell",
-        "slug": "liberty-bell",
-        "description": "A classic march by John Philip Sousa.",
-        "media": []
-      },
-      {
-        "id": "m-big-band-showcase",
-        "title": "Big Band Showcase",
-        "slug": "big-band-showcase",
-        "description": "Highlights from our big band repertoire.",
-        "media": []
-      },
-      {
-        "id": "m-it-dont-mean-a-thing",
-        "title": "It Don''t Mean a Thing",
-        "slug": "it-dont-mean-a-thing",
-        "description": "Duke Ellington''s iconic swing number.",
-        "media": []
-      },
-      {
-        "id": "m-count-basie-salute",
-        "title": "Count Basie Salute",
-        "slug": "count-basie-salute",
-        "description": "A tribute to the legendary Count Basie.",
-        "media": []
-      },
-      {
-        "id": "m-themes-like-old-times",
-        "title": "Themes Like Old Times",
-        "slug": "themes-like-old-times",
-        "description": "A nostalgic medley of timeless melodies.",
-        "media": []
-      },
-      {
-        "id": "m-caravan",
-        "title": "Caravan",
-        "slug": "caravan",
-        "description": "The classic Duke Ellington and Juan Tizol composition.",
-        "media": []
-      },
-      {
-        "id": "m-swing-the-mood",
-        "title": "Swing the Mood",
-        "slug": "swing-the-mood",
-        "description": "An energetic swing medley.",
-        "media": []
-      },
-      {
-        "id": "m-blues-brothers-revue",
-        "title": "Blues Brothers Revue",
-        "slug": "blues-brothers-revue",
-        "description": "A rockin'' tribute to the Blues Brothers.",
-        "media": []
-      }
-    ]
+    "id": "m3",
+    "type": "text",
+    "title": "International Music Camp",
+    "content": "The <a href=\"http://www.internationalmusiccamp.com/\" target=\"_blank\" rel=\"noopener noreferrer\">International Music Camp</a> is an annual event for students and adults that takes place at the International Peace Gardens on the border between Manitoba and North Dakota.\n\nThe adult camp is a 4-day event. Every year a significant number of Westwood Band members make the trek to attend. In 2006, Westwood were guest performers at IMC for our 25th anniversary. We loved performing for such an amazing audience."
+  },
+  {
+    "id": "m4",
+    "type": "downloads",
+    "title": "Band Documents",
+    "content": "Download band resources including the complete music library listing.",
+    "downloadItems": []
   }
 ]'::jsonb,
     updated_at = now()
