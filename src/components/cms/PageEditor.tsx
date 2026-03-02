@@ -378,61 +378,62 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
                 {(() => {
                   const now = new Date();
                   return revisions.map((rev) => {
-                  const date = new Date(rev.createdAt.endsWith('Z') ? rev.createdAt : rev.createdAt + 'Z');
-                  const isRestoring = restoringId === rev.id;
-                  const isRestoredTarget = rev.id === lastRestoredRevisionId;
-                  const minutesAgo = Math.round((now.getTime() - date.getTime()) / 60000);
-                  let relative: string | null = null;
-                  if (!Number.isNaN(minutesAgo)) {
-                    if (minutesAgo < 1) relative = 'just now';
-                    else if (minutesAgo < 60) relative = `${minutesAgo} minute${minutesAgo === 1 ? '' : 's'} ago`;
-                    else {
-                      const hours = Math.round(minutesAgo / 60);
-                      if (hours < 24) relative = `${hours} hour${hours === 1 ? '' : 's'} ago`;
+                    const date = new Date(rev.createdAt.endsWith('Z') ? rev.createdAt : rev.createdAt + 'Z');
+                    const isRestoring = restoringId === rev.id;
+                    const isRestoredTarget = rev.id === lastRestoredRevisionId;
+                    const minutesAgo = Math.round((now.getTime() - date.getTime()) / 60000);
+                    let relative: string | null = null;
+                    if (!Number.isNaN(minutesAgo)) {
+                      if (minutesAgo < 1) relative = 'just now';
+                      else if (minutesAgo < 60) relative = `${minutesAgo} minute${minutesAgo === 1 ? '' : 's'} ago`;
                       else {
-                        const days = Math.round(hours / 24);
-                        relative = `${days} day${days === 1 ? '' : 's'} ago`;
+                        const hours = Math.round(minutesAgo / 60);
+                        if (hours < 24) relative = `${hours} hour${hours === 1 ? '' : 's'} ago`;
+                        else {
+                          const days = Math.round(hours / 24);
+                          relative = `${days} day${days === 1 ? '' : 's'} ago`;
+                        }
                       }
                     }
-                  }
-                  return (
-                    <div
-                      key={rev.id}
-                      className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${
-                        rev.isCurrent
-                          ? 'bg-emerald-50 border-emerald-200'
-                          : isRestoredTarget
-                            ? 'bg-blue-50 border-blue-200'
-                            : 'hover:bg-slate-50 border-transparent hover:border-slate-200'
-                      }`}
-                    >
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-slate-900 flex items-center gap-2">
-                          {date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
-                          <span className="text-slate-500 font-normal">
-                            {date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                          {rev.isCurrent && (
-                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">Current</span>
-                          )}
-                          {isRestoredTarget && !rev.isCurrent && (
-                            <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">Restored to this version</span>
-                          )}
-                        </p>
-                        <p className="text-xs text-slate-500 truncate">
-                          {rev.label ?? (relative ? `Saved ${relative}` : '')}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleRestore(rev.id)}
-                        disabled={rev.isCurrent || isRestoring || restoringId !== null}
-                        className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-300 text-slate-700 hover:border-red-400 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
+                    return (
+                      <div
+                        key={rev.id}
+                        className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${
+                          rev.isCurrent
+                            ? 'bg-emerald-50 border-emerald-200'
+                            : isRestoredTarget
+                              ? 'bg-blue-50 border-blue-200'
+                              : 'hover:bg-slate-50 border-transparent hover:border-slate-200'
+                        }`}
                       >
-                        <RotateCcw size={13} className={isRestoring ? 'animate-spin' : ''} />
-                        {isRestoring ? 'Restoring...' : rev.isCurrent ? 'Current' : 'Restore'}
-                      </button>
-                    </div>
-                  );
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-slate-900 flex items-center gap-2">
+                            {date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                            <span className="text-slate-500 font-normal">
+                              {date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            {rev.isCurrent && (
+                              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">Current</span>
+                            )}
+                            {isRestoredTarget && !rev.isCurrent && (
+                              <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">Restored to this version</span>
+                            )}
+                          </p>
+                          <p className="text-xs text-slate-500 truncate">
+                            {rev.label ?? (relative ? `Saved ${relative}` : '')}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleRestore(rev.id)}
+                          disabled={rev.isCurrent || isRestoring || restoringId !== null}
+                          className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-300 text-slate-700 hover:border-red-400 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
+                        >
+                          <RotateCcw size={13} className={isRestoring ? 'animate-spin' : ''} />
+                          {isRestoring ? 'Restoring...' : rev.isCurrent ? 'Current' : 'Restore'}
+                        </button>
+                      </div>
+                    );
+                  });
                 })()}
               </div>
             )}
