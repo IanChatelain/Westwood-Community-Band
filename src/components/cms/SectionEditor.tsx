@@ -283,6 +283,8 @@ interface SortableSectionItemProps {
   otherPages?: { id: string; title: string }[];
   onMoveToPage?: (sectionId: string, targetPageId: string) => void;
   onMoveToNewPage?: (sectionId: string) => void;
+  allSections?: PageSection[];
+  onMoveSectionItem?: (fromSectionId: string, toSectionId: string, itemKey: string, itemIdentifier: string | number) => void;
 }
 
 function SortableSectionItem({
@@ -296,6 +298,8 @@ function SortableSectionItem({
   otherPages,
   onMoveToPage,
   onMoveToNewPage,
+  allSections,
+  onMoveSectionItem,
 }: SortableSectionItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: section.id,
@@ -511,6 +515,12 @@ function SortableSectionItem({
                 events={section.galleryEvents ?? []}
                 onChange={(galleryEvents) => onUpdate({ galleryEvents })}
                 inputClass={inputClass}
+                targetSections={(allSections ?? [])
+                  .filter(s => s.id !== section.id && s.type === 'gallery')
+                  .map(s => ({ id: s.id, title: s.title || 'Untitled' }))}
+                onMoveEventToSection={onMoveSectionItem
+                  ? (eventId, targetSectionId) => onMoveSectionItem(section.id, targetSectionId, 'galleryEvents', eventId)
+                  : undefined}
               />
             </>
           )}
@@ -520,6 +530,12 @@ function SortableSectionItem({
               items={section.performanceItems ?? []}
               onChange={(performanceItems) => onUpdate({ performanceItems })}
               inputClass={inputClass}
+              targetSections={(allSections ?? [])
+                .filter(s => s.id !== section.id && s.type === 'performances')
+                .map(s => ({ id: s.id, title: s.title || 'Untitled' }))}
+              onMoveToSection={onMoveSectionItem
+                ? (itemId, targetSectionId) => onMoveSectionItem(section.id, targetSectionId, 'performanceItems', itemId)
+                : undefined}
             />
           )}
 
@@ -528,6 +544,12 @@ function SortableSectionItem({
               section={section}
               onUpdate={onUpdate}
               inputClass={inputClass}
+              targetSections={(allSections ?? [])
+                .filter(s => s.id !== section.id && s.type === 'downloads')
+                .map(s => ({ id: s.id, title: s.title || 'Untitled' }))}
+              onMoveItemToSection={onMoveSectionItem
+                ? (itemIndex, targetSectionId) => onMoveSectionItem(section.id, targetSectionId, 'downloadItems', itemIndex)
+                : undefined}
             />
           )}
 
@@ -537,6 +559,12 @@ function SortableSectionItem({
               onChange={(audioItems) => onUpdate({ audioItems })}
               inputClass={inputClass}
               mediaType="audio"
+              targetSections={(allSections ?? [])
+                .filter(s => s.id !== section.id && s.type === 'audio-playlist')
+                .map(s => ({ id: s.id, title: s.title || 'Untitled' }))}
+              onMoveToSection={onMoveSectionItem
+                ? (itemId, targetSectionId) => onMoveSectionItem(section.id, targetSectionId, 'audioItems', itemId)
+                : undefined}
             />
           )}
 
@@ -610,6 +638,12 @@ function SortableSectionItem({
                 events={section.galleryEvents ?? []}
                 onChange={(galleryEvents) => onUpdate({ galleryEvents })}
                 inputClass={inputClass}
+                targetSections={(allSections ?? [])
+                  .filter(s => s.id !== section.id && s.type === 'video-gallery')
+                  .map(s => ({ id: s.id, title: s.title || 'Untitled' }))}
+                onMoveEventToSection={onMoveSectionItem
+                  ? (eventId, targetSectionId) => onMoveSectionItem(section.id, targetSectionId, 'galleryEvents', eventId)
+                  : undefined}
               />
               {(section.videoItems ?? []).length > 0 && (
                 <div className="pt-3 border-t border-slate-200">
@@ -680,10 +714,14 @@ function GalleryEventsEditor({
   events,
   onChange,
   inputClass,
+  targetSections,
+  onMoveEventToSection,
 }: {
   events: GalleryEvent[];
   onChange: (events: GalleryEvent[]) => void;
   inputClass: string;
+  targetSections?: { id: string; title: string }[];
+  onMoveEventToSection?: (eventId: string, targetSectionId: string) => void;
 }) {
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
 
@@ -757,6 +795,12 @@ function GalleryEventsEditor({
               <div className="flex items-center gap-1 flex-shrink-0 ml-2">
                 <button type="button" onClick={(e) => { e.stopPropagation(); moveEvent(idx, -1); }} disabled={idx === 0} className="p-0.5 text-slate-400 hover:text-slate-600 disabled:opacity-30" aria-label="Move up">&#9650;</button>
                 <button type="button" onClick={(e) => { e.stopPropagation(); moveEvent(idx, 1); }} disabled={idx === events.length - 1} className="p-0.5 text-slate-400 hover:text-slate-600 disabled:opacity-30" aria-label="Move down">&#9660;</button>
+                {targetSections && targetSections.length > 0 && onMoveEventToSection && (
+                  <MoveItemToSectionDropdown
+                    targetSections={targetSections}
+                    onMove={(targetSectionId) => onMoveEventToSection(ev.id, targetSectionId)}
+                  />
+                )}
                 <button type="button" onClick={(e) => { e.stopPropagation(); removeEvent(ev.id); }} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50" aria-label="Remove event">
                   <Trash2 size={12} />
                 </button>
@@ -926,6 +970,50 @@ function MoveMediaToEventDropdown({
                 className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 hover:text-slate-900"
               >
                 {ev.title}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function MoveItemToSectionDropdown({
+  targetSections,
+  onMove,
+}: {
+  targetSections: { id: string; title: string }[];
+  onMove: (targetSectionId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  if (targetSections.length === 0) return null;
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+        className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50 flex-shrink-0"
+        aria-label="Move to another section"
+        title="Move to another section"
+      >
+        <ArrowRightLeft size={12} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" aria-hidden onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full mt-1 z-20 w-48 bg-white rounded-lg shadow-xl border border-slate-200 py-1">
+            <p className="px-3 py-1 text-[9px] font-bold text-slate-500 uppercase">Move to section</p>
+            {targetSections.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onMove(s.id); setOpen(false); }}
+                className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+              >
+                {s.title}
               </button>
             ))}
           </div>
@@ -1197,10 +1285,14 @@ function PerformancesEditor({
   items,
   onChange,
   inputClass,
+  targetSections,
+  onMoveToSection,
 }: {
   items: PerformanceItem[];
   onChange: (items: PerformanceItem[]) => void;
   inputClass: string;
+  targetSections?: { id: string; title: string }[];
+  onMoveToSection?: (itemId: string, targetSectionId: string) => void;
 }) {
   const addItem = () => {
     const id = Math.random().toString(36).substring(2, 11);
@@ -1245,9 +1337,17 @@ function PerformancesEditor({
               <input type="text" className={inputClass} value={item.venue ?? ''} onChange={(e) => updateItem(idx, { venue: e.target.value })} placeholder="Venue" />
               <input type="text" className={inputClass} value={item.description ?? ''} onChange={(e) => updateItem(idx, { description: e.target.value })} placeholder="Description (optional)" />
             </div>
-            <button type="button" onClick={() => removeItem(idx)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" aria-label="Remove performance">
-              <Trash2 size={12} />
-            </button>
+            <div className="flex flex-col gap-0.5 flex-shrink-0">
+              {targetSections && targetSections.length > 0 && onMoveToSection && (
+                <MoveItemToSectionDropdown
+                  targetSections={targetSections}
+                  onMove={(targetSectionId) => onMoveToSection(item.id, targetSectionId)}
+                />
+              )}
+              <button type="button" onClick={() => removeItem(idx)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" aria-label="Remove performance">
+                <Trash2 size={12} />
+              </button>
+            </div>
           </div>
         </div>
       ))}
@@ -1341,11 +1441,15 @@ function MediaHubItemsEditor({
   onChange,
   inputClass,
   mediaType,
+  targetSections,
+  onMoveToSection,
 }: {
   items: GalleryMediaItem[];
   onChange: (items: GalleryMediaItem[]) => void;
   inputClass: string;
   mediaType: 'audio' | 'video';
+  targetSections?: { id: string; title: string }[];
+  onMoveToSection?: (itemId: string, targetSectionId: string) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -1522,9 +1626,17 @@ function MediaHubItemsEditor({
               <input type="url" className={inputClass} value={item.thumbnailUrl ?? ''} onChange={(e) => updateItem(item.id, { thumbnailUrl: e.target.value || undefined })} placeholder="Thumbnail URL (optional)" />
             )}
           </div>
-          <button type="button" onClick={() => removeItem(item.id)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" aria-label={`Remove ${typeLabel.toLowerCase()}`}>
-            <X size={12} />
-          </button>
+          <div className="flex flex-col gap-0.5 flex-shrink-0">
+            {targetSections && targetSections.length > 0 && onMoveToSection && (
+              <MoveItemToSectionDropdown
+                targetSections={targetSections}
+                onMove={(targetSectionId) => onMoveToSection(item.id, targetSectionId)}
+              />
+            )}
+            <button type="button" onClick={() => removeItem(item.id)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" aria-label={`Remove ${typeLabel.toLowerCase()}`}>
+              <X size={12} />
+            </button>
+          </div>
         </div>
       ))}
     </div>
@@ -1535,10 +1647,14 @@ function DownloadsEditor({
   section,
   onUpdate,
   inputClass,
+  targetSections,
+  onMoveItemToSection,
 }: {
   section: PageSection;
   onUpdate: (updates: Partial<PageSection>) => void;
   inputClass: string;
+  targetSections?: { id: string; title: string }[];
+  onMoveItemToSection?: (itemIndex: number, targetSectionId: string) => void;
 }) {
   const [mode, setMode] = useState<'flat' | 'grouped'>(
     (section.downloadGroups && section.downloadGroups.length > 0) ? 'grouped' : 'flat'
@@ -1638,9 +1754,17 @@ function DownloadsEditor({
                   </div>
                   <DownloadItemUploadButton idx={idx} onUploaded={updateItem} />
                 </div>
-                <button type="button" onClick={() => removeItem(idx)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" aria-label="Remove item">
-                  <Trash2 size={12} />
-                </button>
+                <div className="flex flex-col gap-0.5 flex-shrink-0">
+                  {targetSections && targetSections.length > 0 && onMoveItemToSection && (
+                    <MoveItemToSectionDropdown
+                      targetSections={targetSections}
+                      onMove={(targetSectionId) => onMoveItemToSection(idx, targetSectionId)}
+                    />
+                  )}
+                  <button type="button" onClick={() => removeItem(idx)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" aria-label="Remove item">
+                    <Trash2 size={12} />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -1813,6 +1937,35 @@ export function SectionEditor({ sections, onChange, currentPageId, allPages, onM
     );
   };
 
+  const moveItemBetweenSections = (
+    fromSectionId: string,
+    toSectionId: string,
+    itemKey: string,
+    itemIdentifier: string | number,
+  ) => {
+    const fromSection = sections.find(s => s.id === fromSectionId);
+    const toSection = sections.find(s => s.id === toSectionId);
+    if (!fromSection || !toSection) return;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fromItems: any[] = (fromSection as any)[itemKey] ?? [];
+    const itemIndex = typeof itemIdentifier === 'number'
+      ? itemIdentifier
+      : fromItems.findIndex((it: { id?: string }) => it.id === itemIdentifier);
+    if (itemIndex < 0 || itemIndex >= fromItems.length) return;
+
+    const item = fromItems[itemIndex];
+    const newFromItems = [...fromItems.slice(0, itemIndex), ...fromItems.slice(itemIndex + 1)];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const toItems: any[] = (toSection as any)[itemKey] ?? [];
+
+    onChange(sections.map(s => {
+      if (s.id === fromSectionId) return { ...s, [itemKey]: newFromItems };
+      if (s.id === toSectionId) return { ...s, [itemKey]: [...toItems, item] };
+      return s;
+    }));
+  };
+
   const addSection = (type: PageSectionType) => {
     const id = Math.random().toString(36).substring(2, 11);
     const label = SECTION_TYPE_LABELS[type] ?? type;
@@ -1972,6 +2125,8 @@ export function SectionEditor({ sections, onChange, currentPageId, allPages, onM
                 otherPages={otherPages}
                 onMoveToPage={onMoveSection}
                 onMoveToNewPage={onMoveSectionToNewPage}
+                allSections={sections}
+                onMoveSectionItem={moveItemBetweenSections}
               />
             ))}
           </div>
