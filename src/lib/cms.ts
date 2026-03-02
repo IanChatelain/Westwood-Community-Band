@@ -8,7 +8,7 @@ import type { AppState, SiteSettings, PageConfig, PageSection, BuilderBlockType 
 import { DEFAULT_SETTINGS, INITIAL_PAGES, INITIAL_USERS } from '@/constants';
 import { v4 as uuidv4 } from 'uuid';
 
-const MAX_REVISIONS_PER_PAGE = 50;
+const MAX_REVISIONS_PER_PAGE = 15;
 
 const BUILDER_BLOCK_TYPES: BuilderBlockType[] = ['richText', 'image', 'separator', 'spacer', 'button'];
 

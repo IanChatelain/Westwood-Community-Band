@@ -353,14 +353,19 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
       {historyOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setHistoryOpen(false)}>
           <div className="bg-white rounded-xl shadow-xl ring-1 ring-slate-900/5 p-6 w-full max-w-lg max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h4 className="font-bold text-slate-900 flex items-center gap-2">
-                <History size={18} />
-                Page history
-              </h4>
-              <button onClick={() => setHistoryOpen(false)} className="p-1 text-slate-500 hover:text-slate-700" aria-label="Close">
-                <X size={20} />
-              </button>
+            <div className="mb-4">
+              <div className="flex justify-between items-center">
+                <h4 className="font-bold text-slate-900 flex items-center gap-2">
+                  <History size={18} />
+                  Page history
+                </h4>
+                <button onClick={() => setHistoryOpen(false)} className="p-1 text-slate-500 hover:text-slate-700" aria-label="Close">
+                  <X size={20} />
+                </button>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                Showing the last 15 saves for this page. Older versions are automatically cleaned up.
+              </p>
             </div>
             {loadingHistory ? (
               <div className="flex-1 flex items-center justify-center py-12">
@@ -370,10 +375,26 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
               <p className="text-sm text-slate-500 py-8 text-center">No previous versions saved yet. History is created each time you save.</p>
             ) : (
               <div className="flex-1 overflow-y-auto -mx-2 px-2 space-y-1">
-                {revisions.map((rev) => {
+                {(() => {
+                  const now = new Date();
+                  return revisions.map((rev) => {
                   const date = new Date(rev.createdAt.endsWith('Z') ? rev.createdAt : rev.createdAt + 'Z');
                   const isRestoring = restoringId === rev.id;
                   const isRestoredTarget = rev.id === lastRestoredRevisionId;
+                  const minutesAgo = Math.round((now.getTime() - date.getTime()) / 60000);
+                  let relative: string | null = null;
+                  if (!Number.isNaN(minutesAgo)) {
+                    if (minutesAgo < 1) relative = 'just now';
+                    else if (minutesAgo < 60) relative = `${minutesAgo} minute${minutesAgo === 1 ? '' : 's'} ago`;
+                    else {
+                      const hours = Math.round(minutesAgo / 60);
+                      if (hours < 24) relative = `${hours} hour${hours === 1 ? '' : 's'} ago`;
+                      else {
+                        const days = Math.round(hours / 24);
+                        relative = `${days} day${days === 1 ? '' : 's'} ago`;
+                      }
+                    }
+                  }
                   return (
                     <div
                       key={rev.id}
@@ -388,7 +409,6 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-slate-900 flex items-center gap-2">
                           {date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
-                          {' '}
                           <span className="text-slate-500 font-normal">
                             {date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                           </span>
@@ -399,9 +419,9 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
                             <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">Restored to this version</span>
                           )}
                         </p>
-                        {rev.label && (
-                          <p className="text-xs text-slate-500 truncate">{rev.label}</p>
-                        )}
+                        <p className="text-xs text-slate-500 truncate">
+                          {rev.label ?? (relative ? `Saved ${relative}` : '')}
+                        </p>
                       </div>
                       <button
                         onClick={() => handleRestore(rev.id)}
@@ -413,7 +433,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
                       </button>
                     </div>
                   );
-                })}
+                })()}
               </div>
             )}
           </div>
