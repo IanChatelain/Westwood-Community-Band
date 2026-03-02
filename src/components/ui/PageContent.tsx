@@ -1230,7 +1230,8 @@ function SectionInnerContent({ section, page, heroH }: { section: PageSection; p
             )}
 
             {section.type === 'image-text' && (() => {
-              const { wrapper, image } = imageLayoutClasses(section.style);
+              const hasImage = Boolean(section.imageUrl);
+              const { wrapper, image } = hasImage ? imageLayoutClasses(section.style) : { wrapper: 'max-w-3xl', image: '' };
               return (
                 <div className={wrapper} style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
                   {section.imageUrl && (
