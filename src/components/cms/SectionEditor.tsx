@@ -786,7 +786,7 @@ function GalleryMediaEditor({
         setAddImageError(result.error);
       } else if (result.url) {
         const id = Math.random().toString(36).substring(2, 11);
-        onChange([...items, { id, type: 'audio', url: result.url, caption: file.name.replace(/\.[^.]+$/, ''), ...(duration ? { duration } : {}) }]);
+        onChange([...items, { id, type: 'audio', url: result.url, caption: file.name.replace(/\.[^.]+$/, ''), ...(duration ? { duration } : {}), ...(result.fileSize ? { fileSize: result.fileSize } : {}) }]);
       }
     } catch {
       setAddImageError('Upload failed');
@@ -1117,7 +1117,7 @@ function MediaHubItemsEditor({
       } else if (result.url) {
         const id = Math.random().toString(36).substring(2, 11);
         const caption = file.name.replace(/\.[^.]+$/, '');
-        onChange([...items, { id, type: mediaType, url: result.url, caption, ...(duration ? { duration } : {}) }]);
+        onChange([...items, { id, type: mediaType, url: result.url, caption, ...(duration ? { duration } : {}), ...(result.fileSize ? { fileSize: result.fileSize } : {}) }]);
       }
     } catch {
       setError('Upload failed');

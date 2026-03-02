@@ -77,7 +77,7 @@ export function blockWrapperClassesAndStyle(s?: BlockWrapperStyle): { className:
   else if (s.shadow === 'none') classes.push('shadow-none');
   return { className: classes.join(' ').trim(), style };
 }
-import { Calendar, ArrowRight, Mail, MapPin, Clock, Send, FileDown, ExternalLink, Music, Image as ImageIcon, Video, Play, Pause } from 'lucide-react';
+import { Calendar, ArrowRight, Mail, MapPin, Clock, Send, FileDown, ExternalLink, Music, Image as ImageIcon, Video, Play, Pause, Download } from 'lucide-react';
 import Link from 'next/link';
 import { submitContactMessage } from '@/app/actions/contact';
 
@@ -471,6 +471,10 @@ function MediaHubAudioPlayer({ item }: { item: GalleryMediaItem }) {
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState('0:00');
   const [totalDuration, setTotalDuration] = useState(item.duration || '0:00');
+  const [loadError, setLoadError] = useState(false);
+
+  const trackName = item.caption || 'Untitled Recording';
+  const hasValidUrl = item.url && item.url !== '#';
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -479,44 +483,82 @@ function MediaHubAudioPlayer({ item }: { item: GalleryMediaItem }) {
   };
 
   const togglePlay = () => {
-    if (!audioRef.current) return;
-    if (playing) audioRef.current.pause();
-    else audioRef.current.play();
-    setPlaying(!playing);
+    const el = audioRef.current;
+    if (!el || !hasValidUrl) return;
+    if (el.paused) el.play().catch(() => setLoadError(true));
+    else el.pause();
   };
 
   const handleTimeUpdate = () => {
-    if (!audioRef.current) return;
-    const { currentTime: ct, duration } = audioRef.current;
-    if (duration) {
-      setProgress((ct / duration) * 100);
-      setCurrentTime(formatTime(ct));
-    }
+    const el = audioRef.current;
+    if (!el || !el.duration) return;
+    setProgress((el.currentTime / el.duration) * 100);
+    setCurrentTime(formatTime(el.currentTime));
   };
 
   const handleLoadedMetadata = () => {
     if (!audioRef.current) return;
     setTotalDuration(formatTime(audioRef.current.duration));
+    setLoadError(false);
   };
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!audioRef.current) return;
+    const el = audioRef.current;
+    if (!el || !el.duration) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const pct = (e.clientX - rect.left) / rect.width;
-    audioRef.current.currentTime = pct * audioRef.current.duration;
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    el.currentTime = pct * el.duration;
   };
 
   const handleEnded = () => { setPlaying(false); setProgress(0); setCurrentTime('0:00'); };
+  const handleError = () => { setLoadError(true); setPlaying(false); };
 
   return (
     <div className="group flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all">
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-      <audio ref={audioRef} src={item.url} preload="metadata" onTimeUpdate={handleTimeUpdate} onLoadedMetadata={handleLoadedMetadata} onEnded={handleEnded} onPause={() => setPlaying(false)} onPlay={() => setPlaying(true)} />
-      <button type="button" onClick={togglePlay} className="flex-shrink-0 w-11 h-11 rounded-full bg-red-800 hover:bg-red-900 text-white flex items-center justify-center transition-colors shadow-sm" aria-label={playing ? 'Pause' : 'Play'}>
+      {hasValidUrl && (
+        <audio
+          ref={audioRef}
+          src={item.url}
+          preload="metadata"
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onEnded={handleEnded}
+          onPause={() => setPlaying(false)}
+          onPlay={() => setPlaying(true)}
+          onError={handleError}
+        />
+      )}
+      <button
+        type="button"
+        onClick={togglePlay}
+        disabled={!hasValidUrl || loadError}
+        className="flex-shrink-0 w-11 h-11 rounded-full bg-red-800 hover:bg-red-900 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center transition-colors shadow-sm"
+        aria-label={playing ? `Pause ${trackName}` : `Play ${trackName}`}
+      >
         {playing ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
       </button>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-900 truncate">{item.caption || 'Untitled Recording'}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-semibold text-slate-900 truncate flex-1">{trackName}</p>
+          {hasValidUrl && (
+            <a
+              href={item.url}
+              download
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-shrink-0 flex items-center gap-1 text-[11px] font-medium text-slate-400 hover:text-red-800 transition-colors"
+              aria-label={`Download ${trackName}`}
+              title={item.fileSize ? `Download (${item.fileSize})` : 'Download'}
+            >
+              <Download size={13} />
+              <span className="hidden sm:inline">{item.fileSize || 'Download'}</span>
+            </a>
+          )}
+        </div>
+        {loadError && (
+          <p className="text-[11px] text-red-600 mt-1">Unable to load this recording.</p>
+        )}
         <div className="mt-2 flex items-center gap-3">
           <div className="flex-1 h-1.5 bg-slate-200 rounded-full cursor-pointer group/bar" onClick={handleSeek} role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
             <div className="h-full bg-red-800 rounded-full transition-[width] duration-150 relative" style={{ width: `${progress}%` }}>

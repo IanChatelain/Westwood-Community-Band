@@ -70,6 +70,7 @@ export interface GalleryMediaItem {
   thumbnailUrl?: string;
   caption?: string;
   duration?: string;
+  fileSize?: string;
 }
 
 export interface GalleryEvent {
