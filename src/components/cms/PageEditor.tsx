@@ -23,6 +23,12 @@ const SIDEBAR_BLOCK_TYPES: { value: SidebarBlockType; label: string }[] = [
   { value: 'custom', label: 'Custom' },
 ];
 
+const DEFAULT_SIDEBAR_FEE_ITEMS: SidebarFeeItem[] = [
+  { label: 'Annual Fee', amount: '$100.00' },
+  { label: 'Students', amount: '$50.00' },
+  { label: 'Polo Shirt', amount: '$15.00' },
+];
+
 function pageConfigEqual(a: PageConfig, b: PageConfig): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
@@ -205,7 +211,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
         </div>
 
         {editedPage.layout !== 'full' && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <span className="text-[10px] font-bold text-slate-500 uppercase">Sidebar</span>
             <input
               type="range"
@@ -216,89 +222,13 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
               className="w-20 h-1.5 bg-slate-200 rounded accent-red-600"
             />
             <span className="text-xs text-slate-600 w-6">{editedPage.sidebarWidth}%</span>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setSidebarEditorOpen(!sidebarEditorOpen)}
-                className="flex items-center gap-1 text-xs font-medium text-slate-600 hover:text-slate-900"
-              >
-                Edit blocks <ChevronDown size={12} className={sidebarEditorOpen ? 'rotate-180' : ''} />
-              </button>
-              {sidebarEditorOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" aria-hidden onClick={() => setSidebarEditorOpen(false)} />
-                  <div className="absolute left-0 top-full mt-2 z-20 w-[26rem] max-h-[28rem] overflow-y-auto bg-white rounded-lg shadow-xl border border-slate-200 p-3 space-y-2">
-                    {[...sidebarBlocks].sort((a, b) => a.order - b.order).map((block) => (
-                      <div key={block.id} className="p-2.5 bg-slate-50 rounded-lg text-xs space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-slate-500 uppercase tracking-wide">{block.type}</span>
-                          <button onClick={() => removeSidebarBlock(block.id)} className="text-red-600 hover:text-red-800 text-sm leading-none">×</button>
-                        </div>
-
-                        {block.type === 'rehearsals' && (
-                          <div className="grid grid-cols-2 gap-1.5">
-                            <input className="col-span-2 p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.title ?? ''} onChange={(e) => updateSidebarBlock(block.id, { title: e.target.value })} placeholder="Title (e.g. Rehearsals)" />
-                            <input className="p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.day ?? ''} onChange={(e) => updateSidebarBlock(block.id, { day: e.target.value })} placeholder="Day (e.g. Thursday Evenings)" />
-                            <input className="p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.time ?? ''} onChange={(e) => updateSidebarBlock(block.id, { time: e.target.value })} placeholder="Time (e.g. 7:15 to 9:15 p.m.)" />
-                            <input className="col-span-2 p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.venueName ?? ''} onChange={(e) => updateSidebarBlock(block.id, { venueName: e.target.value })} placeholder="Venue (e.g. The Band Room)" />
-                            <input className="col-span-2 p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.addressLine1 ?? ''} onChange={(e) => updateSidebarBlock(block.id, { addressLine1: e.target.value })} placeholder="Address line 1 (e.g. John Taylor Collegiate)" />
-                            <input className="col-span-2 p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.addressLine2 ?? ''} onChange={(e) => updateSidebarBlock(block.id, { addressLine2: e.target.value })} placeholder="Address line 2 (e.g. 470 Hamilton Ave, Winnipeg)" />
-                            <input className="col-span-2 p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.mapUrl ?? ''} onChange={(e) => updateSidebarBlock(block.id, { mapUrl: e.target.value })} placeholder="Map / directions URL" />
-                          </div>
-                        )}
-
-                        {block.type === 'fees' && (
-                          <div className="space-y-1.5">
-                            <input className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.title ?? ''} onChange={(e) => updateSidebarBlock(block.id, { title: e.target.value })} placeholder="Title (e.g. Membership Fees)" />
-                            <input className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.seasonLabel ?? ''} onChange={(e) => updateSidebarBlock(block.id, { seasonLabel: e.target.value })} placeholder="Season note (e.g. Band Season: September to June)" />
-                            <div className="space-y-1">
-                              <span className="text-[10px] font-bold text-slate-400 uppercase">Fee items</span>
-                              {(block.feeItems ?? []).map((item, idx) => (
-                                <div key={idx} className="flex gap-1">
-                                  <input className="flex-1 min-w-0 p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={item.label} onChange={(e) => { const items = [...(block.feeItems ?? [])]; items[idx] = { ...items[idx], label: e.target.value }; updateSidebarBlock(block.id, { feeItems: items }); }} placeholder="Label" />
-                                  <input className="w-24 p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={item.amount} onChange={(e) => { const items = [...(block.feeItems ?? [])]; items[idx] = { ...items[idx], amount: e.target.value }; updateSidebarBlock(block.id, { feeItems: items }); }} placeholder="Amount" />
-                                  <button className="text-red-600 hover:text-red-800 px-1" onClick={() => { const items = (block.feeItems ?? []).filter((_, i) => i !== idx); updateSidebarBlock(block.id, { feeItems: items }); }}>×</button>
-                                </div>
-                              ))}
-                              <button className="text-xs text-slate-600 hover:text-red-700 border border-slate-300 rounded px-2 py-1 hover:border-red-400" onClick={() => { const items: SidebarFeeItem[] = [...(block.feeItems ?? []), { label: '', amount: '' }]; updateSidebarBlock(block.id, { feeItems: items }); }}>+ Add fee</button>
-                            </div>
-                          </div>
-                        )}
-
-                        {block.type === 'contact' && (
-                          <div className="space-y-1.5">
-                            <input className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.title ?? ''} onChange={(e) => updateSidebarBlock(block.id, { title: e.target.value })} placeholder="Title (e.g. Contact)" />
-                            <textarea className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900 resize-y" rows={2} value={block.body ?? ''} onChange={(e) => updateSidebarBlock(block.id, { body: e.target.value })} placeholder="Body text above the button" />
-                            <div className="grid grid-cols-2 gap-1.5">
-                              <input className="p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.linkLabel ?? ''} onChange={(e) => updateSidebarBlock(block.id, { linkLabel: e.target.value })} placeholder="Button label (e.g. Get in Touch)" />
-                              <input className="p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.href ?? ''} onChange={(e) => updateSidebarBlock(block.id, { href: e.target.value })} placeholder="Button link (e.g. /contact)" />
-                            </div>
-                          </div>
-                        )}
-
-                        {block.type === 'custom' && (
-                          <div className="space-y-1.5">
-                            <input className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.title ?? ''} onChange={(e) => updateSidebarBlock(block.id, { title: e.target.value })} placeholder="Title" />
-                            <textarea className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900 resize-y" rows={3} value={block.content ?? ''} onChange={(e) => updateSidebarBlock(block.id, { content: e.target.value })} placeholder="Content" />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    <div className="flex flex-wrap gap-1 pt-1">
-                      {SIDEBAR_BLOCK_TYPES.map(({ value, label }) => (
-                        <button
-                          key={value}
-                          onClick={() => addSidebarBlock(value)}
-                          className="px-2 py-1 text-xs border border-slate-300 rounded hover:border-red-400 hover:text-red-700"
-                        >
-                          + {label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+            <button
+              type="button"
+              onClick={() => setSidebarEditorOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-600 text-xs font-semibold text-red-700 bg-white hover:bg-red-50"
+            >
+              Edit sidebar
+            </button>
           </div>
         )}
 
@@ -381,6 +311,234 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
           />
         </div>
       </div>
+
+      {sidebarEditorOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setSidebarEditorOpen(false)}>
+          <div
+            className="bg-white rounded-xl shadow-xl ring-1 ring-slate-900/5 p-5 w-full max-w-2xl max-h-[80vh] flex flex-col space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-bold text-slate-900 text-sm">Sidebar blocks</h4>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Edit the content that appears in the sidebar for this page.
+                </p>
+              </div>
+              <button
+                onClick={() => setSidebarEditorOpen(false)}
+                className="p-1.5 text-slate-500 hover:text-slate-700 rounded-full hover:bg-slate-100"
+                aria-label="Close sidebar editor"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+              {[...sidebarBlocks].sort((a, b) => a.order - b.order).map((block) => {
+                const isRehearsals = block.type === 'rehearsals';
+                const isFees = block.type === 'fees';
+                const isContact = block.type === 'contact';
+                const isCustom = block.type === 'custom';
+
+                const effectiveFeeItems =
+                  isFees && block.feeItems && block.feeItems.length > 0
+                    ? block.feeItems
+                    : isFees
+                      ? DEFAULT_SIDEBAR_FEE_ITEMS
+                      : [];
+
+                return (
+                  <div key={block.id} className="p-2.5 bg-slate-50 rounded-lg text-xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-500 uppercase tracking-wide">{block.type}</span>
+                      <button
+                        onClick={() => removeSidebarBlock(block.id)}
+                        className="text-red-600 hover:text-red-800 text-sm leading-none"
+                      >
+                        ×
+                      </button>
+                    </div>
+
+                    {isRehearsals && (
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <input
+                          className="col-span-2 p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          value={block.title ?? 'Rehearsals'}
+                          onChange={(e) => updateSidebarBlock(block.id, { title: e.target.value })}
+                          placeholder="Title (e.g. Rehearsals)"
+                        />
+                        <input
+                          className="p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          value={block.day ?? 'Thursday Evenings'}
+                          onChange={(e) => updateSidebarBlock(block.id, { day: e.target.value })}
+                          placeholder="Day (e.g. Thursday Evenings)"
+                        />
+                        <input
+                          className="p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          value={block.time ?? '7:15 to 9:15 p.m.'}
+                          onChange={(e) => updateSidebarBlock(block.id, { time: e.target.value })}
+                          placeholder="Time (e.g. 7:15 to 9:15 p.m.)"
+                        />
+                        <input
+                          className="col-span-2 p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          value={block.venueName ?? 'The Band Room'}
+                          onChange={(e) => updateSidebarBlock(block.id, { venueName: e.target.value })}
+                          placeholder="Venue (e.g. The Band Room)"
+                        />
+                        <input
+                          className="col-span-2 p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          value={block.addressLine1 ?? 'John Taylor Collegiate'}
+                          onChange={(e) => updateSidebarBlock(block.id, { addressLine1: e.target.value })}
+                          placeholder="Address line 1 (e.g. John Taylor Collegiate)"
+                        />
+                        <input
+                          className="col-span-2 p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          value={block.addressLine2 ?? '470 Hamilton Avenue, Winnipeg, Manitoba'}
+                          onChange={(e) => updateSidebarBlock(block.id, { addressLine2: e.target.value })}
+                          placeholder="Address line 2 (e.g. 470 Hamilton Ave, Winnipeg)"
+                        />
+                        <input
+                          className="col-span-2 p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          value={
+                            block.mapUrl ?? 'https://maps.google.ca/maps?q=470+Hamilton+Avenue,+Winnipeg,+MB'
+                          }
+                          onChange={(e) => updateSidebarBlock(block.id, { mapUrl: e.target.value })}
+                          placeholder="Map / directions URL"
+                        />
+                      </div>
+                    )}
+
+                    {isFees && (
+                      <div className="space-y-1.5">
+                        <input
+                          className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          value={block.title ?? 'Membership Fees'}
+                          onChange={(e) => updateSidebarBlock(block.id, { title: e.target.value })}
+                          placeholder="Title (e.g. Membership Fees)"
+                        />
+                        <input
+                          className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          value={block.seasonLabel ?? 'Band Season: September to June'}
+                          onChange={(e) => updateSidebarBlock(block.id, { seasonLabel: e.target.value })}
+                          placeholder="Season note (e.g. Band Season: September to June)"
+                        />
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">Fee items</span>
+                          {effectiveFeeItems.map((item, idx) => (
+                            <div key={idx} className="flex gap-1">
+                              <input
+                                className="flex-1 min-w-0 p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                                value={item.label}
+                                onChange={(e) => {
+                                  const items = [...effectiveFeeItems];
+                                  items[idx] = { ...items[idx], label: e.target.value };
+                                  updateSidebarBlock(block.id, { feeItems: items });
+                                }}
+                                placeholder="Label"
+                              />
+                              <input
+                                className="w-24 p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                                value={item.amount}
+                                onChange={(e) => {
+                                  const items = [...effectiveFeeItems];
+                                  items[idx] = { ...items[idx], amount: e.target.value };
+                                  updateSidebarBlock(block.id, { feeItems: items });
+                                }}
+                                placeholder="Amount"
+                              />
+                              <button
+                                className="text-red-600 hover:text-red-800 px-1"
+                                onClick={() => {
+                                  const items = effectiveFeeItems.filter((_, i) => i !== idx);
+                                  updateSidebarBlock(block.id, { feeItems: items });
+                                }}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            className="text-xs text-slate-600 hover:text-red-700 border border-slate-300 rounded px-2 py-1 hover:border-red-400"
+                            onClick={() => {
+                              const items: SidebarFeeItem[] = [...effectiveFeeItems, { label: '', amount: '' }];
+                              updateSidebarBlock(block.id, { feeItems: items });
+                            }}
+                          >
+                            + Add fee
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {isContact && (
+                      <div className="space-y-1.5">
+                        <input
+                          className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          value={block.title ?? 'Contact'}
+                          onChange={(e) => updateSidebarBlock(block.id, { title: e.target.value })}
+                          placeholder="Title (e.g. Contact)"
+                        />
+                        <textarea
+                          className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900 resize-y"
+                          rows={2}
+                          value={block.body ?? ''}
+                          onChange={(e) => updateSidebarBlock(block.id, { body: e.target.value })}
+                          placeholder="Body text above the button"
+                        />
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <input
+                            className="p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                            value={block.linkLabel ?? 'Get in Touch'}
+                            onChange={(e) => updateSidebarBlock(block.id, { linkLabel: e.target.value })}
+                            placeholder="Button label (e.g. Get in Touch)"
+                          />
+                          <input
+                            className="p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                            value={block.href ?? '/contact'}
+                            onChange={(e) => updateSidebarBlock(block.id, { href: e.target.value })}
+                            placeholder="Button link (e.g. /contact)"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {isCustom && (
+                      <div className="space-y-1.5">
+                        <input
+                          className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          value={block.title ?? ''}
+                          onChange={(e) => updateSidebarBlock(block.id, { title: e.target.value })}
+                          placeholder="Title"
+                        />
+                        <textarea
+                          className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900 resize-y"
+                          rows={3}
+                          value={block.content ?? ''}
+                          onChange={(e) => updateSidebarBlock(block.id, { content: e.target.value })}
+                          placeholder="Content"
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex flex-wrap gap-1 pt-1">
+              {SIDEBAR_BLOCK_TYPES.map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => addSidebarBlock(value)}
+                  className="px-2 py-1 text-xs border border-slate-300 rounded hover:border-red-400 hover:text-red-700"
+                >
+                  + {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {historyOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setHistoryOpen(false)}>
