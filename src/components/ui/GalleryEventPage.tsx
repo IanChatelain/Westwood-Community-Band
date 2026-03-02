@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, Play, Image as ImageIcon, Music, Video, Pause } from 'lucide-react';
 import type { GalleryEvent, GalleryMediaItem } from '@/types';
 import GalleryLightbox from './GalleryLightbox';
+import { useAudioManager } from './AudioManagerProvider';
 
 function parseVideoEmbedUrl(url: string): string | null {
   try {
@@ -35,6 +36,22 @@ function AudioPlayer({ item }: { item: GalleryMediaItem }) {
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState('0:00');
   const [totalDuration, setTotalDuration] = useState(item.duration || '0:00');
+  const { activePlayerId, requestPlay, requestPause } = useAudioManager();
+  const playerId = `gallery-${item.id}`;
+
+  useEffect(() => {
+    if (activePlayerId !== playerId && playing) {
+      setPlaying(false);
+    }
+  }, [activePlayerId, playerId, playing]);
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, []);
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -45,11 +62,10 @@ function AudioPlayer({ item }: { item: GalleryMediaItem }) {
   const togglePlay = () => {
     if (!audioRef.current) return;
     if (playing) {
-      audioRef.current.pause();
+      requestPause(playerId);
     } else {
-      audioRef.current.play();
+      requestPlay(playerId, audioRef.current);
     }
-    setPlaying(!playing);
   };
 
   const handleTimeUpdate = () => {
@@ -74,7 +90,7 @@ function AudioPlayer({ item }: { item: GalleryMediaItem }) {
   };
 
   const handleEnded = () => {
-    setPlaying(false);
+    requestPause(playerId);
     setProgress(0);
     setCurrentTime('0:00');
   };

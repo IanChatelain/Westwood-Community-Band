@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { PageConfig, SidebarBlock, PageSection, SectionStyle, BuilderBlock, BlockWrapperStyle, GalleryEvent, GalleryMediaItem, DownloadItem, DownloadGroup, PerformanceItem } from '@/types';
 import { DEFAULT_SIDEBAR_BLOCKS } from '@/constants';
@@ -78,6 +78,7 @@ export function blockWrapperClassesAndStyle(s?: BlockWrapperStyle): { className:
   return { className: classes.join(' ').trim(), style };
 }
 import { Calendar, ArrowRight, Mail, MapPin, Clock, Send, FileDown, ExternalLink, Music, Image as ImageIcon, Video, Play, Pause, Download } from 'lucide-react';
+import { useAudioManager } from './AudioManagerProvider';
 import Link from 'next/link';
 import { submitContactMessage } from '@/app/actions/contact';
 
@@ -472,6 +473,22 @@ function MediaHubAudioPlayer({ item }: { item: GalleryMediaItem }) {
   const [currentTime, setCurrentTime] = useState('0:00');
   const [totalDuration, setTotalDuration] = useState(item.duration || '0:00');
   const [loadError, setLoadError] = useState(false);
+  const { activePlayerId, requestPlay, requestPause } = useAudioManager();
+  const playerId = `mediahub-${item.id}`;
+
+  useEffect(() => {
+    if (activePlayerId !== playerId && playing) {
+      setPlaying(false);
+    }
+  }, [activePlayerId, playerId, playing]);
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, []);
 
   const trackName = item.caption || 'Untitled Recording';
   const hasValidUrl = item.url && item.url !== '#';
@@ -485,8 +502,11 @@ function MediaHubAudioPlayer({ item }: { item: GalleryMediaItem }) {
   const togglePlay = () => {
     const el = audioRef.current;
     if (!el || !hasValidUrl) return;
-    if (el.paused) el.play().catch(() => setLoadError(true));
-    else el.pause();
+    if (el.paused) {
+      requestPlay(playerId, el);
+    } else {
+      requestPause(playerId);
+    }
   };
 
   const handleTimeUpdate = () => {
@@ -510,8 +530,8 @@ function MediaHubAudioPlayer({ item }: { item: GalleryMediaItem }) {
     el.currentTime = pct * el.duration;
   };
 
-  const handleEnded = () => { setPlaying(false); setProgress(0); setCurrentTime('0:00'); };
-  const handleError = () => { setLoadError(true); setPlaying(false); };
+  const handleEnded = () => { requestPause(playerId); setProgress(0); setCurrentTime('0:00'); };
+  const handleError = () => { setLoadError(true); requestPause(playerId); };
 
   return (
     <div className="group flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all">
