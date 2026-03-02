@@ -22,6 +22,7 @@ import type { PageSection, PageSectionType, PageConfig, GalleryEvent, GalleryMed
 import { ChevronDown, ChevronRight, Trash2, Plus, Upload, X, GripVertical, Image as ImageIcon, Video, Music, ArrowRightLeft, HelpCircle } from 'lucide-react';
 import { RichTextEditor } from '@/components/cms/RichTextEditor';
 import { uploadToR2 } from '@/lib/upload';
+import { deleteR2ObjectByUrl } from '@/app/actions/r2-delete';
 
 const SECTION_TYPE_OPTIONS: { value: PageSectionType; label: string }[] = [
   { value: 'hero', label: 'Hero Banner' },
@@ -58,6 +59,47 @@ const DEFAULT_HEIGHTS: Partial<Record<PageSectionType, number>> = {
 
 const MOVE_DROPDOWN_PANEL_ID = 'move-section-dropdown-panel';
 const PANEL_MAX_HEIGHT = 320;
+
+function ConfirmDeleteMediaModal({
+  mediaLabel,
+  onConfirm,
+  onCancel,
+  isDeleting,
+}: {
+  mediaLabel: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isDeleting: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60" aria-modal="true" role="dialog">
+      <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 max-w-md w-full">
+        <h4 className="font-bold text-slate-900 mb-2">Delete this {mediaLabel}?</h4>
+        <p className="text-sm text-slate-600 mb-4">
+          This will remove it from this section. If it was uploaded to this site, the file(s) will be permanently deleted from storage. This can&apos;t be undone.
+        </p>
+        <div className="flex gap-2 justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isDeleting}
+            className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium disabled:opacity-50"
+          >
+            {isDeleting ? 'Deleting...' : `Delete ${mediaLabel}`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 const GAP = 4;
 const MAX_VIDEO_FILES_PER_BATCH = 20;
 
@@ -443,6 +485,8 @@ function SortableSectionItem({
             <ImageUploadField
               value={section.imageUrl}
               onChange={(url) => onUpdate({ imageUrl: url })}
+              onBeforeReplace={async (url) => { await deleteR2ObjectByUrl(url); }}
+              onBeforeRemove={async (url) => { await deleteR2ObjectByUrl(url); }}
             />
           )}
           {section.type === 'gallery' && (
@@ -648,6 +692,7 @@ function SortableSectionItem({
               {(section.videoItems ?? []).length > 0 && (
                 <div className="pt-3 border-t border-slate-200">
                   <p className="text-[10px] font-bold text-slate-700 uppercase mb-2">Standalone Videos (not in events)</p>
+                  <p className="text-[10px] text-slate-500 mb-2">Removing or replacing a video deletes its file from storage.</p>
                   <MediaHubItemsEditor
                     items={section.videoItems ?? []}
                     onChange={(videoItems) => onUpdate({ videoItems })}
@@ -825,7 +870,13 @@ function GalleryEventsEditor({
                   <label className="block text-[10px] font-bold text-slate-700 uppercase mb-0.5">Description</label>
                   <textarea rows={2} className={inputClass} value={ev.description ?? ''} onChange={(e) => updateEvent(ev.id, { description: e.target.value })} placeholder="Optional description" />
                 </div>
-                <ImageUploadField value={ev.coverImageUrl} onChange={(url) => updateEvent(ev.id, { coverImageUrl: url })} label="Cover Image" />
+                <ImageUploadField
+                  value={ev.coverImageUrl}
+                  onChange={(url) => updateEvent(ev.id, { coverImageUrl: url })}
+                  label="Cover Image"
+                  onBeforeReplace={async (url) => { await deleteR2ObjectByUrl(url); }}
+                  onBeforeRemove={async (url) => { await deleteR2ObjectByUrl(url); }}
+                />
                 <GalleryMediaEditor
                   items={ev.media}
                   onChange={(media) => updateEvent(ev.id, { media })}
@@ -1132,8 +1183,37 @@ function GalleryMediaEditor({
     onChange(items.map((m) => (m.id === id ? { ...m, ...updates } : m)));
   };
 
+  const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const removeItem = (id: string) => {
     onChange(items.filter((m) => m.id !== id));
+  };
+
+  const handleConfirmRemove = async () => {
+    if (!pendingRemoveId) return;
+    const item = items.find((m) => m.id === pendingRemoveId);
+    if (!item) {
+      setPendingRemoveId(null);
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      if (item.url) await deleteR2ObjectByUrl(item.url);
+      if (item.type === 'video' && item.thumbnailUrl) await deleteR2ObjectByUrl(item.thumbnailUrl);
+      removeItem(pendingRemoveId);
+    } catch {
+      removeItem(pendingRemoveId);
+    } finally {
+      setIsDeleting(false);
+      setPendingRemoveId(null);
+    }
+  };
+
+  const getMediaLabel = (item: GalleryMediaItem) => {
+    if (item.type === 'image') return 'image';
+    if (item.type === 'video') return 'video';
+    return 'recording';
   };
 
   const moveItem = (idx: number, dir: -1 | 1) => {
@@ -1146,6 +1226,14 @@ function GalleryMediaEditor({
 
   return (
     <div className="space-y-2">
+      {pendingRemoveId && (
+        <ConfirmDeleteMediaModal
+          mediaLabel={getMediaLabel(items.find((m) => m.id === pendingRemoveId) ?? { type: 'image', id: '', url: '', caption: '' })}
+          onConfirm={handleConfirmRemove}
+          onCancel={() => setPendingRemoveId(null)}
+          isDeleting={isDeleting}
+        />
+      )}
       <div className="flex items-center justify-between">
         <label className="block text-[10px] font-bold text-slate-700 uppercase">Media Items</label>
         <div className="flex gap-1 flex-wrap justify-end">
@@ -1240,6 +1328,7 @@ function GalleryMediaEditor({
                 label="Image"
                 compact
                 hideRemoveButton
+                onBeforeReplace={async (url) => { await deleteR2ObjectByUrl(url); }}
               />
             ) : (
               <input
@@ -1271,7 +1360,7 @@ function GalleryMediaEditor({
             {otherEvents && otherEvents.length > 0 && onMoveToEvent && (
               <MoveMediaToEventDropdown itemId={item.id} otherEvents={otherEvents} onMove={onMoveToEvent} />
             )}
-            <button type="button" onClick={() => removeItem(item.id)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50" aria-label="Remove media item">
+            <button type="button" onClick={() => setPendingRemoveId(item.id)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50" aria-label="Remove media item">
               <X size={12} />
             </button>
           </div>
@@ -1376,9 +1465,11 @@ function getAudioDuration(file: File): Promise<string | null> {
 function DownloadItemUploadButton({
   idx,
   onUploaded,
+  currentUrl,
 }: {
   idx: number;
   onUploaded: (idx: number, updates: Partial<DownloadItem>) => void;
+  currentUrl?: string;
 }) {
   const audioRef = useRef<HTMLInputElement>(null);
   const docRef = useRef<HTMLInputElement>(null);
@@ -1389,6 +1480,7 @@ function DownloadItemUploadButton({
     setError(null);
     setUploading(true);
     try {
+      if (currentUrl) await deleteR2ObjectByUrl(currentUrl);
       const duration = await getAudioDuration(file);
       const result = await uploadToR2(file, 'recordings');
       if (result.error) { setError(result.error); }
@@ -1407,6 +1499,7 @@ function DownloadItemUploadButton({
     setError(null);
     setUploading(true);
     try {
+      if (currentUrl) await deleteR2ObjectByUrl(currentUrl);
       const result = await uploadToR2(file, 'documents');
       if (result.error) { setError(result.error); }
       else if (result.url) {
@@ -1558,8 +1651,31 @@ function MediaHubItemsEditor({
     onChange(items.map((m) => (m.id === id ? { ...m, ...updates } : m)));
   };
 
+  const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const removeItem = (id: string) => {
     onChange(items.filter((m) => m.id !== id));
+  };
+
+  const handleConfirmRemove = async () => {
+    if (!pendingRemoveId) return;
+    const item = items.find((m) => m.id === pendingRemoveId);
+    if (!item) {
+      setPendingRemoveId(null);
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      if (item.url) await deleteR2ObjectByUrl(item.url);
+      if (item.type === 'video' && item.thumbnailUrl) await deleteR2ObjectByUrl(item.thumbnailUrl);
+      removeItem(pendingRemoveId);
+    } catch {
+      removeItem(pendingRemoveId);
+    } finally {
+      setIsDeleting(false);
+      setPendingRemoveId(null);
+    }
   };
 
   const moveItem = (idx: number, dir: -1 | 1) => {
@@ -1576,6 +1692,14 @@ function MediaHubItemsEditor({
 
   return (
     <div className="space-y-2">
+      {pendingRemoveId && (
+        <ConfirmDeleteMediaModal
+          mediaLabel={typeLabel.toLowerCase()}
+          onConfirm={handleConfirmRemove}
+          onCancel={() => setPendingRemoveId(null)}
+          isDeleting={isDeleting}
+        />
+      )}
       <div className="flex items-center justify-between">
         <label className="block text-[10px] font-bold text-slate-700 uppercase">{typeLabel}s</label>
         <div className="flex gap-1">
@@ -1633,7 +1757,7 @@ function MediaHubItemsEditor({
                 onMove={(targetSectionId) => onMoveToSection(item.id, targetSectionId)}
               />
             )}
-            <button type="button" onClick={() => removeItem(item.id)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" aria-label={`Remove ${typeLabel.toLowerCase()}`}>
+            <button type="button" onClick={() => setPendingRemoveId(item.id)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" aria-label={`Remove ${typeLabel.toLowerCase()}`}>
               <X size={12} />
             </button>
           </div>
@@ -1752,7 +1876,7 @@ function DownloadsEditor({
                     <input type="text" className={inputClass} value={item.fileSize ?? ''} onChange={(e) => updateItem(idx, { fileSize: e.target.value })} placeholder="File size" />
                     <input type="text" className={inputClass} value={item.duration ?? ''} onChange={(e) => updateItem(idx, { duration: e.target.value })} placeholder="Duration" />
                   </div>
-                  <DownloadItemUploadButton idx={idx} onUploaded={updateItem} />
+                  <DownloadItemUploadButton idx={idx} onUploaded={updateItem} currentUrl={item.url} />
                 </div>
                 <div className="flex flex-col gap-0.5 flex-shrink-0">
                   {targetSections && targetSections.length > 0 && onMoveItemToSection && (
@@ -1837,12 +1961,16 @@ function ImageUploadField({
   label,
   compact,
   hideRemoveButton,
+  onBeforeReplace,
+  onBeforeRemove,
 }: {
   value: string | undefined;
   onChange: (url: string | undefined) => void;
   label?: string;
   compact?: boolean;
   hideRemoveButton?: boolean;
+  onBeforeReplace?: (url: string) => Promise<void>;
+  onBeforeRemove?: (url: string) => Promise<void>;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -1852,6 +1980,9 @@ function ImageUploadField({
     setError(null);
     setUploading(true);
     try {
+      if (value && onBeforeReplace) {
+        await onBeforeReplace(value);
+      }
       const result = await uploadToR2(file, 'images');
       if (result.error) {
         setError(result.error);
@@ -1865,6 +1996,16 @@ function ImageUploadField({
     }
   };
 
+  const handleRemoveClick = async () => {
+    if (!value) return;
+    if (onBeforeRemove) {
+      const ok = window.confirm('Delete this image? It will be permanently removed from storage. This can\'t be undone.');
+      if (!ok) return;
+      await onBeforeRemove(value);
+    }
+    onChange(undefined);
+  };
+
   return (
     <div>
       {!compact && <label className="block text-[10px] font-bold text-slate-700 uppercase mb-1">{label ?? 'Image'}</label>}
@@ -1875,7 +2016,7 @@ function ImageUploadField({
           {!hideRemoveButton && (
             <button
               type="button"
-              onClick={() => onChange(undefined)}
+              onClick={handleRemoveClick}
               className="absolute top-1 right-1 p-1 bg-white/90 rounded-full text-slate-600 hover:text-red-600 shadow-sm"
               aria-label="Remove image"
             >
