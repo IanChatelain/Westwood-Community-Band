@@ -28,6 +28,132 @@ function isDirectVideoUrl(url: string): boolean {
   } catch { return false; }
 }
 
+interface VideoLightboxProps {
+  items: GalleryMediaItem[];
+  activeIndex: number;
+  onClose: () => void;
+  onNavigate: (index: number) => void;
+}
+
+function VideoLightbox({ items, activeIndex, onClose, onNavigate }: VideoLightboxProps) {
+  const item = items[activeIndex];
+  const hasPrev = activeIndex > 0;
+  const hasNext = activeIndex < items.length - 1;
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      else if (e.key === 'ArrowLeft' && hasPrev) onNavigate(activeIndex - 1);
+      else if (e.key === 'ArrowRight' && hasNext) onNavigate(activeIndex + 1);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [activeIndex, hasNext, hasPrev, onClose, onNavigate]);
+
+  if (!item) return null;
+
+  const embedUrl = parseVideoEmbedUrl(item.url);
+  const isDirect = isDirectVideoUrl(item.url);
+
+  return (
+    <div
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Video viewer"
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute top-4 right-4 z-10 px-3 py-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+      >
+        Close
+      </button>
+
+      {hasPrev && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onNavigate(activeIndex - 1); }}
+          className="absolute left-4 z-10 p-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+          aria-label="Previous video"
+        >
+          ‹
+        </button>
+      )}
+
+      {hasNext && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onNavigate(activeIndex + 1); }}
+          className="absolute right-4 z-10 p-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+          aria-label="Next video"
+        >
+          ›
+        </button>
+      )}
+
+      <div
+        className="relative max-w-[90vw] max-h-[90vh] w-full md:w-auto flex flex-col items-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-[90vw] max-w-5xl">
+          {embedUrl ? (
+            <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black shadow-2xl">
+              <iframe
+                src={`${embedUrl}?autoplay=1`}
+                title={item.caption || 'Video'}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          ) : isDirect ? (
+            // eslint-disable-next-line jsx-a11y/media-has-caption
+            <video
+              src={item.url}
+              controls
+              preload="metadata"
+              autoPlay
+              className="w-full max-h-[80vh] rounded-lg bg-black shadow-2xl"
+            />
+          ) : (
+            <a
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full rounded-lg bg-slate-900 text-white py-12 text-center shadow-2xl"
+            >
+              Open video in new tab
+            </a>
+          )}
+        </div>
+
+        <div className="mt-4 flex flex-col items-center gap-2 text-sm text-white/90 max-w-3xl px-4 text-center">
+          {item.caption && <p>{item.caption}</p>}
+          {isDirect && (
+            <a
+              href={item.url}
+              download
+              className="inline-flex items-center gap-2 text-xs font-semibold text-white/90 hover:text-white underline-offset-2 hover:underline"
+            >
+              Download video{item.fileSize ? ` (${item.fileSize})` : ''}
+            </a>
+          )}
+        </div>
+
+        <p className="mt-2 text-xs text-white/60">
+          {activeIndex + 1} / {items.length}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 type MediaTab = 'photos' | 'recordings' | 'videos';
 
 function AudioPlayer({ item }: { item: GalleryMediaItem }) {
@@ -209,7 +335,13 @@ function RecordingsList({ items }: { items: GalleryMediaItem[] }) {
   );
 }
 
-function VideosGrid({ items }: { items: GalleryMediaItem[] }) {
+function VideosGrid({
+  items,
+  onOpenVideo,
+}: {
+  items: GalleryMediaItem[];
+  onOpenVideo: (index: number) => void;
+}) {
   if (items.length === 0) {
     return (
       <div className="text-center py-16">
@@ -221,63 +353,46 @@ function VideosGrid({ items }: { items: GalleryMediaItem[] }) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-      {items.map((item) => {
-        const embedUrl = parseVideoEmbedUrl(item.url);
-        if (embedUrl) {
-          return (
-            <div key={item.id} className="rounded-xl overflow-hidden border border-slate-200 bg-black shadow-sm">
-              <div className="aspect-video">
-                <iframe
-                  src={embedUrl}
-                  title={item.caption || 'Video'}
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-              {item.caption && (
-                <div className="px-4 py-3 bg-white border-t border-slate-200">
-                  <p className="text-sm font-medium text-slate-800">{item.caption}</p>
-                </div>
-              )}
-            </div>
-          );
-        }
-        if (isDirectVideoUrl(item.url)) {
-          return (
-            <div key={item.id} className="rounded-xl overflow-hidden border border-slate-200 bg-black shadow-sm">
-              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-              <video
-                src={item.url}
-                controls
-                preload="metadata"
-                className="w-full aspect-video"
-              />
-              {item.caption && (
-                <div className="px-4 py-3 bg-white border-t border-slate-200">
-                  <p className="text-sm font-medium text-slate-800">{item.caption}</p>
-                </div>
-              )}
-            </div>
-          );
-        }
+      {items.map((item, index) => {
+        const thumbSrc = item.thumbnailUrl;
+
         return (
-          <a
+          <button
             key={item.id}
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group relative aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all flex items-center justify-center"
+            type="button"
+            onClick={() => onOpenVideo(index)}
+            className="group relative aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-red-800 focus:ring-offset-2"
           >
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                <Play size={28} className="text-white/80 group-hover:text-white transition-colors ml-1" />
+            {thumbSrc ? (
+              <Image
+                src={thumbSrc}
+                alt={item.caption || 'Video thumbnail'}
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+                <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                  <Play size={30} className="text-white/85 group-hover:text-white transition-colors ml-0.5" />
+                </div>
               </div>
-              {item.caption && (
-                <p className="text-sm text-white/80 mt-2">{item.caption}</p>
-              )}
+            )}
+
+            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-14 h-14 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center border border-white/40 shadow-lg">
+                <Play size={28} className="text-white ml-0.5" />
+              </div>
             </div>
-          </a>
+
+            {item.caption && (
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+                <p className="text-sm text-white line-clamp-2">{item.caption}</p>
+              </div>
+            )}
+          </button>
         );
       })}
     </div>
@@ -291,6 +406,7 @@ interface GalleryEventPageProps {
 
 export default function GalleryEventPage({ event, parentSlug }: GalleryEventPageProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [videoLightboxIndex, setVideoLightboxIndex] = useState<number | null>(null);
 
   const photos = event.media.filter((m) => m.type === 'image' && m.url);
   const recordings = event.media.filter((m) => m.type === 'audio' && m.url);
@@ -390,7 +506,7 @@ export default function GalleryEventPage({ event, parentSlug }: GalleryEventPage
 
           {activeTab === 'videos' && videos.length > 0 && (
             <div>
-              <VideosGrid items={videos} />
+          <VideosGrid items={videos} onOpenVideo={setVideoLightboxIndex} />
             </div>
           )}
 
@@ -398,7 +514,7 @@ export default function GalleryEventPage({ event, parentSlug }: GalleryEventPage
             <RecordingsList items={recordings} />
           )}
           {!showTabs && videos.length > 0 && photos.length === 0 && recordings.length === 0 && (
-            <VideosGrid items={videos} />
+          <VideosGrid items={videos} onOpenVideo={setVideoLightboxIndex} />
           )}
 
           {!showTabs && availableTabs.length === 1 && availableTabs[0].key !== 'photos' && null}
@@ -411,6 +527,15 @@ export default function GalleryEventPage({ event, parentSlug }: GalleryEventPage
           activeIndex={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
           onNavigate={setLightboxIndex}
+        />
+      )}
+
+      {videoLightboxIndex !== null && (
+        <VideoLightbox
+          items={videos}
+          activeIndex={videoLightboxIndex}
+          onClose={() => setVideoLightboxIndex(null)}
+          onNavigate={setVideoLightboxIndex}
         />
       )}
     </div>

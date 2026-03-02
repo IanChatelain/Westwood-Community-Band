@@ -211,7 +211,10 @@ function ContactSection({ section }: { section: PageSection }) {
   return (
     <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm ring-1 ring-slate-900/5">
       <h3 className="text-2xl font-bold text-slate-900 text-center mb-4">{section.title}</h3>
-      <p className="text-slate-600 text-center mb-10">{section.content}</p>
+      <div
+        className="text-slate-600 text-center mb-10 prose prose-slate prose-sm mx-auto"
+        dangerouslySetInnerHTML={{ __html: textToHtml(section.content) }}
+      />
       <form className="max-w-xl mx-auto space-y-5" onSubmit={handleSubmit}>
         {recipients.length > 0 && (
           <div>
@@ -618,7 +621,10 @@ function AudioPlaylistSection({ section }: { section: PageSection }) {
         <h3 className="text-2xl font-bold text-slate-900 mb-2 border-l-4 border-red-800 pl-6">{section.title}</h3>
       )}
       {section.content && (
-        <p className="text-slate-600 mb-6 pl-6 ml-1">{section.content}</p>
+        <div
+          className="text-slate-600 mb-6 pl-6 ml-1 prose prose-slate prose-sm max-w-none"
+          dangerouslySetInnerHTML={{ __html: textToHtml(section.content) }}
+        />
       )}
       {items.length > 0 ? (
         <div className="space-y-3 max-w-3xl">
@@ -644,7 +650,10 @@ function VideoGallerySection({ section }: { section: PageSection }) {
         <h3 className="text-2xl font-bold text-slate-900 mb-2 border-l-4 border-red-800 pl-6">{section.title}</h3>
       )}
       {section.content && (
-        <p className="text-slate-600 mb-6 pl-6 ml-1">{section.content}</p>
+        <div
+          className="text-slate-600 mb-6 pl-6 ml-1 prose prose-slate prose-sm max-w-none"
+          dangerouslySetInnerHTML={{ __html: textToHtml(section.content) }}
+        />
       )}
       {videos.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
