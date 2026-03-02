@@ -723,6 +723,79 @@ function getMediaAudioDuration(file: File): Promise<string | null> {
   });
 }
 
+function generateVideoThumbnailFile(file: File, captureTimeSeconds = 1): Promise<File | null> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.muted = true;
+    video.playsInline = true;
+    video.src = url;
+
+    const cleanup = () => URL.revokeObjectURL(url);
+
+    video.addEventListener('loadedmetadata', () => {
+      const seekTo = Math.min(captureTimeSeconds, Math.max(0, video.duration - 0.5));
+      video.currentTime = seekTo;
+    });
+
+    video.addEventListener('seeked', () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { cleanup(); resolve(null); return; }
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => {
+            cleanup();
+            if (!blob) { resolve(null); return; }
+            const baseName = file.name.replace(/\.[^.]+$/, '');
+            resolve(new File([blob], `${baseName}-thumb.jpg`, { type: 'image/jpeg' }));
+          },
+          'image/jpeg',
+          0.85,
+        );
+      } catch {
+        cleanup();
+        resolve(null);
+      }
+    });
+
+    video.addEventListener('error', () => { cleanup(); resolve(null); });
+  });
+}
+
+async function uploadVideoWithThumbnail(
+  file: File,
+): Promise<{ url: string | null; thumbnailUrl?: string; fileSize?: string; error: string | null }> {
+  const videoResult = await uploadToR2(file, 'videos');
+  if (videoResult.error || !videoResult.url) {
+    return { url: null, error: videoResult.error ?? 'Upload failed' };
+  }
+
+  let thumbnailUrl: string | undefined;
+  try {
+    const thumbFile = await generateVideoThumbnailFile(file);
+    if (thumbFile) {
+      const thumbResult = await uploadToR2(thumbFile, 'images');
+      if (!thumbResult.error && thumbResult.url) {
+        thumbnailUrl = thumbResult.url;
+      }
+    }
+  } catch {
+    // Thumbnail generation is best-effort; continue without it
+  }
+
+  return {
+    url: videoResult.url,
+    fileSize: videoResult.fileSize ?? undefined,
+    ...(thumbnailUrl ? { thumbnailUrl } : {}),
+    error: null,
+  };
+}
+
 function GalleryMediaEditor({
   items,
   onChange,
@@ -762,12 +835,18 @@ function GalleryMediaEditor({
     setAddImageError(null);
     setAddingVideo(true);
     try {
-      const result = await uploadToR2(file, 'videos');
+      const result = await uploadVideoWithThumbnail(file);
       if (result.error) {
         setAddImageError(result.error);
       } else if (result.url) {
         const id = Math.random().toString(36).substring(2, 11);
-        onChange([...items, { id, type: 'video', url: result.url, caption: '' }]);
+        onChange([...items, {
+          id,
+          type: 'video',
+          url: result.url,
+          caption: '',
+          ...(result.thumbnailUrl ? { thumbnailUrl: result.thumbnailUrl } : {}),
+        }]);
       }
     } catch {
       setAddImageError('Upload failed');
@@ -883,9 +962,14 @@ function GalleryMediaEditor({
             <img src={item.url} alt="" className="w-12 h-12 rounded object-cover flex-shrink-0" />
           )}
           {item.type === 'video' && (
-            <div className="w-12 h-12 rounded bg-slate-100 flex items-center justify-center flex-shrink-0">
-              <Video size={16} className="text-slate-400" />
-            </div>
+            item.thumbnailUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={item.thumbnailUrl} alt="" className="w-12 h-12 rounded object-cover flex-shrink-0" />
+            ) : (
+              <div className="w-12 h-12 rounded bg-slate-100 flex items-center justify-center flex-shrink-0">
+                <Video size={16} className="text-slate-400" />
+              </div>
+            )
           )}
           {item.type === 'audio' && (
             <div className="w-12 h-12 rounded bg-red-50 flex items-center justify-center flex-shrink-0">
@@ -923,6 +1007,15 @@ function GalleryMediaEditor({
               onChange={(e) => updateItem(item.id, { caption: e.target.value })}
               placeholder={item.type === 'audio' ? 'Recording title' : 'Caption (optional)'}
             />
+            {item.type === 'video' && (
+              <input
+                type="url"
+                className={inputClass}
+                value={item.thumbnailUrl ?? ''}
+                onChange={(e) => updateItem(item.id, { thumbnailUrl: e.target.value || undefined })}
+                placeholder="Thumbnail URL (optional)"
+              />
+            )}
           </div>
           <button type="button" onClick={() => removeItem(item.id)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" aria-label="Remove media item">
             <X size={12} />
@@ -1095,8 +1188,24 @@ function MediaHubItemsEditor({
     setError(null);
     setUploading(true);
     try {
-      let duration: string | null = null;
-      if (mediaType === 'audio') {
+      if (mediaType === 'video') {
+        const result = await uploadVideoWithThumbnail(file);
+        if (result.error) {
+          setError(result.error);
+        } else if (result.url) {
+          const id = Math.random().toString(36).substring(2, 11);
+          const caption = file.name.replace(/\.[^.]+$/, '');
+          onChange([...items, {
+            id,
+            type: 'video',
+            url: result.url,
+            caption,
+            ...(result.fileSize ? { fileSize: result.fileSize } : {}),
+            ...(result.thumbnailUrl ? { thumbnailUrl: result.thumbnailUrl } : {}),
+          }]);
+        }
+      } else {
+        let duration: string | null = null;
         duration = await new Promise<string | null>((resolve) => {
           const url = URL.createObjectURL(file);
           const audio = new Audio(url);
@@ -1109,15 +1218,14 @@ function MediaHubItemsEditor({
           });
           audio.addEventListener('error', () => { URL.revokeObjectURL(url); resolve(null); });
         });
-      }
-      const folder = mediaType === 'audio' ? 'recordings' : 'videos';
-      const result = await uploadToR2(file, folder);
-      if (result.error) {
-        setError(result.error);
-      } else if (result.url) {
-        const id = Math.random().toString(36).substring(2, 11);
-        const caption = file.name.replace(/\.[^.]+$/, '');
-        onChange([...items, { id, type: mediaType, url: result.url, caption, ...(duration ? { duration } : {}), ...(result.fileSize ? { fileSize: result.fileSize } : {}) }]);
+        const result = await uploadToR2(file, 'recordings');
+        if (result.error) {
+          setError(result.error);
+        } else if (result.url) {
+          const id = Math.random().toString(36).substring(2, 11);
+          const caption = file.name.replace(/\.[^.]+$/, '');
+          onChange([...items, { id, type: mediaType, url: result.url, caption, ...(duration ? { duration } : {}), ...(result.fileSize ? { fileSize: result.fileSize } : {}) }]);
+        }
       }
     } catch {
       setError('Upload failed');
@@ -1175,9 +1283,14 @@ function MediaHubItemsEditor({
             <button type="button" onClick={() => moveItem(idx, -1)} disabled={idx === 0} className="text-slate-400 hover:text-slate-600 disabled:opacity-30 text-[8px]" aria-label="Move up">&#9650;</button>
             <button type="button" onClick={() => moveItem(idx, 1)} disabled={idx === items.length - 1} className="text-slate-400 hover:text-slate-600 disabled:opacity-30 text-[8px]" aria-label="Move down">&#9660;</button>
           </div>
-          <div className={`w-12 h-12 rounded flex items-center justify-center flex-shrink-0 ${mediaType === 'audio' ? 'bg-red-50' : 'bg-slate-100'}`}>
-            {mediaType === 'audio' ? <Music size={16} className="text-red-400" /> : <Video size={16} className="text-slate-400" />}
-          </div>
+          {mediaType === 'video' && item.thumbnailUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={item.thumbnailUrl} alt="" className="w-12 h-12 rounded object-cover flex-shrink-0" />
+          ) : (
+            <div className={`w-12 h-12 rounded flex items-center justify-center flex-shrink-0 ${mediaType === 'audio' ? 'bg-red-50' : 'bg-slate-100'}`}>
+              {mediaType === 'audio' ? <Music size={16} className="text-red-400" /> : <Video size={16} className="text-slate-400" />}
+            </div>
+          )}
           <div className="flex-1 space-y-1 min-w-0">
             <div className="flex items-center gap-1">
               <span className="text-[9px] font-bold uppercase text-slate-400">{mediaType}</span>
@@ -1185,6 +1298,9 @@ function MediaHubItemsEditor({
             </div>
             <input type="url" className={inputClass} value={item.url} onChange={(e) => updateItem(item.id, { url: e.target.value })} placeholder={mediaType === 'audio' ? 'Audio file URL' : 'https://youtube.com/watch?v=...'} />
             <input type="text" className={inputClass} value={item.caption ?? ''} onChange={(e) => updateItem(item.id, { caption: e.target.value })} placeholder={mediaType === 'audio' ? 'Recording title' : 'Video title'} />
+            {mediaType === 'video' && (
+              <input type="url" className={inputClass} value={item.thumbnailUrl ?? ''} onChange={(e) => updateItem(item.id, { thumbnailUrl: e.target.value || undefined })} placeholder="Thumbnail URL (optional)" />
+            )}
           </div>
           <button type="button" onClick={() => removeItem(item.id)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" aria-label={`Remove ${typeLabel.toLowerCase()}`}>
             <X size={12} />
