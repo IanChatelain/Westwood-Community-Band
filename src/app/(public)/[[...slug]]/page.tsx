@@ -67,7 +67,7 @@ export default function DynamicPage() {
   const page = state.pages.find((p) => p.slug === path);
 
   if (page) {
-    return <PageContent page={page} />;
+    return <PageContent page={page} globalSidebarBlocks={state.settings.globalSidebarBlocks} />;
   }
 
   if (slugSegments && slugSegments.length >= 2) {

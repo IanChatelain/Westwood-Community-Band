@@ -1102,9 +1102,10 @@ function TabGroupContainer({ sections, page, renderSectionContent }: { sections:
 
 interface PageContentProps {
   page: PageConfig;
+  globalSidebarBlocks?: SidebarBlock[];
 }
 
-export default function PageContent({ page }: PageContentProps) {
+export default function PageContent({ page, globalSidebarBlocks }: PageContentProps) {
   const hasBlocks = page.blocks && page.blocks.length > 0;
 
   return (
@@ -1174,8 +1175,8 @@ export default function PageContent({ page }: PageContentProps) {
 
       {/* Sidebar Area */}
       {page.layout !== 'full' && (() => {
-        const blocks = (page.sidebarBlocks && page.sidebarBlocks.length > 0)
-          ? [...page.sidebarBlocks].sort((a, b) => a.order - b.order)
+        const blocks = (globalSidebarBlocks && globalSidebarBlocks.length > 0)
+          ? [...globalSidebarBlocks].sort((a, b) => a.order - b.order)
           : DEFAULT_SIDEBAR_BLOCKS;
         return (
           <aside

@@ -144,8 +144,9 @@ export function LivePreviewEditor({ page, pageId }: LivePreviewEditorProps) {
   });
 
   const hasBlocks = blocks.length > 0;
-  const sidebarBlocks = (page.sidebarBlocks && page.sidebarBlocks.length > 0)
-    ? [...page.sidebarBlocks].sort((a, b) => a.order - b.order)
+  const globalBlocks = state.settings.globalSidebarBlocks;
+  const sidebarBlocks = (globalBlocks && globalBlocks.length > 0)
+    ? [...globalBlocks].sort((a, b) => a.order - b.order)
     : DEFAULT_SIDEBAR_BLOCKS;
 
   return (

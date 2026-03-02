@@ -8,6 +8,7 @@ export const siteSettings = sqliteTable('site_settings', {
   primaryColor: text('primary_color').notNull().default('#991b1b'),
   secondaryColor: text('secondary_color').notNull().default('#1e3a8a'),
   footerText: text('footer_text').notNull().default(''),
+  globalSidebarBlocks: text('global_sidebar_blocks', { mode: 'json' }).$type<unknown[] | null>(),
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
 });
 

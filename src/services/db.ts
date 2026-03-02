@@ -71,6 +71,7 @@ export class DbService {
       primaryColor: rawSettings.primaryColor,
       secondaryColor: rawSettings.secondaryColor,
       footerText: rawSettings.footerText,
+      globalSidebarBlocks: (rawSettings as SiteSettings).globalSidebarBlocks,
     };
     return { ...state, pages, settings };
   }

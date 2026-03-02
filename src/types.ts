@@ -192,6 +192,7 @@ export interface SiteSettings {
   primaryColor: string;
   secondaryColor: string;
   footerText: string;
+  globalSidebarBlocks?: SidebarBlock[];
 }
 
 export interface AppState {

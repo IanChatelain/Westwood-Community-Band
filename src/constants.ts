@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   primaryColor: "#991b1b",  /* Westwood red */
   secondaryColor: "#1e3a8a",
   footerText: "\u00a9 2026 Westwood Community Band. Forty-five Years of Making Music.",
+  globalSidebarBlocks: [...DEFAULT_SIDEBAR_BLOCKS],
 };
 
 export const INITIAL_PAGES: PageConfig[] = [

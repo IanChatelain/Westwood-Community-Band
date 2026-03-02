@@ -101,6 +101,9 @@ function rowToSettings(row: typeof siteSettings.$inferSelect): SiteSettings {
     primaryColor: row.primaryColor,
     secondaryColor: row.secondaryColor,
     footerText: row.footerText,
+    globalSidebarBlocks: row.globalSidebarBlocks
+      ? (Array.isArray(row.globalSidebarBlocks) ? row.globalSidebarBlocks as SiteSettings['globalSidebarBlocks'] : undefined)
+      : undefined,
   };
 }
 
@@ -196,6 +199,7 @@ export async function saveSettings(settings: SiteSettings): Promise<boolean> {
       primaryColor: settings.primaryColor,
       secondaryColor: settings.secondaryColor,
       footerText: settings.footerText,
+      globalSidebarBlocks: (settings.globalSidebarBlocks ?? null) as unknown[] | null,
       updatedAt: new Date().toISOString(),
     }).where(eq(siteSettings.id, 1));
     revalidateTag('cms', 'max');
