@@ -108,8 +108,8 @@ function rowToSettings(row: typeof siteSettings.$inferSelect): SiteSettings {
 function expandMediaHubSections(sections: PageSection[]): PageSection[] {
   const result: PageSection[] = [];
   for (const s of sections) {
-    if ((s as Record<string, unknown>).type === 'media-hub') {
-      const hub = s as Record<string, unknown>;
+    const legacy = s as any;
+    if (legacy.type === 'media-hub') {
       result.push({
         id: s.id + '-photos',
         type: 'gallery',
@@ -117,7 +117,7 @@ function expandMediaHubSections(sections: PageSection[]): PageSection[] {
         content: '',
         tabGroup: 'media',
         tabLabel: 'Photos',
-        galleryEvents: (hub.mediaPhotos as PageSection['galleryEvents']) ?? [],
+        galleryEvents: (legacy.mediaPhotos as PageSection['galleryEvents']) ?? [],
       });
       result.push({
         id: s.id + '-recordings',
@@ -126,7 +126,7 @@ function expandMediaHubSections(sections: PageSection[]): PageSection[] {
         content: '',
         tabGroup: 'media',
         tabLabel: 'Recordings',
-        audioItems: (hub.mediaRecordings as PageSection['audioItems']) ?? [],
+        audioItems: (legacy.mediaRecordings as PageSection['audioItems']) ?? [],
       });
       result.push({
         id: s.id + '-videos',
@@ -135,7 +135,7 @@ function expandMediaHubSections(sections: PageSection[]): PageSection[] {
         content: '',
         tabGroup: 'media',
         tabLabel: 'Videos',
-        videoItems: (hub.mediaVideos as PageSection['videoItems']) ?? [],
+        videoItems: (legacy.mediaVideos as PageSection['videoItems']) ?? [],
       });
     } else {
       result.push(s);
