@@ -59,6 +59,7 @@ const DEFAULT_HEIGHTS: Partial<Record<PageSectionType, number>> = {
 const MOVE_DROPDOWN_PANEL_ID = 'move-section-dropdown-panel';
 const PANEL_MAX_HEIGHT = 320;
 const GAP = 4;
+const MAX_VIDEO_FILES_PER_BATCH = 20;
 
 function MoveSectionDropdown({
   sectionId,
@@ -954,6 +955,7 @@ function GalleryMediaEditor({
   const [addingVideo, setAddingVideo] = useState(false);
   const [addingAudio, setAddingAudio] = useState(false);
   const [addImageError, setAddImageError] = useState<string | null>(null);
+  const [videoUploadProgress, setVideoUploadProgress] = useState<string | null>(null);
 
   const handleAddImage = async (file: File) => {
     setAddImageError(null);
@@ -973,28 +975,45 @@ function GalleryMediaEditor({
     }
   };
 
-  const handleAddVideoFile = async (file: File) => {
+  const handleAddVideoFiles = async (files: File[]) => {
+    if (files.length > MAX_VIDEO_FILES_PER_BATCH) {
+      setAddImageError(`You can upload up to ${MAX_VIDEO_FILES_PER_BATCH} videos at a time. You selected ${files.length}.`);
+      return;
+    }
     setAddImageError(null);
     setAddingVideo(true);
-    try {
-      const result = await uploadVideoWithThumbnail(file);
-      if (result.error) {
-        setAddImageError(result.error);
-      } else if (result.url) {
-        const id = Math.random().toString(36).substring(2, 11);
-        onChange([...items, {
-          id,
-          type: 'video',
-          url: result.url,
-          caption: '',
-          ...(result.thumbnailUrl ? { thumbnailUrl: result.thumbnailUrl } : {}),
-        }]);
+    const errors: string[] = [];
+    let currentItems = [...items];
+    for (let i = 0; i < files.length; i++) {
+      setVideoUploadProgress(files.length > 1 ? `Uploading ${i + 1} of ${files.length}...` : 'Uploading...');
+      try {
+        const result = await uploadVideoWithThumbnail(files[i]);
+        if (result.error) {
+          errors.push(`${files[i].name}: ${result.error}`);
+        } else if (result.url) {
+          const id = Math.random().toString(36).substring(2, 11);
+          currentItems = [...currentItems, {
+            id,
+            type: 'video' as const,
+            url: result.url,
+            caption: '',
+            ...(result.thumbnailUrl ? { thumbnailUrl: result.thumbnailUrl } : {}),
+          }];
+          onChange(currentItems);
+        }
+      } catch {
+        errors.push(`${files[i].name}: Upload failed`);
       }
-    } catch {
-      setAddImageError('Upload failed');
-    } finally {
-      setAddingVideo(false);
     }
+    if (errors.length > 0) {
+      setAddImageError(
+        errors.length === files.length
+          ? `All ${files.length} videos failed to upload`
+          : `${errors.length} of ${files.length} videos failed: ${errors.join('; ')}`
+      );
+    }
+    setVideoUploadProgress(null);
+    setAddingVideo(false);
   };
 
   const handleAddAudioFile = async (file: File) => {
@@ -1057,10 +1076,11 @@ function GalleryMediaEditor({
             ref={videoInputRef}
             type="file"
             accept="video/mp4,video/webm"
+            multiple
             className="hidden"
             onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) handleAddVideoFile(f);
+              const files = Array.from(e.target.files ?? []);
+              if (files.length > 0) handleAddVideoFiles(files);
               e.target.value = '';
             }}
           />
@@ -1082,7 +1102,7 @@ function GalleryMediaEditor({
             <Music size={10} /> {addingAudio ? 'Uploading...' : 'Recording'}
           </button>
           <button type="button" disabled={addingVideo} onClick={() => videoInputRef.current?.click()} className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 disabled:opacity-50 transition-colors">
-            <Upload size={10} /> {addingVideo ? 'Uploading...' : 'Video File'}
+            <Upload size={10} /> {addingVideo ? (videoUploadProgress ?? 'Uploading...') : 'Video Files'}
           </button>
           <button type="button" onClick={addVideo} className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 transition-colors">
             <Video size={10} /> Video URL
@@ -1330,6 +1350,7 @@ function MediaHubItemsEditor({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
 
   const handleFileUpload = async (file: File) => {
     setError(null);
@@ -1381,6 +1402,49 @@ function MediaHubItemsEditor({
     }
   };
 
+  const handleVideoFilesUpload = async (files: File[]) => {
+    if (files.length > MAX_VIDEO_FILES_PER_BATCH) {
+      setError(`You can upload up to ${MAX_VIDEO_FILES_PER_BATCH} videos at a time. You selected ${files.length}.`);
+      return;
+    }
+    setError(null);
+    setUploading(true);
+    const errors: string[] = [];
+    let currentItems = [...items];
+    for (let i = 0; i < files.length; i++) {
+      setUploadProgress(files.length > 1 ? `Uploading ${i + 1} of ${files.length}...` : 'Uploading...');
+      try {
+        const result = await uploadVideoWithThumbnail(files[i]);
+        if (result.error) {
+          errors.push(`${files[i].name}: ${result.error}`);
+        } else if (result.url) {
+          const id = Math.random().toString(36).substring(2, 11);
+          const caption = files[i].name.replace(/\.[^.]+$/, '');
+          currentItems = [...currentItems, {
+            id,
+            type: 'video' as const,
+            url: result.url,
+            caption,
+            ...(result.fileSize ? { fileSize: result.fileSize } : {}),
+            ...(result.thumbnailUrl ? { thumbnailUrl: result.thumbnailUrl } : {}),
+          }];
+          onChange(currentItems);
+        }
+      } catch {
+        errors.push(`${files[i].name}: Upload failed`);
+      }
+    }
+    if (errors.length > 0) {
+      setError(
+        errors.length === files.length
+          ? `All ${files.length} videos failed to upload`
+          : `${errors.length} of ${files.length} videos failed: ${errors.join('; ')}`
+      );
+    }
+    setUploadProgress(null);
+    setUploading(false);
+  };
+
   const addUrlItem = () => {
     const id = Math.random().toString(36).substring(2, 11);
     onChange([...items, { id, type: mediaType, url: '', caption: '' }]);
@@ -1411,9 +1475,18 @@ function MediaHubItemsEditor({
       <div className="flex items-center justify-between">
         <label className="block text-[10px] font-bold text-slate-700 uppercase">{typeLabel}s</label>
         <div className="flex gap-1">
-          <input ref={fileInputRef} type="file" accept={acceptType} className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ''; }} />
+          <input ref={fileInputRef} type="file" accept={acceptType} multiple={mediaType === 'video'} className="hidden" onChange={(e) => {
+            if (mediaType === 'video') {
+              const files = Array.from(e.target.files ?? []);
+              if (files.length > 0) handleVideoFilesUpload(files);
+            } else {
+              const f = e.target.files?.[0];
+              if (f) handleFileUpload(f);
+            }
+            e.target.value = '';
+          }} />
           <button type="button" disabled={uploading} onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 disabled:opacity-50 transition-colors">
-            {iconComp} {uploading ? 'Uploading...' : `Upload ${typeLabel}`}
+            {iconComp} {uploading ? (uploadProgress ?? 'Uploading...') : (mediaType === 'video' ? 'Upload Videos' : `Upload ${typeLabel}`)}
           </button>
           {mediaType === 'video' && (
             <button type="button" onClick={addUrlItem} className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-700 transition-colors">
