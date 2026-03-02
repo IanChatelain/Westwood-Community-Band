@@ -768,8 +768,28 @@ function AudioPlaylistSection({ section }: { section: PageSection }) {
   );
 }
 
-function VideoGallerySection({ section }: { section: PageSection }) {
+function VideoGallerySection({ section, pageSlug }: { section: PageSection; pageSlug: string }) {
+  const events = section.galleryEvents ?? [];
+  const eventsWithVideos = events.filter(ev => ev.media.some(m => m.type === 'video'));
   const videos = section.videoItems ?? [];
+  const hasEvents = eventsWithVideos.length > 0;
+  const basePath = pageSlug === '/' ? '' : pageSlug;
+
+  const cols = section.galleryColumns ?? 3;
+  const cardSize = section.galleryCardSize ?? 'md';
+  const thumbAspect = section.galleryThumbnailAspect ?? 'landscape';
+  const showDesc = section.galleryShowDescription ?? true;
+
+  const gridColsClass: Record<number, string> = {
+    2: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6',
+    3: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6',
+    4: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6',
+  };
+  const cardPadding: Record<string, string> = { sm: 'p-2.5', md: 'p-4', lg: 'p-6' };
+  const titleSize: Record<string, string> = { sm: 'text-sm', md: 'text-base', lg: 'text-lg' };
+  const descSize: Record<string, string> = { sm: 'text-xs', md: 'text-sm', lg: 'text-sm' };
+  const aspectClass = thumbAspect === 'square' ? 'aspect-square' : 'aspect-[4/3]';
+
   return (
     <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm ring-1 ring-slate-900/5" style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
       {section.title && (
@@ -781,7 +801,50 @@ function VideoGallerySection({ section }: { section: PageSection }) {
           dangerouslySetInnerHTML={{ __html: textToHtml(section.content) }}
         />
       )}
-      {videos.length > 0 ? (
+      {hasEvents ? (
+        <div className={gridColsClass[cols] ?? gridColsClass[3]}>
+          {eventsWithVideos.map((ev) => {
+            const eventVideos = ev.media.filter(m => m.type === 'video');
+            const firstVideoThumb = eventVideos.find(m => m.thumbnailUrl)?.thumbnailUrl;
+            const coverUrl = ev.coverImageUrl || firstVideoThumb;
+
+            return (
+              <Link
+                key={ev.id}
+                href={`${basePath}/${ev.slug}`}
+                className="group block rounded-xl overflow-hidden border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all bg-white"
+              >
+                <div className={`relative ${aspectClass} bg-slate-900 overflow-hidden`}>
+                  {coverUrl ? (
+                    <Image
+                      src={coverUrl}
+                      alt={ev.title}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+                      <Play size={48} className="text-white/40" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors" />
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center border border-white/30 shadow-lg">
+                      <Play size={22} className="text-white ml-0.5" />
+                    </div>
+                  </div>
+                </div>
+                <div className={cardPadding[cardSize]}>
+                  <h4 className={`font-semibold text-slate-900 group-hover:text-red-800 transition-colors ${titleSize[cardSize]}`}>{ev.title}</h4>
+                  {showDesc && ev.description && <p className={`${descSize[cardSize]} text-slate-500 mt-1 line-clamp-2`}>{ev.description}</p>}
+                  <p className="text-xs text-slate-400 mt-2">{eventVideos.length} {eventVideos.length === 1 ? 'video' : 'videos'}</p>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      ) : videos.length > 0 ? (
         <VideoGalleryGrid videos={videos} />
       ) : (
         <div className="text-center py-12 text-slate-400">
@@ -1171,7 +1234,7 @@ function SectionInnerContent({ section, page, heroH }: { section: PageSection; p
             )}
 
             {section.type === 'video-gallery' && (
-              <VideoGallerySection section={section} />
+              <VideoGallerySection section={section} pageSlug={page.slug} />
             )}
 
             {section.type === 'contact' && (

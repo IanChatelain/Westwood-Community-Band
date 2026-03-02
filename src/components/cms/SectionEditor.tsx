@@ -540,12 +540,88 @@ function SortableSectionItem({
           )}
 
           {section.type === 'video-gallery' && (
-            <MediaHubItemsEditor
-              items={section.videoItems ?? []}
-              onChange={(videoItems) => onUpdate({ videoItems })}
-              inputClass={inputClass}
-              mediaType="video"
-            />
+            <>
+              <div className="space-y-3 pb-2">
+                <p className="text-[10px] font-bold text-slate-700 uppercase">Gallery Layout</p>
+                <div className="flex items-center gap-3">
+                  <label className="text-xs text-slate-700 w-28 flex-shrink-0">Cards per row</label>
+                  <select
+                    className={inputClass}
+                    value={section.galleryColumns ?? 3}
+                    onChange={(e) => onUpdate({ galleryColumns: parseInt(e.target.value, 10) as 2 | 3 | 4 })}
+                  >
+                    <option value={2}>2</option>
+                    <option value={3}>3</option>
+                    <option value={4}>4</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="text-xs text-slate-700 w-28 flex-shrink-0">Card size</label>
+                  <select
+                    className={inputClass}
+                    value={section.galleryCardSize ?? 'md'}
+                    onChange={(e) => onUpdate({ galleryCardSize: e.target.value as 'sm' | 'md' | 'lg' })}
+                  >
+                    <option value="sm">Small</option>
+                    <option value="md">Medium</option>
+                    <option value="lg">Large</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="text-xs text-slate-700 w-28 flex-shrink-0">Thumbnail shape</label>
+                  <div className="flex gap-2">
+                    {(['landscape', 'square'] as const).map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => onUpdate({ galleryThumbnailAspect: opt })}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                          (section.galleryThumbnailAspect ?? 'landscape') === opt
+                            ? 'border-red-600 bg-red-600 text-white'
+                            : 'border-slate-300 text-slate-700 hover:border-slate-400'
+                        }`}
+                      >
+                        {opt === 'landscape' ? 'Landscape (4:3)' : 'Square (1:1)'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="text-xs text-slate-700 w-28 flex-shrink-0">Show description</label>
+                  <button
+                    type="button"
+                    onClick={() => onUpdate({ galleryShowDescription: !(section.galleryShowDescription ?? true) })}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                      (section.galleryShowDescription ?? true) ? 'bg-red-600' : 'bg-slate-300'
+                    }`}
+                    role="switch"
+                    aria-checked={section.galleryShowDescription ?? true}
+                  >
+                    <span
+                      className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${
+                        (section.galleryShowDescription ?? true) ? 'translate-x-4.5' : 'translate-x-0.5'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+              <GalleryEventsEditor
+                events={section.galleryEvents ?? []}
+                onChange={(galleryEvents) => onUpdate({ galleryEvents })}
+                inputClass={inputClass}
+              />
+              {(section.videoItems ?? []).length > 0 && (
+                <div className="pt-3 border-t border-slate-200">
+                  <p className="text-[10px] font-bold text-slate-700 uppercase mb-2">Standalone Videos (not in events)</p>
+                  <MediaHubItemsEditor
+                    items={section.videoItems ?? []}
+                    onChange={(videoItems) => onUpdate({ videoItems })}
+                    inputClass={inputClass}
+                    mediaType="video"
+                  />
+                </div>
+              )}
+            </>
           )}
 
           {/* Size controls */}
@@ -634,6 +710,20 @@ function GalleryEventsEditor({
     onChange(next);
   };
 
+  const handleMoveMediaToEvent = (itemId: string, targetEventId: string) => {
+    let movedItem: GalleryMediaItem | undefined;
+    const updated = events.map((ev) => {
+      const found = ev.media.find((m) => m.id === itemId);
+      if (found) {
+        movedItem = found;
+        return { ...ev, media: ev.media.filter((m) => m.id !== itemId) };
+      }
+      return ev;
+    });
+    if (!movedItem) return;
+    onChange(updated.map((ev) => ev.id === targetEventId ? { ...ev, media: [...ev.media, movedItem!] } : ev));
+  };
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -695,6 +785,8 @@ function GalleryEventsEditor({
                   items={ev.media}
                   onChange={(media) => updateEvent(ev.id, { media })}
                   inputClass={inputClass}
+                  otherEvents={events.filter(e => e.id !== ev.id).map(e => ({ id: e.id, title: e.title }))}
+                  onMoveToEvent={handleMoveMediaToEvent}
                 />
               </div>
             )}
@@ -796,14 +888,64 @@ async function uploadVideoWithThumbnail(
   };
 }
 
+function MoveMediaToEventDropdown({
+  itemId,
+  otherEvents,
+  onMove,
+}: {
+  itemId: string;
+  otherEvents: { id: string; title: string }[];
+  onMove: (itemId: string, targetEventId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  if (otherEvents.length === 0) return null;
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+        className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50 flex-shrink-0"
+        aria-label="Move to another event"
+        title="Move to another event"
+      >
+        <ArrowRightLeft size={12} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" aria-hidden onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full mt-1 z-20 w-48 bg-white rounded-lg shadow-xl border border-slate-200 py-1">
+            <p className="px-3 py-1 text-[9px] font-bold text-slate-500 uppercase">Move to event</p>
+            {otherEvents.map((ev) => (
+              <button
+                key={ev.id}
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onMove(itemId, ev.id); setOpen(false); }}
+                className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+              >
+                {ev.title}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function GalleryMediaEditor({
   items,
   onChange,
   inputClass,
+  otherEvents,
+  onMoveToEvent,
 }: {
   items: GalleryMediaItem[];
   onChange: (items: GalleryMediaItem[]) => void;
   inputClass: string;
+  otherEvents?: { id: string; title: string }[];
+  onMoveToEvent?: (itemId: string, targetEventId: string) => void;
 }) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -1017,9 +1159,14 @@ function GalleryMediaEditor({
               />
             )}
           </div>
-          <button type="button" onClick={() => removeItem(item.id)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" aria-label="Remove media item">
-            <X size={12} />
-          </button>
+          <div className="flex flex-col gap-0.5 flex-shrink-0">
+            {otherEvents && otherEvents.length > 0 && onMoveToEvent && (
+              <MoveMediaToEventDropdown itemId={item.id} otherEvents={otherEvents} onMove={onMoveToEvent} />
+            )}
+            <button type="button" onClick={() => removeItem(item.id)} className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50" aria-label="Remove media item">
+              <X size={12} />
+            </button>
+          </div>
         </div>
       ))}
     </div>
@@ -1612,7 +1759,14 @@ export function SectionEditor({ sections, onChange, currentPageId, allPages, onM
       downloadGroups: [] as DownloadGroup[],
     } : {};
     const audioPlaylistDefaults = type === 'audio-playlist' ? { audioItems: [] as GalleryMediaItem[] } : {};
-    const videoGalleryDefaults = type === 'video-gallery' ? { videoItems: [] as GalleryMediaItem[] } : {};
+    const videoGalleryDefaults = type === 'video-gallery' ? {
+      videoItems: [] as GalleryMediaItem[],
+      galleryEvents: [] as GalleryEvent[],
+      galleryColumns: 3 as const,
+      galleryCardSize: 'md' as const,
+      galleryThumbnailAspect: 'landscape' as const,
+      galleryShowDescription: true,
+    } : {};
     const newSection: PageSection = {
       id,
       type,

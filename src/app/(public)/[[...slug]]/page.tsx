@@ -35,7 +35,7 @@ function findGalleryEvent(
   const page = pages.find((p) => p.slug === parentSlug);
   if (!page) return null;
   for (const section of page.sections) {
-    if (section.type === 'gallery' && section.galleryEvents) {
+    if ((section.type === 'gallery' || section.type === 'video-gallery') && section.galleryEvents) {
       const event = section.galleryEvents.find((ev) => ev.slug === eventSlug);
       if (event) return { event, parentSlug };
     }
