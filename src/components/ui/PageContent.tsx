@@ -101,40 +101,63 @@ function imageLayoutClasses(style?: SectionStyle): { wrapper: string; image: str
 
 export function SidebarBlockContent({ block }: { block: SidebarBlock }) {
   if (block.type === 'rehearsals') {
+    const title = block.title || 'Rehearsals';
+    const day = block.day || 'Thursday Evenings';
+    const time = block.time || '7:15 to 9:15 p.m.';
+    const venue = block.venueName || 'The Band Room';
+    const addr1 = block.addressLine1 || 'John Taylor Collegiate';
+    const addr2 = block.addressLine2 || '470 Hamilton Avenue\nWinnipeg, Manitoba';
+    const mapUrl = block.mapUrl || 'https://maps.google.ca/maps?q=470+Hamilton+Avenue,+Winnipeg,+MB';
     return (
       <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm ring-1 ring-slate-900/5">
         <h4 className="text-base font-bold mb-3 flex items-center gap-2 text-slate-900" style={{ color: 'var(--westwood-red)' }}>
-          <Clock size={16} className="opacity-90"/> Rehearsals
+          <Clock size={16} className="opacity-90"/> {title}
         </h4>
         <div className="space-y-2 text-sm text-slate-700">
-          <p>Thursday Evenings</p>
-          <p className="font-semibold text-slate-900">7:15 to 9:15 p.m.</p>
+          <p>{day}</p>
+          <p className="font-semibold text-slate-900">{time}</p>
           <div className="pt-2 border-t border-slate-200">
-            <p className="text-slate-700 flex items-start gap-2"><MapPin size={14} className="mt-0.5 flex-shrink-0 text-slate-500"/> The Band Room<br/>John Taylor Collegiate<br/>470 Hamilton Avenue<br/>Winnipeg, Manitoba</p>
+            <p className="text-slate-700 flex items-start gap-2">
+              <MapPin size={14} className="mt-0.5 flex-shrink-0 text-slate-500"/>
+              <span>{venue}<br/>{addr1}<br/>{addr2.split('\n').map((line, i) => <React.Fragment key={i}>{i > 0 && <br/>}{line}</React.Fragment>)}</span>
+            </p>
           </div>
         </div>
-        <a href="https://maps.google.ca/maps?q=470+Hamilton+Avenue,+Winnipeg,+MB" target="_blank" rel="noopener noreferrer" className="mt-4 block w-full py-2.5 rounded-lg font-medium text-sm transition-colors text-center border-2 border-[var(--westwood-red)] text-[var(--westwood-red)] hover:bg-[var(--westwood-red)] hover:text-white focus:outline-none focus:ring-2 focus:ring-[var(--westwood-red)] focus:ring-offset-2">Get Directions</a>
+        <a href={mapUrl} target="_blank" rel="noopener noreferrer" className="mt-4 block w-full py-2.5 rounded-lg font-medium text-sm transition-colors text-center border-2 border-[var(--westwood-red)] text-[var(--westwood-red)] hover:bg-[var(--westwood-red)] hover:text-white focus:outline-none focus:ring-2 focus:ring-[var(--westwood-red)] focus:ring-offset-2">Get Directions</a>
       </div>
     );
   }
   if (block.type === 'fees') {
+    const defaultFees = [
+      { label: 'Annual Fee', amount: '$100.00' },
+      { label: 'Students', amount: '$50.00' },
+      { label: 'Polo Shirt', amount: '$15.00' },
+    ];
+    const fees = (block.feeItems && block.feeItems.length > 0) ? block.feeItems : defaultFees;
+    const season = block.seasonLabel || 'Band Season: September to June';
     return (
       <div className="bg-white p-5 rounded-xl shadow-sm ring-1 ring-slate-900/5">
         <h4 className="text-base font-bold mb-4 text-slate-900">{block.title || 'Membership Fees'}</h4>
         <ul className="space-y-3 text-sm">
-          <li className="flex justify-between text-slate-700"><span>Annual Fee</span><span className="font-bold text-slate-900">$100.00</span></li>
-          <li className="flex justify-between text-slate-700"><span>Students</span><span className="font-bold text-slate-900">$50.00</span></li>
-          <li className="flex justify-between text-slate-700"><span>Polo Shirt</span><span className="font-bold text-slate-900">$15.00</span></li>
+          {fees.map((item, idx) => (
+            <li key={idx} className="flex justify-between text-slate-700">
+              <span>{item.label}</span>
+              <span className="font-bold text-slate-900">{item.amount}</span>
+            </li>
+          ))}
         </ul>
-        <p className="text-xs text-slate-500 mt-4">Band Season: September to June</p>
+        <p className="text-xs text-slate-500 mt-4">{season}</p>
       </div>
     );
   }
   if (block.type === 'contact') {
+    const label = block.linkLabel || 'Get in Touch';
+    const href = block.href || '/contact';
     return (
       <div className="bg-white p-5 rounded-xl shadow-sm ring-1 ring-slate-900/5">
         <h4 className="text-base font-bold mb-4 text-slate-900 flex items-center gap-2"><Mail size={16}/> {block.title || 'Contact'}</h4>
-        <Link href="/contact" className="block w-full border-2 border-red-800 text-red-800 hover:bg-red-800 hover:text-white py-2.5 rounded-lg font-medium text-sm transition-colors text-center">Get in Touch</Link>
+        {block.body && <p className="text-sm text-slate-700 mb-4 whitespace-pre-line">{block.body}</p>}
+        <Link href={href} className="block w-full border-2 border-red-800 text-red-800 hover:bg-red-800 hover:text-white py-2.5 rounded-lg font-medium text-sm transition-colors text-center">{label}</Link>
       </div>
     );
   }

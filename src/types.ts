@@ -129,12 +129,40 @@ export interface PageSection {
 
 export type SidebarBlockType = 'rehearsals' | 'fees' | 'contact' | 'custom';
 
+export interface SidebarFeeItem {
+  label: string;
+  amount: string;
+  description?: string;
+}
+
 export interface SidebarBlock {
   id: string;
   type: SidebarBlockType;
   title?: string;
   content?: string;
   order: number;
+  /** rehearsals: day of week (e.g. "Thursday Evenings") */
+  day?: string;
+  /** rehearsals: time range (e.g. "7:15 to 9:15 p.m.") */
+  time?: string;
+  /** rehearsals: venue name (e.g. "The Band Room") */
+  venueName?: string;
+  /** rehearsals: first address line (e.g. "John Taylor Collegiate") */
+  addressLine1?: string;
+  /** rehearsals: second address line (e.g. "470 Hamilton Avenue\nWinnipeg, Manitoba") */
+  addressLine2?: string;
+  /** rehearsals: Google Maps or directions URL */
+  mapUrl?: string;
+  /** fees: season description (e.g. "Band Season: September to June") */
+  seasonLabel?: string;
+  /** fees: list of fee line items */
+  feeItems?: SidebarFeeItem[];
+  /** contact: body text above the CTA button */
+  body?: string;
+  /** contact: CTA button label (default "Get in Touch") */
+  linkLabel?: string;
+  /** contact: CTA button href (default "/contact") */
+  href?: string;
 }
 
 export interface PageConfig {

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { PageConfig, SidebarBlock, SidebarBlockType } from '@/types';
+import { PageConfig, SidebarBlock, SidebarBlockType, SidebarFeeItem } from '@/types';
 import { DEFAULT_SIDEBAR_BLOCKS } from '@/constants';
 import { useAppContext } from '@/context/AppContext';
 import { Save, Layout as LayoutIcon, ChevronDown, Undo2, X, History, RotateCcw } from 'lucide-react';
@@ -227,29 +227,61 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
               {sidebarEditorOpen && (
                 <>
                   <div className="fixed inset-0 z-10" aria-hidden onClick={() => setSidebarEditorOpen(false)} />
-                  <div className="absolute left-0 top-full mt-2 z-20 w-72 max-h-64 overflow-y-auto bg-white rounded-lg shadow-xl border border-slate-200 p-3 space-y-2">
+                  <div className="absolute left-0 top-full mt-2 z-20 w-[26rem] max-h-[28rem] overflow-y-auto bg-white rounded-lg shadow-xl border border-slate-200 p-3 space-y-2">
                     {[...sidebarBlocks].sort((a, b) => a.order - b.order).map((block) => (
-                      <div key={block.id} className="flex flex-wrap gap-2 p-2 bg-slate-50 rounded-lg text-xs">
-                        <span className="font-bold text-slate-500 w-16">{block.type}</span>
-                        {block.type === 'custom' && (
-                          <>
-                            <input
-                              className="flex-1 min-w-0 p-1.5 border border-slate-300 rounded bg-white text-slate-900"
-                              value={block.title ?? ''}
-                              onChange={(e) => updateSidebarBlock(block.id, { title: e.target.value })}
-                              placeholder="Title"
-                            />
-                            <input
-                              className="flex-1 min-w-0 p-1.5 border border-slate-300 rounded bg-white text-slate-900"
-                              value={block.content ?? ''}
-                              onChange={(e) => updateSidebarBlock(block.id, { content: e.target.value })}
-                              placeholder="Content"
-                            />
-                          </>
+                      <div key={block.id} className="p-2.5 bg-slate-50 rounded-lg text-xs space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-slate-500 uppercase tracking-wide">{block.type}</span>
+                          <button onClick={() => removeSidebarBlock(block.id)} className="text-red-600 hover:text-red-800 text-sm leading-none">×</button>
+                        </div>
+
+                        {block.type === 'rehearsals' && (
+                          <div className="grid grid-cols-2 gap-1.5">
+                            <input className="col-span-2 p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.title ?? ''} onChange={(e) => updateSidebarBlock(block.id, { title: e.target.value })} placeholder="Title (e.g. Rehearsals)" />
+                            <input className="p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.day ?? ''} onChange={(e) => updateSidebarBlock(block.id, { day: e.target.value })} placeholder="Day (e.g. Thursday Evenings)" />
+                            <input className="p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.time ?? ''} onChange={(e) => updateSidebarBlock(block.id, { time: e.target.value })} placeholder="Time (e.g. 7:15 to 9:15 p.m.)" />
+                            <input className="col-span-2 p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.venueName ?? ''} onChange={(e) => updateSidebarBlock(block.id, { venueName: e.target.value })} placeholder="Venue (e.g. The Band Room)" />
+                            <input className="col-span-2 p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.addressLine1 ?? ''} onChange={(e) => updateSidebarBlock(block.id, { addressLine1: e.target.value })} placeholder="Address line 1 (e.g. John Taylor Collegiate)" />
+                            <input className="col-span-2 p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.addressLine2 ?? ''} onChange={(e) => updateSidebarBlock(block.id, { addressLine2: e.target.value })} placeholder="Address line 2 (e.g. 470 Hamilton Ave, Winnipeg)" />
+                            <input className="col-span-2 p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.mapUrl ?? ''} onChange={(e) => updateSidebarBlock(block.id, { mapUrl: e.target.value })} placeholder="Map / directions URL" />
+                          </div>
                         )}
-                        <button onClick={() => removeSidebarBlock(block.id)} className="text-red-600 hover:text-red-800">
-                          ×
-                        </button>
+
+                        {block.type === 'fees' && (
+                          <div className="space-y-1.5">
+                            <input className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.title ?? ''} onChange={(e) => updateSidebarBlock(block.id, { title: e.target.value })} placeholder="Title (e.g. Membership Fees)" />
+                            <input className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.seasonLabel ?? ''} onChange={(e) => updateSidebarBlock(block.id, { seasonLabel: e.target.value })} placeholder="Season note (e.g. Band Season: September to June)" />
+                            <div className="space-y-1">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase">Fee items</span>
+                              {(block.feeItems ?? []).map((item, idx) => (
+                                <div key={idx} className="flex gap-1">
+                                  <input className="flex-1 min-w-0 p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={item.label} onChange={(e) => { const items = [...(block.feeItems ?? [])]; items[idx] = { ...items[idx], label: e.target.value }; updateSidebarBlock(block.id, { feeItems: items }); }} placeholder="Label" />
+                                  <input className="w-24 p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={item.amount} onChange={(e) => { const items = [...(block.feeItems ?? [])]; items[idx] = { ...items[idx], amount: e.target.value }; updateSidebarBlock(block.id, { feeItems: items }); }} placeholder="Amount" />
+                                  <button className="text-red-600 hover:text-red-800 px-1" onClick={() => { const items = (block.feeItems ?? []).filter((_, i) => i !== idx); updateSidebarBlock(block.id, { feeItems: items }); }}>×</button>
+                                </div>
+                              ))}
+                              <button className="text-xs text-slate-600 hover:text-red-700 border border-slate-300 rounded px-2 py-1 hover:border-red-400" onClick={() => { const items: SidebarFeeItem[] = [...(block.feeItems ?? []), { label: '', amount: '' }]; updateSidebarBlock(block.id, { feeItems: items }); }}>+ Add fee</button>
+                            </div>
+                          </div>
+                        )}
+
+                        {block.type === 'contact' && (
+                          <div className="space-y-1.5">
+                            <input className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.title ?? ''} onChange={(e) => updateSidebarBlock(block.id, { title: e.target.value })} placeholder="Title (e.g. Contact)" />
+                            <textarea className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900 resize-y" rows={2} value={block.body ?? ''} onChange={(e) => updateSidebarBlock(block.id, { body: e.target.value })} placeholder="Body text above the button" />
+                            <div className="grid grid-cols-2 gap-1.5">
+                              <input className="p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.linkLabel ?? ''} onChange={(e) => updateSidebarBlock(block.id, { linkLabel: e.target.value })} placeholder="Button label (e.g. Get in Touch)" />
+                              <input className="p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.href ?? ''} onChange={(e) => updateSidebarBlock(block.id, { href: e.target.value })} placeholder="Button link (e.g. /contact)" />
+                            </div>
+                          </div>
+                        )}
+
+                        {block.type === 'custom' && (
+                          <div className="space-y-1.5">
+                            <input className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900" value={block.title ?? ''} onChange={(e) => updateSidebarBlock(block.id, { title: e.target.value })} placeholder="Title" />
+                            <textarea className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900 resize-y" rows={3} value={block.content ?? ''} onChange={(e) => updateSidebarBlock(block.id, { content: e.target.value })} placeholder="Content" />
+                          </div>
+                        )}
                       </div>
                     ))}
                     <div className="flex flex-wrap gap-1 pt-1">
