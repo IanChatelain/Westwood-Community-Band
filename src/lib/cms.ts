@@ -104,9 +104,51 @@ function rowToSettings(row: typeof siteSettings.$inferSelect): SiteSettings {
   };
 }
 
+/** Auto-expand legacy `media-hub` sections into gallery + audio-playlist + video-gallery so the tab UI works without requiring the DB migration. */
+function expandMediaHubSections(sections: PageSection[]): PageSection[] {
+  const result: PageSection[] = [];
+  for (const s of sections) {
+    if ((s as Record<string, unknown>).type === 'media-hub') {
+      const hub = s as Record<string, unknown>;
+      result.push({
+        id: s.id + '-photos',
+        type: 'gallery',
+        title: 'Photos',
+        content: '',
+        tabGroup: 'media',
+        tabLabel: 'Photos',
+        galleryEvents: (hub.mediaPhotos as PageSection['galleryEvents']) ?? [],
+      });
+      result.push({
+        id: s.id + '-recordings',
+        type: 'audio-playlist',
+        title: 'Recordings',
+        content: '',
+        tabGroup: 'media',
+        tabLabel: 'Recordings',
+        audioItems: (hub.mediaRecordings as PageSection['audioItems']) ?? [],
+      });
+      result.push({
+        id: s.id + '-videos',
+        type: 'video-gallery',
+        title: 'Videos',
+        content: '',
+        tabGroup: 'media',
+        tabLabel: 'Videos',
+        videoItems: (hub.mediaVideos as PageSection['videoItems']) ?? [],
+      });
+    } else {
+      result.push(s);
+    }
+  }
+  return result;
+}
+
 function rowToPage(row: typeof pages.$inferSelect): PageConfig {
   const sectionsData = Array.isArray(row.sections) ? row.sections : [];
   const storedAsBlocks = isBuilderBlocks(sectionsData as object[]);
+  let sections: PageSection[] = storedAsBlocks ? blocksToSections(sectionsData) : (sectionsData as PageConfig['sections']);
+  sections = expandMediaHubSections(sections);
 
   return {
     id: row.id,
@@ -114,7 +156,7 @@ function rowToPage(row: typeof pages.$inferSelect): PageConfig {
     slug: row.slug,
     layout: row.layout as PageConfig['layout'],
     sidebarWidth: row.sidebarWidth,
-    sections: storedAsBlocks ? blocksToSections(sectionsData) : (sectionsData as PageConfig['sections']),
+    sections,
     sidebarBlocks: row.sidebarBlocks ? (Array.isArray(row.sidebarBlocks) ? row.sidebarBlocks as PageConfig['sidebarBlocks'] : undefined) : undefined,
     showInNav: row.showInNav ?? true,
     navOrder: row.navOrder ?? 999,

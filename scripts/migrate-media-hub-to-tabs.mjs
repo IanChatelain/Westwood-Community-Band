@@ -23,18 +23,24 @@ import dotenv from 'dotenv';
 import { createClient } from '@libsql/client';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
+const root = path.resolve(__dirname, '..');
+dotenv.config({ path: path.join(root, '.env') });
+dotenv.config({ path: path.join(root, '.env.local'), override: true });
 
-let url = process.env.TURSO_DATABASE_URL ?? '';
-url = url.replace(/^TURSO_DATABASE_URL=/, '').trim();
+let url = (process.env.TURSO_DATABASE_URL ?? '').replace(/^TURSO_DATABASE_URL=/, '').trim();
 const authToken = process.env.TURSO_AUTH_TOKEN;
+const isLocalFile = url.startsWith('file:');
 
-if (!url.startsWith('libsql://') || !authToken) {
-  console.error('Missing or invalid TURSO_DATABASE_URL or TURSO_AUTH_TOKEN in .env');
+if (!url.startsWith('libsql://') && !isLocalFile) {
+  console.error('Missing or invalid TURSO_DATABASE_URL in .env / .env.local (expected libsql://... or file:...)');
+  process.exit(1);
+}
+if (!isLocalFile && !authToken) {
+  console.error('TURSO_AUTH_TOKEN is required when using Turso cloud (libsql://...)');
   process.exit(1);
 }
 
-const client = createClient({ url, authToken });
+const client = createClient(isLocalFile ? { url } : { url, authToken });
 
 function parseSections(row) {
   const raw = row.sections;
