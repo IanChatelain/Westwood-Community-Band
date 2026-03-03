@@ -21,20 +21,29 @@ export default function LoginModal() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const result = await login(email, password);
-    setLoading(false);
-    if (result.error) {
-      setError(result.error);
-      return;
+    try {
+      const result = await login(email, password);
+      if (!result || typeof result !== 'object') {
+        throw new Error('Unexpected response from login');
+      }
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      if (result.user) {
+        setState((prev) => ({ ...prev, currentUser: result.user as User }));
+      }
+      setIsLoginModalOpen(false);
+      setEmail('');
+      setPassword('');
+      router.push('/admin');
+      router.refresh();
+    } catch (err) {
+      console.error('Login failed on client:', err);
+      setError('Unable to sign in right now. Please try again in a moment.');
+    } finally {
+      setLoading(false);
     }
-    if (result.user) {
-      setState((prev) => ({ ...prev, currentUser: result.user as User }));
-    }
-    setIsLoginModalOpen(false);
-    setEmail('');
-    setPassword('');
-    router.push('/admin');
-    router.refresh();
   };
 
   return (
