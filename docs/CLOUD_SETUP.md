@@ -87,6 +87,8 @@ Set these in the deployment project (e.g. Vercel → Settings → Environment Va
 | `R2_BUCKET_NAME` | Yes (for uploads) | Runtime | e.g. `cms-uploads`. |
 | `R2_PUBLIC_URL` | Yes (for images) | **Build** (and runtime) | Public base URL for R2 (used for `remotePatterns` at build and for resolving image URLs at runtime). |
 | `AUTH_SECRET` | Yes | Runtime | Secret for JWT signing (auth). |
+| `RESEND_API_KEY` | Yes (for contact form) | Runtime | Resend API key for sending contact emails. |
+| `RESEND_FROM_EMAIL` | Yes (for contact form) | Runtime | Sender address, e.g. `Westwood Community Band <no-reply@yourdomain.com>`. |
 
 Optional:
 
@@ -113,13 +115,27 @@ Optional:
 - [ ] R2 bucket created; `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` set (for uploads).
 - [ ] R2 public URL configured (public bucket **or** custom domain); `R2_PUBLIC_URL` set in deployment **and** at build time (same env in Vercel is fine).
 - [ ] `AUTH_SECRET` set in deployment (and locally if you test auth).
+- [ ] `RESEND_API_KEY` and `RESEND_FROM_EMAIL` set (for contact form email delivery).
 - [ ] After first deploy, open a public page and an R2 image URL: confirm the image loads via `/_next/image?url=...` (Next.js Image optimization).
 - [ ] Open `/admin`, make a change, save: confirm the public site shows the update within the next request or revalidate window.
 - [ ] (Optional) Simulate Turso down: confirm admin shows “We’re having trouble connecting” and Retry works when Turso is back.
 
 ---
 
-## 5. Data flow summary
+## 5. Troubleshooting 500 errors
+
+If you see **`POST / 500`** or **"An error occurred in the Server Components render"** in the browser when visiting the public site:
+
+1. **Verify Vercel environment variables.** Go to Vercel → Project → Settings → Environment Variables and confirm **Production** (and Preview if used) has all required vars. Missing or invalid values cause the server to crash before rendering.
+2. **Essential for database access:**
+   - `TURSO_DATABASE_URL` – must be a plain URL like `libsql://your-db-your-org.turso.io` (no `TURSO_DATABASE_URL=` in the value).
+   - `TURSO_AUTH_TOKEN` – required when using cloud Turso (not needed for `file:` local SQLite).
+3. **After changing env vars:** Trigger a fresh deploy in Vercel so both build and runtime use the new values.
+4. **Check server logs:** In Vercel → Project → Logs (or Functions), the actual error will mention missing env vars (e.g. "TURSO_DATABASE_URL must be set") instead of the generic browser message.
+
+---
+
+## 6. Data flow summary
 
 ```
 Public request
