@@ -54,12 +54,14 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-function profileToUser(profile: { id: string; username: string; role: string; email: string }): User {
+function profileToUser(profile: { id: string; username: string; role: string; email: string; isContactRecipient?: boolean; contactLabel?: string | null }): User {
   return {
     id: profile.id,
     username: profile.username,
     role: profile.role as UserRole,
     email: profile.email,
+    isContactRecipient: profile.isContactRecipient ?? false,
+    contactLabel: profile.contactLabel ?? undefined,
   };
 }
 

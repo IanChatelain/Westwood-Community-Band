@@ -80,7 +80,7 @@ export function blockWrapperClassesAndStyle(s?: BlockWrapperStyle): { className:
 import { Calendar, ArrowRight, Mail, MapPin, Clock, Send, FileDown, ExternalLink, Music, Image as ImageIcon, Video, Play, Pause, Download } from 'lucide-react';
 import { useAudioManager } from './AudioManagerProvider';
 import Link from 'next/link';
-import { submitContactMessage } from '@/app/actions/contact';
+import { submitContactMessage, listContactRecipients } from '@/app/actions/contact';
 
 function sectionWrapperClasses(style?: SectionStyle): string {
   if (!style) return '';
@@ -191,16 +191,29 @@ export function SidebarBlockContent({ block }: { block: SidebarBlock }) {
 }
 
 function ContactSection({ section }: { section: PageSection }) {
-  const recipients = section.contactRecipients ?? [];
+  const fallbackRecipients = section.contactRecipients ?? [];
+  const [recipients, setRecipients] = useState(fallbackRecipients);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
-  const [recipientId, setRecipientId] = useState(recipients[0]?.id ?? '');
+  const [recipientId, setRecipientId] = useState(fallbackRecipients[0]?.id ?? '');
   const [mathAnswer, setMathAnswer] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  useEffect(() => {
+    listContactRecipients().then((list) => {
+      if (list.length > 0) {
+        setRecipients(list);
+        setRecipientId((prev) => {
+          if (!prev || !list.some((r) => r.id === prev)) return list[0].id;
+          return prev;
+        });
+      }
+    });
+  }, []);
 
   const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();

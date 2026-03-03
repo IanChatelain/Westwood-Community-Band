@@ -63,6 +63,8 @@ export interface User {
   username: string;
   role: UserRole;
   email: string;
+  isContactRecipient: boolean;
+  contactLabel?: string;
 }
 
 export interface NavLink {

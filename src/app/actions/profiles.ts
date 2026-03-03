@@ -38,6 +38,8 @@ export async function listProfiles(): Promise<{
   username: string;
   role: string;
   email: string;
+  isContactRecipient: boolean;
+  contactLabel: string | null;
 }[]> {
   try {
     await requirePermission('manage_users');
@@ -51,6 +53,8 @@ export async function listProfiles(): Promise<{
       username: profiles.username,
       role: profiles.role,
       email: profiles.email,
+      isContactRecipient: profiles.isContactRecipient,
+      contactLabel: profiles.contactLabel,
     })
     .from(profiles)
     .orderBy(profiles.username);
@@ -60,7 +64,35 @@ export async function listProfiles(): Promise<{
     username: r.username,
     role: r.role,
     email: r.email ?? '',
+    isContactRecipient: r.isContactRecipient,
+    contactLabel: r.contactLabel,
   }));
+}
+
+export async function updateProfileContactSettings(
+  profileId: string,
+  settings: { isContactRecipient: boolean; contactLabel: string | null },
+): Promise<{ error: string | null }> {
+  try {
+    await requirePermission('manage_users');
+  } catch {
+    return { error: 'You do not have permission to update contact settings' };
+  }
+
+  try {
+    await db
+      .update(profiles)
+      .set({
+        isContactRecipient: settings.isContactRecipient,
+        contactLabel: settings.contactLabel,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(profiles.id, profileId));
+    return { error: null };
+  } catch (err) {
+    console.error('updateProfileContactSettings failed:', err);
+    return { error: 'Failed to update contact settings' };
+  }
 }
 
 export async function createProfile(

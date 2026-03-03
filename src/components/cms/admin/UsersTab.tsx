@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { User, UserRole, PERMISSION_KEYS, PERMISSION_LABELS, type PermissionKey, type RolePermissionMap } from '@/types';
 import { useAppContext } from '@/context/AppContext';
-import { updateProfileRole, listProfiles, createProfile, deleteProfile } from '@/app/actions/profiles';
+import { updateProfileRole, listProfiles, createProfile, deleteProfile, updateProfileContactSettings } from '@/app/actions/profiles';
 import { listRolePermissions, setRolePermission, fetchCurrentUserPermissions } from '@/app/actions/rbac';
 import { X, UserPlus, Shield, Trash2 } from 'lucide-react';
 
@@ -44,6 +44,8 @@ export default function UsersTab() {
       username: p.username,
       role: p.role as UserRole,
       email: p.email,
+      isContactRecipient: p.isContactRecipient,
+      contactLabel: p.contactLabel ?? undefined,
     })));
     setLoading(false);
   }, []);
@@ -86,7 +88,7 @@ export default function UsersTab() {
     setAddSaving(false);
     if (err) { setAddError(err); return; }
     if (user) {
-      setUsers(prev => [...prev, { id: user.id, username: user.username, role: user.role as UserRole, email: user.email }]);
+      setUsers(prev => [...prev, { id: user.id, username: user.username, role: user.role as UserRole, email: user.email, isContactRecipient: false }]);
     }
     setShowAddUser(false);
     setAddForm({ username: '', email: '', role: UserRole.MEMBER, password: '' });
@@ -158,7 +160,8 @@ export default function UsersTab() {
               <tr>
                 <th className="px-6 py-4" scope="col">User</th>
                 <th className="px-6 py-4" scope="col">Role</th>
-                <th className="px-6 py-4" scope="col">Contact</th>
+                <th className="px-6 py-4" scope="col">Email</th>
+                <th className="px-6 py-4" scope="col">Contact Form</th>
                 <th className="px-6 py-4" scope="col">Actions</th>
               </tr>
             </thead>
@@ -179,6 +182,56 @@ export default function UsersTab() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-600">{user.email}</td>
+                  <td className="px-6 py-4">
+                    {canManageUsers && user.email ? (
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const next = !user.isContactRecipient;
+                            setUsers(prev => prev.map(u => u.id === user.id ? { ...u, isContactRecipient: next } : u));
+                            const { error: err } = await updateProfileContactSettings(user.id, {
+                              isContactRecipient: next,
+                              contactLabel: user.contactLabel ?? null,
+                            });
+                            if (err) {
+                              setUsers(prev => prev.map(u => u.id === user.id ? { ...u, isContactRecipient: !next } : u));
+                              setError(err);
+                            }
+                          }}
+                          className={`relative w-10 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 cursor-pointer ${
+                            user.isContactRecipient ? 'bg-red-600' : 'bg-slate-300'
+                          }`}
+                          title={user.isContactRecipient ? 'Remove from contact form' : 'Show on contact form'}
+                        >
+                          <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                            user.isContactRecipient ? 'translate-x-4' : 'translate-x-0'
+                          }`} />
+                        </button>
+                        {user.isContactRecipient && (
+                          <input
+                            type="text"
+                            className="w-36 px-2 py-1 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400"
+                            placeholder={user.username}
+                            value={user.contactLabel ?? ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setUsers(prev => prev.map(u => u.id === user.id ? { ...u, contactLabel: val || undefined } : u));
+                            }}
+                            onBlur={async () => {
+                              const { error: err } = await updateProfileContactSettings(user.id, {
+                                isContactRecipient: user.isContactRecipient,
+                                contactLabel: user.contactLabel ?? null,
+                              });
+                              if (err) setError(err);
+                            }}
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-400">{user.email ? '—' : 'No email'}</span>
+                    )}
+                  </td>
                   <td className="px-6 py-4">
                     {canManageUsers && user.id !== currentUser?.id && (
                       <div className="flex gap-2">

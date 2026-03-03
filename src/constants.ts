@@ -309,8 +309,8 @@ export const INITIAL_PAGES: PageConfig[] = [
 ];
 
 export const INITIAL_USERS: User[] = [
-  { id: 'admin-1', username: 'admin', role: UserRole.ADMIN, email: 'admin@westwoodcommunityband.ca' },
-  { id: 'editor-1', username: 'editor', role: UserRole.EDITOR, email: 'editor@westwoodcommunityband.ca' }
+  { id: 'admin-1', username: 'admin', role: UserRole.ADMIN, email: 'admin@westwoodcommunityband.ca', isContactRecipient: false },
+  { id: 'editor-1', username: 'editor', role: UserRole.EDITOR, email: 'editor@westwoodcommunityband.ca', isContactRecipient: false }
 ];
 
 /** Create a new empty page for "Add page". Slug should be like "/about" (leading slash). */

@@ -34,6 +34,8 @@ export const profiles = sqliteTable('profiles', {
   role: text('role').notNull().default('GUEST'),
   email: text('email'),
   passwordHash: text('password_hash'),
+  isContactRecipient: integer('is_contact_recipient', { mode: 'boolean' }).notNull().default(false),
+  contactLabel: text('contact_label'),
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
 });
 

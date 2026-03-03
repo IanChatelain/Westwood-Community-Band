@@ -14,7 +14,7 @@ import {
 export async function login(
   email: string,
   password: string,
-): Promise<{ error: string | null; user?: { id: string; username: string; role: string; email: string } }> {
+): Promise<{ error: string | null; user?: { id: string; username: string; role: string; email: string; isContactRecipient: boolean; contactLabel?: string } }> {
   try {
     const rows = await db
       .select()
@@ -49,6 +49,8 @@ export async function login(
         username: profile.username,
         role: profile.role,
         email: profile.email ?? '',
+        isContactRecipient: profile.isContactRecipient,
+        contactLabel: profile.contactLabel ?? undefined,
       },
     };
   } catch (err) {
@@ -66,6 +68,8 @@ export async function getCurrentUser(): Promise<{
   username: string;
   role: string;
   email: string;
+  isContactRecipient: boolean;
+  contactLabel?: string;
 } | null> {
   const session = await getSession();
   if (!session) return null;
@@ -76,6 +80,8 @@ export async function getCurrentUser(): Promise<{
       username: profiles.username,
       role: profiles.role,
       email: profiles.email,
+      isContactRecipient: profiles.isContactRecipient,
+      contactLabel: profiles.contactLabel,
     })
     .from(profiles)
     .where(eq(profiles.id, session.sub));
@@ -86,5 +92,7 @@ export async function getCurrentUser(): Promise<{
     username: rows[0].username,
     role: rows[0].role,
     email: rows[0].email ?? '',
+    isContactRecipient: rows[0].isContactRecipient,
+    contactLabel: rows[0].contactLabel ?? undefined,
   };
 }
