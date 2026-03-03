@@ -8,8 +8,7 @@ import type { BuilderBlock, PageConfig } from '@/types';
 import { useAppContext } from '@/context/AppContext';
 import { BuilderBlockView, blockWrapperClassesAndStyle } from '@/components/ui/PageContent';
 import { GripVertical, Trash2, ChevronUp, ChevronDown, Copy } from 'lucide-react';
-import { DEFAULT_SIDEBAR_BLOCKS } from '@/constants';
-import { SidebarBlockContent } from '@/components/ui/PageContent';
+import { SidebarBlockContent, getEffectiveSidebarBlocks } from '@/components/ui/PageContent';
 
 interface LivePreviewEditorProps {
   page: PageConfig;
@@ -144,10 +143,8 @@ export function LivePreviewEditor({ page, pageId }: LivePreviewEditorProps) {
   });
 
   const hasBlocks = blocks.length > 0;
-  const globalBlocks = state.settings.globalSidebarBlocks;
-  const sidebarBlocks = (globalBlocks && globalBlocks.length > 0)
-    ? [...globalBlocks].sort((a, b) => a.order - b.order)
-    : DEFAULT_SIDEBAR_BLOCKS;
+  const effectiveSidebarBlocks = getEffectiveSidebarBlocks(page, state.settings.globalSidebarBlocks);
+  const showSidebar = page.layout !== 'full' && effectiveSidebarBlocks.length > 0;
 
   return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row gap-12 min-h-0">
@@ -156,7 +153,7 @@ export function LivePreviewEditor({ page, pageId }: LivePreviewEditorProps) {
           className={`flex-grow space-y-16 min-w-0 ${
             isCanvasOver ? 'bg-red-50/30 rounded-xl' : ''
           }`}
-          style={{ width: page.layout === 'full' ? '100%' : `${100 - page.sidebarWidth}%` }}
+          style={{ width: showSidebar ? `${100 - page.sidebarWidth}%` : '100%' }}
         >
           {hasBlocks ? (
             <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
@@ -177,12 +174,12 @@ export function LivePreviewEditor({ page, pageId }: LivePreviewEditorProps) {
           )}
         </div>
 
-        {page.layout !== 'full' && (
+        {showSidebar && (
           <aside
             className={`space-y-6 ${page.layout === 'sidebar-left' ? 'md:order-first' : ''}`}
             style={{ width: `${page.sidebarWidth}%`, minWidth: '200px' }}
           >
-            {sidebarBlocks.map((block) => (
+            {effectiveSidebarBlocks.map((block) => (
               <SidebarBlockContent key={block.id} block={block} />
             ))}
           </aside>

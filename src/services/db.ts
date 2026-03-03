@@ -39,7 +39,7 @@ export class DbService {
   private migratePages(pages: PageConfig[]): PageConfig[] {
     return pages.map((p) => {
       const hasSidebar = p.layout !== 'full';
-      const needsSidebarBlocks = hasSidebar && (!p.sidebarBlocks || p.sidebarBlocks.length === 0);
+      const needsSidebarBlocks = hasSidebar && p.sidebarBlocks === undefined;
       return {
         ...p,
         sidebarBlocks: needsSidebarBlocks ? [...DEFAULT_SIDEBAR_BLOCKS] : p.sidebarBlocks,

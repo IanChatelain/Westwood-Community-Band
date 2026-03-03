@@ -99,6 +99,24 @@ function imageLayoutClasses(style?: SectionStyle): { wrapper: string; image: str
   return { wrapper: 'grid grid-cols-1 md:grid-cols-2 gap-12 items-start', image: size };
 }
 
+/**
+ * Compute the effective sidebar blocks for a page, respecting per-page overrides,
+ * global settings, and defaults. An explicitly empty array (length 0) means
+ * "no sidebar" and is NOT replaced with defaults.
+ */
+export function getEffectiveSidebarBlocks(
+  page: PageConfig,
+  globalSidebarBlocks?: SidebarBlock[],
+): SidebarBlock[] {
+  if (page.sidebarBlocks !== undefined) {
+    return [...page.sidebarBlocks].sort((a, b) => a.order - b.order);
+  }
+  if (globalSidebarBlocks !== undefined) {
+    return [...globalSidebarBlocks].sort((a, b) => a.order - b.order);
+  }
+  return DEFAULT_SIDEBAR_BLOCKS;
+}
+
 export function SidebarBlockContent({ block }: { block: SidebarBlock }) {
   if (block.type === 'rehearsals') {
     const title = block.title || 'Rehearsals';
@@ -1107,13 +1125,15 @@ interface PageContentProps {
 
 export default function PageContent({ page, globalSidebarBlocks }: PageContentProps) {
   const hasBlocks = page.blocks && page.blocks.length > 0;
+  const effectiveSidebarBlocks = getEffectiveSidebarBlocks(page, globalSidebarBlocks);
+  const showSidebar = page.layout !== 'full' && effectiveSidebarBlocks.length > 0;
 
   return (
     <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row gap-12`}>
       {/* Main Content Area */}
       <div 
         className="flex-grow space-y-16"
-        style={{ width: page.layout === 'full' ? '100%' : `${100 - page.sidebarWidth}%` }}
+        style={{ width: showSidebar ? `${100 - page.sidebarWidth}%` : '100%' }}
       >
         {hasBlocks && page.blocks!.map((block) => {
           const { className, style } = blockWrapperClassesAndStyle(block.wrapperStyle);
@@ -1174,21 +1194,16 @@ export default function PageContent({ page, globalSidebarBlocks }: PageContentPr
       </div>
 
       {/* Sidebar Area */}
-      {page.layout !== 'full' && (() => {
-        const blocks = (globalSidebarBlocks && globalSidebarBlocks.length > 0)
-          ? [...globalSidebarBlocks].sort((a, b) => a.order - b.order)
-          : DEFAULT_SIDEBAR_BLOCKS;
-        return (
-          <aside
-            className={`space-y-6 ${page.layout === 'sidebar-left' ? '-order-1' : ''}`}
-            style={{ width: `${page.sidebarWidth}%`, minWidth: '280px' }}
-          >
-            {blocks.map((block) => (
-              <SidebarBlockContent key={block.id} block={block} />
-            ))}
-          </aside>
-        );
-      })()}
+      {showSidebar && (
+        <aside
+          className={`space-y-6 ${page.layout === 'sidebar-left' ? '-order-1' : ''}`}
+          style={{ width: `${page.sidebarWidth}%`, minWidth: '280px' }}
+        >
+          {effectiveSidebarBlocks.map((block) => (
+            <SidebarBlockContent key={block.id} block={block} />
+          ))}
+        </aside>
+      )}
     </div>
   );
 }
@@ -1239,10 +1254,10 @@ function SectionInnerContent({ section, page, heroH }: { section: PageSection; p
                       <Image src={section.imageUrl} fill className="object-cover" alt={section.title} sizes="(max-width: 768px) 100vw, 50vw" />
                     </div>
                   )}
-                  <div className="space-y-5">
-                    <h3 className="text-2xl md:text-3xl font-bold text-slate-900">{section.title}</h3>
+                  <div className={hasImage ? 'space-y-5' : ''}>
+                    <h3 className={`text-2xl md:text-3xl font-bold text-slate-900 ${hasImage ? '' : 'mb-6 border-l-4 border-red-800 pl-6'}`}>{section.title}</h3>
                     <div
-                      className="prose prose-slate max-w-none text-base leading-relaxed"
+                      className={`prose prose-slate max-w-none leading-relaxed ${hasImage ? 'text-base' : 'text-lg'}`}
                       dangerouslySetInnerHTML={{ __html: textToHtml(section.content) }}
                     />
                   </div>

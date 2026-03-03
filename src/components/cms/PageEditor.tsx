@@ -170,7 +170,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
               className="w-20 h-1.5 bg-slate-200 rounded accent-red-600"
             />
             <span className="text-xs text-slate-600 w-6">{editedPage.sidebarWidth}%</span>
-            <span className="text-[10px] text-slate-400">Sidebar content is managed in Site Settings.</span>
+            <span className="text-[10px] text-slate-400">Sidebar content is managed in Site Settings. Remove all blocks to hide the sidebar.</span>
           </div>
         )}
 

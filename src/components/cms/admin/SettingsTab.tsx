@@ -28,7 +28,7 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
   const [feedback, setFeedback] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const sidebarBlocks: SidebarBlock[] = settings.globalSidebarBlocks && settings.globalSidebarBlocks.length > 0
+  const sidebarBlocks: SidebarBlock[] = settings.globalSidebarBlocks !== undefined
     ? settings.globalSidebarBlocks
     : [...DEFAULT_SIDEBAR_BLOCKS];
 
@@ -89,7 +89,7 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
           <div>
             <h3 className="text-sm font-bold text-slate-900">Global Sidebar Content</h3>
             <p className="text-[11px] text-slate-500 mt-0.5">
-              These blocks appear in the sidebar on every page that uses a sidebar layout.
+              These blocks appear in the sidebar on every page that uses a sidebar layout. Remove all blocks to hide the sidebar and let content fill the full width.
             </p>
           </div>
           {sidebarOpen ? <ChevronUp size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
