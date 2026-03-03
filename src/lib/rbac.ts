@@ -2,7 +2,7 @@
 
 import { db } from '@/db';
 import { rolePermissions } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import {
   type PermissionKey,
   type RolePermissionMap,
@@ -41,9 +41,19 @@ export async function invalidatePermissionsCache() {
 
 /**
  * Seed the role_permissions table with defaults for any roles that don't have a row yet.
- * Safe to call on every app start — it only inserts missing rows.
+ * Safe to call on every app start — it creates the table if missing and only inserts missing rows.
  */
 export async function seedRolePermissions(): Promise<void> {
+  await db.run(sql`CREATE TABLE IF NOT EXISTS role_permissions (
+    role text PRIMARY KEY,
+    can_access_admin integer NOT NULL DEFAULT 0,
+    can_manage_users integer NOT NULL DEFAULT 0,
+    can_manage_pages integer NOT NULL DEFAULT 0,
+    can_manage_archive integer NOT NULL DEFAULT 0,
+    can_manage_settings integer NOT NULL DEFAULT 0,
+    updated_at text NOT NULL DEFAULT (datetime('now'))
+  )`);
+
   for (const role of Object.values(UserRole)) {
     const defaults = DEFAULT_ROLE_PERMISSIONS[role];
     try {
