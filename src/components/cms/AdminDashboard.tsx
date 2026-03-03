@@ -322,7 +322,7 @@ export default function AdminDashboard() {
           <ArchiveTab
             pages={state.pages}
             onRestorePage={handleRestorePage}
-            onSetAdminTab={guardedSetTab}
+            globalSidebarBlocks={state.settings.globalSidebarBlocks}
           />
         )}
 
