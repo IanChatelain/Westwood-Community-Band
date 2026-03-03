@@ -149,7 +149,7 @@ export function SidebarBlockContent({ block }: { block: SidebarBlock }) {
     const defaultFees = [
       { label: 'Annual Fee', amount: '$100.00' },
       { label: 'Students', amount: '$50.00' },
-      { label: 'Polo Shirt', amount: '$15.00' },
+      { label: 'Polo Shirt', amount: '$25.00' },
     ];
     const fees = (block.feeItems && block.feeItems.length > 0) ? block.feeItems : defaultFees;
     const season = block.seasonLabel || 'Band Season: September to June';

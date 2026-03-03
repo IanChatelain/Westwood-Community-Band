@@ -268,7 +268,7 @@ export const INITIAL_PAGES: PageConfig[] = [
         id: 'j3',
         type: 'text',
         title: 'Membership',
-        content: 'The Band averages 40+ members from all parts of Winnipeg and from all walks of life: ages range from 18 to 80+.\n\nBand Season is from September to June.\nAnnual fee $100.00\nStudents $50.00\nWestwood Community Band Polo Shirt $15.00'
+        content: 'The Band averages 40+ members from all parts of Winnipeg and from all walks of life: ages range from 18 to 80+.\n\nBand Season is from September to June.\nAnnual fee $100.00\nStudents $50.00\nWestwood Community Band Polo Shirt $25.00'
       },
       {
         id: 'j4',

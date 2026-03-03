@@ -20,7 +20,7 @@ const SIDEBAR_BLOCK_TYPES: { value: SidebarBlockType; label: string }[] = [
 const DEFAULT_SIDEBAR_FEE_ITEMS: SidebarFeeItem[] = [
   { label: 'Annual Fee', amount: '$100.00' },
   { label: 'Students', amount: '$50.00' },
-  { label: 'Polo Shirt', amount: '$15.00' },
+  { label: 'Polo Shirt', amount: '$25.00' },
 ];
 
 export default function SettingsTab({ settings, onUpdateSettings, onApply }: SettingsTabProps) {
