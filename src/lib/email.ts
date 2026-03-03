@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resendApiKey = process.env.RESEND_API_KEY;
+const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 interface SendContactEmailParams {
   toEmail: string;
@@ -14,6 +15,12 @@ interface SendContactEmailParams {
 
 export async function sendContactEmail(params: SendContactEmailParams): Promise<{ error: string | null }> {
   const fromAddress = process.env.RESEND_FROM_EMAIL;
+
+  if (!resendApiKey || !resend) {
+    console.error('sendContactEmail: RESEND_API_KEY is not configured');
+    return { error: 'Email service is not configured.' };
+  }
+
   if (!fromAddress) {
     console.error('sendContactEmail: RESEND_FROM_EMAIL is not configured');
     return { error: 'Email service is not configured.' };
