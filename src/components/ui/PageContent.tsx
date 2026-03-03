@@ -1128,82 +1128,100 @@ export default function PageContent({ page, globalSidebarBlocks }: PageContentPr
   const effectiveSidebarBlocks = getEffectiveSidebarBlocks(page, globalSidebarBlocks);
   const showSidebar = page.layout !== 'full' && effectiveSidebarBlocks.length > 0;
 
+  const heroSections = !hasBlocks ? page.sections.filter(s => s.type === 'hero') : [];
+  const contentSections = !hasBlocks ? page.sections.filter(s => s.type !== 'hero') : [];
+
   return (
-    <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row gap-12`}>
-      {/* Main Content Area */}
-      <div 
-        className="flex-grow space-y-16"
-        style={{ width: showSidebar ? `${100 - page.sidebarWidth}%` : '100%' }}
-      >
-        {hasBlocks && page.blocks!.map((block) => {
-          const { className, style } = blockWrapperClassesAndStyle(block.wrapperStyle);
-          return (
-            <div key={block.id} className={className || undefined} style={Object.keys(style).length ? style : undefined}>
-              <BuilderBlockView block={block} />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-12">
+      {/* Full-width hero banner(s) above the sidebar */}
+      {heroSections.map((section) => {
+        const heroH = section.minHeight && section.minHeight > 0 ? section.minHeight : 260;
+        return (
+          <section key={section.id} className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className={sectionWrapperClasses(section.style)}>
+              <SectionInnerContent section={section} page={page} heroH={heroH} />
             </div>
-          );
-        })}
+          </section>
+        );
+      })}
 
-        {!hasBlocks && (() => {
-          const groups = groupSectionsIntoTabGroups(page.sections);
-          return groups.map((block) => {
-            if (block.type === 'single') {
-              const section = block.section;
-              const sectionStyle: React.CSSProperties = {};
-              if (section.maxWidth && section.maxWidth < 100) {
-                sectionStyle.maxWidth = `${section.maxWidth}%`;
-                sectionStyle.marginLeft = 'auto';
-                sectionStyle.marginRight = 'auto';
-                sectionStyle.width = '100%';
-              }
-              const heroH = section.minHeight && section.minHeight > 0 ? section.minHeight : 260;
-              return (
-                <section key={section.id} className="animate-in fade-in slide-in-from-bottom-4 duration-700" style={sectionStyle}>
-                  <div className={sectionWrapperClasses(section.style)}>
-                    <SectionInnerContent section={section} page={page} heroH={heroH} />
-                  </div>
-                </section>
-              );
-            }
-            return (
-              <TabGroupContainer
-                key={block.sections[0].id}
-                sections={block.sections}
-                page={page}
-                renderSectionContent={(section) => {
-                  const sectionStyle: React.CSSProperties = {};
-                  if (section.maxWidth && section.maxWidth < 100) {
-                    sectionStyle.maxWidth = `${section.maxWidth}%`;
-                    sectionStyle.marginLeft = 'auto';
-                    sectionStyle.marginRight = 'auto';
-                    sectionStyle.width = '100%';
-                  }
-                  const heroH = section.minHeight && section.minHeight > 0 ? section.minHeight : 260;
-                  return (
-                    <section key={section.id} className="animate-in fade-in slide-in-from-bottom-4 duration-700" style={sectionStyle}>
-                      <div className={sectionWrapperClasses(section.style)}>
-                        <SectionInnerContent section={section} page={page} heroH={heroH} />
-                      </div>
-                    </section>
-                  );
-                }}
-              />
-            );
-          });
-        })()}
-      </div>
-
-      {/* Sidebar Area */}
-      {showSidebar && (
-        <aside
-          className={`space-y-6 ${page.layout === 'sidebar-left' ? '-order-1' : ''}`}
-          style={{ width: `${page.sidebarWidth}%`, minWidth: '280px' }}
+      {/* Content + Sidebar row */}
+      <div className="flex flex-col md:flex-row gap-12">
+        {/* Main Content Area */}
+        <div 
+          className="flex-grow space-y-16"
+          style={{ width: showSidebar ? `${100 - page.sidebarWidth}%` : '100%' }}
         >
-          {effectiveSidebarBlocks.map((block) => (
-            <SidebarBlockContent key={block.id} block={block} />
-          ))}
-        </aside>
-      )}
+          {hasBlocks && page.blocks!.map((block) => {
+            const { className, style } = blockWrapperClassesAndStyle(block.wrapperStyle);
+            return (
+              <div key={block.id} className={className || undefined} style={Object.keys(style).length ? style : undefined}>
+                <BuilderBlockView block={block} />
+              </div>
+            );
+          })}
+
+          {!hasBlocks && (() => {
+            const groups = groupSectionsIntoTabGroups(contentSections);
+            return groups.map((block) => {
+              if (block.type === 'single') {
+                const section = block.section;
+                const sectionStyle: React.CSSProperties = {};
+                if (section.maxWidth && section.maxWidth < 100) {
+                  sectionStyle.maxWidth = `${section.maxWidth}%`;
+                  sectionStyle.marginLeft = 'auto';
+                  sectionStyle.marginRight = 'auto';
+                  sectionStyle.width = '100%';
+                }
+                const heroH = section.minHeight && section.minHeight > 0 ? section.minHeight : 260;
+                return (
+                  <section key={section.id} className="animate-in fade-in slide-in-from-bottom-4 duration-700" style={sectionStyle}>
+                    <div className={sectionWrapperClasses(section.style)}>
+                      <SectionInnerContent section={section} page={page} heroH={heroH} />
+                    </div>
+                  </section>
+                );
+              }
+              return (
+                <TabGroupContainer
+                  key={block.sections[0].id}
+                  sections={block.sections}
+                  page={page}
+                  renderSectionContent={(section) => {
+                    const sectionStyle: React.CSSProperties = {};
+                    if (section.maxWidth && section.maxWidth < 100) {
+                      sectionStyle.maxWidth = `${section.maxWidth}%`;
+                      sectionStyle.marginLeft = 'auto';
+                      sectionStyle.marginRight = 'auto';
+                      sectionStyle.width = '100%';
+                    }
+                    const heroH = section.minHeight && section.minHeight > 0 ? section.minHeight : 260;
+                    return (
+                      <section key={section.id} className="animate-in fade-in slide-in-from-bottom-4 duration-700" style={sectionStyle}>
+                        <div className={sectionWrapperClasses(section.style)}>
+                          <SectionInnerContent section={section} page={page} heroH={heroH} />
+                        </div>
+                      </section>
+                    );
+                  }}
+                />
+              );
+            });
+          })()}
+        </div>
+
+        {/* Sidebar Area */}
+        {showSidebar && (
+          <aside
+            className={`space-y-6 ${page.layout === 'sidebar-left' ? '-order-1' : ''}`}
+            style={{ width: `${page.sidebarWidth}%`, minWidth: '280px' }}
+          >
+            {effectiveSidebarBlocks.map((block) => (
+              <SidebarBlockContent key={block.id} block={block} />
+            ))}
+          </aside>
+        )}
+      </div>
     </div>
   );
 }
