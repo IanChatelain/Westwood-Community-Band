@@ -100,19 +100,20 @@ function imageLayoutClasses(style?: SectionStyle): { wrapper: string; image: str
 }
 
 /**
- * Compute the effective sidebar blocks for a page, respecting per-page overrides,
- * global settings, and defaults. An explicitly empty array (length 0) means
- * "no sidebar" and is NOT replaced with defaults.
+ * Compute the effective sidebar blocks for a page. Global sidebar blocks are
+ * the single source of truth so that every sidebar-layout page stays consistent.
+ * Falls back to page-level blocks (legacy) and then hardcoded defaults only when
+ * global settings are not available.
  */
 export function getEffectiveSidebarBlocks(
   page: PageConfig,
   globalSidebarBlocks?: SidebarBlock[],
 ): SidebarBlock[] {
-  if (page.sidebarBlocks !== undefined) {
-    return [...page.sidebarBlocks].sort((a, b) => a.order - b.order);
-  }
   if (globalSidebarBlocks !== undefined) {
     return [...globalSidebarBlocks].sort((a, b) => a.order - b.order);
+  }
+  if (page.sidebarBlocks !== undefined) {
+    return [...page.sidebarBlocks].sort((a, b) => a.order - b.order);
   }
   return DEFAULT_SIDEBAR_BLOCKS;
 }

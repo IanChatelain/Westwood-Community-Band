@@ -250,7 +250,6 @@ export const INITIAL_PAGES: PageConfig[] = [
     sidebarWidth: 35,
     showInNav: true,
     navOrder: 5,
-    sidebarBlocks: [...DEFAULT_SIDEBAR_BLOCKS],
     sections: [
       {
         id: 'j1',
@@ -287,7 +286,6 @@ export const INITIAL_PAGES: PageConfig[] = [
     sidebarWidth: 40,
     showInNav: true,
     navOrder: 6,
-    sidebarBlocks: [...DEFAULT_SIDEBAR_BLOCKS],
     sections: [
       {
         id: 'c1',

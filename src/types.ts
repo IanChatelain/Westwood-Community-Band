@@ -174,7 +174,8 @@ export interface PageConfig {
   sections: PageSection[];
   /** Optional block-based builder content for visual editor. */
   blocks?: BuilderBlock[];
-  /** Editable sidebar blocks; when absent, default blocks are used. */
+  /** Legacy per-page sidebar blocks. Global sidebar blocks (from SiteSettings) take
+   *  precedence when defined; this field is only used as a fallback. */
   sidebarBlocks?: SidebarBlock[];
   /** Show this page in header/footer nav. Default true. */
   showInNav?: boolean;

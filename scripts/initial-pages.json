@@ -100,11 +100,6 @@
     "sidebarWidth": 35,
     "showInNav": true,
     "navOrder": 5,
-    "sidebarBlocks": [
-      { "id": "sb-rehearsals", "type": "rehearsals", "order": 0 },
-      { "id": "sb-fees", "type": "fees", "order": 1 },
-      { "id": "sb-contact", "type": "contact", "order": 2 }
-    ],
     "sections": [
       { "id": "j1", "type": "text", "title": "Welcome New Members", "content": "The Band welcomes adults, beginners through to accomplished musicians. New members are welcome to sit-in for a couple of nights with no commitment necessary." },
       { "id": "j2", "type": "text", "title": "Rehearsals", "content": "Thursday Evenings, 7:15 to 9:15 p.m.\n\nThe Band Room\nJohn Taylor Collegiate\\n470 Hamilton Avenue\\nWinnipeg, Manitoba" },
@@ -119,11 +114,6 @@
     "sidebarWidth": 40,
     "showInNav": true,
     "navOrder": 6,
-    "sidebarBlocks": [
-      { "id": "sb-rehearsals", "type": "rehearsals", "order": 0 },
-      { "id": "sb-fees", "type": "fees", "order": 1 },
-      { "id": "sb-contact", "type": "contact", "order": 2 }
-    ],
     "sections": [
       {
         "id": "c1",
