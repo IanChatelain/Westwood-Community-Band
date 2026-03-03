@@ -1139,7 +1139,7 @@ export default function PageContent({ page, globalSidebarBlocks }: PageContentPr
         return (
           <section key={section.id} className="animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className={sectionWrapperClasses(section.style)}>
-              <SectionInnerContent section={section} page={page} heroH={heroH} />
+              <SectionInnerContent section={section} page={page} heroH={heroH} hasSidebar={showSidebar} />
             </div>
           </section>
         );
@@ -1177,7 +1177,7 @@ export default function PageContent({ page, globalSidebarBlocks }: PageContentPr
                 return (
                   <section key={section.id} className="animate-in fade-in slide-in-from-bottom-4 duration-700" style={sectionStyle}>
                     <div className={sectionWrapperClasses(section.style)}>
-                      <SectionInnerContent section={section} page={page} heroH={heroH} />
+                      <SectionInnerContent section={section} page={page} heroH={heroH} hasSidebar={showSidebar} />
                     </div>
                   </section>
                 );
@@ -1199,7 +1199,7 @@ export default function PageContent({ page, globalSidebarBlocks }: PageContentPr
                     return (
                       <section key={section.id} className="animate-in fade-in slide-in-from-bottom-4 duration-700" style={sectionStyle}>
                         <div className={sectionWrapperClasses(section.style)}>
-                          <SectionInnerContent section={section} page={page} heroH={heroH} />
+                          <SectionInnerContent section={section} page={page} heroH={heroH} hasSidebar={showSidebar} />
                         </div>
                       </section>
                     );
@@ -1226,7 +1226,7 @@ export default function PageContent({ page, globalSidebarBlocks }: PageContentPr
   );
 }
 
-function SectionInnerContent({ section, page, heroH }: { section: PageSection; page: PageConfig; heroH: number }) {
+function SectionInnerContent({ section, page, heroH, hasSidebar }: { section: PageSection; page: PageConfig; heroH: number; hasSidebar: boolean }) {
   return (
     <>
             {section.type === 'hero' && (
@@ -1253,7 +1253,7 @@ function SectionInnerContent({ section, page, heroH }: { section: PageSection; p
             )}
 
             {section.type === 'text' && (
-              <div className="max-w-3xl" style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
+              <div className={hasSidebar ? 'max-w-3xl' : 'w-full'} style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
                 <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6 border-l-4 border-red-800 pl-6">{section.title}</h3>
                 <div
                   className="prose prose-slate max-w-none text-lg leading-relaxed"
@@ -1264,7 +1264,8 @@ function SectionInnerContent({ section, page, heroH }: { section: PageSection; p
 
             {section.type === 'image-text' && (() => {
               const hasImage = Boolean(section.imageUrl);
-              const { wrapper, image } = hasImage ? imageLayoutClasses(section.style) : { wrapper: 'max-w-3xl', image: '' };
+              const noImageWrapper = hasSidebar ? 'max-w-3xl' : 'w-full';
+              const { wrapper, image } = hasImage ? imageLayoutClasses(section.style) : { wrapper: noImageWrapper, image: '' };
               return (
                 <div className={wrapper} style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
                   {section.imageUrl && (

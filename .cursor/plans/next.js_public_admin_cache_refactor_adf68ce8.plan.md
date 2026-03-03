@@ -63,6 +63,20 @@ isProject: false
 4. **Route Segment Config for public page**
   - On the public catch-all page (or its layout), keep `revalidate = <n>` consistent with the cached getter so the full route is revalidated on the same interval. If the layout already sets `revalidate`, the page inherits it unless overridden.
 
+## Phase 2b: Remove runtime hard-coded content fallbacks
+
+**Goal:** Ensure that during a server/DB outage the public site always serves the **last real CMS content from cache**, never stale literals baked into the app bundle.
+
+1. **Retire public fallback to `INITIAL_PAGES` / `DEFAULT_SETTINGS`**
+  - In `src/context/AppContext.tsx`, keep the `cmsLoadError` behavior for `/admin`, but remove or narrowly gate the branch that, on `loadCmsState()` failure, replaces public state with `DEFAULT_SETTINGS` + `INITIAL_PAGES`.
+  - Public routes should instead:
+    - Prefer `initialCmsState` coming from `getCachedCmsState()` (Phase 2) for first paint.
+    - If both cache and DB are unavailable, show a clear “temporarily unavailable” state rather than silently swapping to old hard-coded content.
+2. **Eliminate user-facing hard-coded content defaults**
+  - In `src/components/ui/PageContent.tsx`, remove or minimize literals like the `defaultFees` array used when `block.feeItems` is empty; sidebar fees should come from CMS data (seeded via migrations) so cached CMS state is always the single source of truth for values like the polo shirt price.
+  - In `src/components/cms/admin/SettingsTab.tsx`, keep any editor-side defaults (`DEFAULT_SIDEBAR_FEE_ITEMS`) strictly in sync with the DB seed values and treat them as *editor helpers only* (used to initialize DB-backed fields), not as runtime display fallbacks.
+  - Audit other occurrences of membership/fees prose in `src/constants.ts`, seed SQL, and import scripts to ensure they are used only for initial data seeding and not for live rendering once CMS content exists.
+
 ---
 
 ## Phase 3: Cache invalidation on CMS writes
