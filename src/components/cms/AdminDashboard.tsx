@@ -75,7 +75,7 @@ function UnsavedChangesModal({
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { state, setState, logout, updatePage, addPage, removePage, persist, adminTab, setAdminTab, setIsLoginModalOpen, refreshCmsState, cmsLoadError } = useAppContext();
+  const { state, setState, logout, updatePage, addPage, removePage, persist, adminTab, setAdminTab, setIsLoginModalOpen, refreshCmsState, cmsLoadError, can } = useAppContext();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
 
@@ -234,6 +234,7 @@ export default function AdminDashboard() {
         onLogout={handleLogout}
         collapsed={sidebarCollapsed}
         onToggleCollapsed={() => setSidebarCollapsed((c) => !c)}
+        can={can}
       />
 
       <main className={`flex-grow max-h-screen overflow-y-auto ${adminTab.startsWith('edit-page-') ? 'p-4' : 'p-8'}`}>

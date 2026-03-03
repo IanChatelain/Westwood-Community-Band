@@ -12,12 +12,15 @@ import {
   BuilderPage,
   PageBuilderActions,
   PageBuilderState,
+  type PermissionKey,
+  type RolePermissionMap,
 } from '@/types';
 import { createEmptyPage, DEFAULT_SETTINGS, INITIAL_USERS } from '@/constants';
 import { cloneBlock } from '@/lib/builder/factory';
 import { createInitialBuilderState } from '@/lib/builder/state';
 import { loadCmsState, saveSettings, savePages, savePage, deletePage, restorePageRevision as restoreRevisionAction } from '@/lib/cms';
 import { getCurrentUser, logout as logoutAction } from '@/app/actions/auth';
+import { fetchCurrentUserPermissions } from '@/app/actions/rbac';
 
 interface AppContextType {
   state: AppState;
@@ -43,6 +46,10 @@ interface AppContextType {
   loading: boolean;
   /** When true (admin only), CMS load failed and we show a friendly error instead of fallback content. */
   cmsLoadError: boolean;
+  /** Permission map for the currently logged-in user's role. Null until loaded. */
+  permissions: RolePermissionMap | null;
+  /** Check whether the current user has a specific permission. */
+  can: (permission: PermissionKey) => boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -125,17 +132,23 @@ export function AppProvider({ children, initialCmsState }: AppProviderProps) {
   const [mounted, setMounted] = useState(false);
   const [cmsLoadError, setCmsLoadError] = useState(false);
   const [loading, setLoading] = useState(!hasInitialState);
+  const [permissions, setPermissions] = useState<RolePermissionMap | null>(null);
+  const can = useCallback((permission: PermissionKey): boolean => {
+    if (permissions) return permissions[permission];
+    // Fallback: ADMIN gets everything until permissions load
+    return state.currentUser?.role === UserRole.ADMIN;
+  }, [permissions, state.currentUser?.role]);
   const stateRef = useRef(state);
   stateRef.current = state;
 
   const persist = useCallback(async (): Promise<boolean> => {
     const s = stateRef.current;
-    const [settingsOk, pagesOk] = await Promise.all([
-      saveSettings(s.settings),
-      savePages(s.pages),
+    const results = await Promise.all([
+      can('manage_settings') ? saveSettings(s.settings) : Promise.resolve(true),
+      can('manage_pages') ? savePages(s.pages) : Promise.resolve(true),
     ]);
-    return settingsOk && pagesOk;
-  }, []);
+    return results.every(Boolean);
+  }, [can]);
 
   const refreshCmsState = useCallback(async (): Promise<void> => {
     const loaded = await loadCmsState();
@@ -205,6 +218,7 @@ export function AppProvider({ children, initialCmsState }: AppProviderProps) {
     getCurrentUser().then((user) => {
       if (user) {
         setState(prev => ({ ...prev, currentUser: profileToUser(user) }));
+        fetchCurrentUserPermissions().then((perms) => setPermissions(perms));
         if (user.role === 'ADMIN' || user.role === 'EDITOR') {
           loadCmsState().then((loaded) => {
             if (loaded?.pages) {
@@ -218,6 +232,7 @@ export function AppProvider({ children, initialCmsState }: AppProviderProps) {
         }
       } else {
         setState(prev => ({ ...prev, currentUser: null }));
+        setPermissions(null);
       }
     });
   }, [mounted]);
@@ -225,6 +240,7 @@ export function AppProvider({ children, initialCmsState }: AppProviderProps) {
   const logout = useCallback(async () => {
     await logoutAction();
     setState(prev => ({ ...prev, currentUser: null }));
+    setPermissions(null);
     setIsAdminMode(false);
     loadCmsState().then((loaded) => {
       if (loaded?.pages) {
@@ -542,6 +558,8 @@ export function AppProvider({ children, initialCmsState }: AppProviderProps) {
       restorePageRevision,
       loading,
       cmsLoadError,
+      permissions,
+      can,
     }}>
       {children}
     </AppContext.Provider>

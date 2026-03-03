@@ -7,6 +7,7 @@ import { eq, asc, desc } from 'drizzle-orm';
 import type { AppState, SiteSettings, PageConfig, PageSection, BuilderBlockType } from '@/types';
 import { DEFAULT_SETTINGS, INITIAL_PAGES, INITIAL_USERS } from '@/constants';
 import { v4 as uuidv4 } from 'uuid';
+import { seedRolePermissions, requirePermission } from '@/lib/rbac';
 
 const MAX_REVISIONS_PER_PAGE = 15;
 
@@ -178,6 +179,11 @@ export async function loadCmsState(): Promise<Partial<AppState> | null> {
     const settings = settingsRows.length > 0 ? rowToSettings(settingsRows[0]) : DEFAULT_SETTINGS;
     const pageList = pageRows.length > 0 ? pageRows.map(rowToPage) : INITIAL_PAGES;
 
+    // Ensure role_permissions table has default rows (idempotent)
+    seedRolePermissions().catch((err) =>
+      console.warn('seedRolePermissions failed (table may not exist yet — run db:push):', err),
+    );
+
     return {
       settings,
       pages: pageList,
@@ -193,6 +199,7 @@ export async function loadCmsState(): Promise<Partial<AppState> | null> {
 
 export async function saveSettings(settings: SiteSettings): Promise<boolean> {
   try {
+    await requirePermission('manage_settings');
     await db.update(siteSettings).set({
       bandName: settings.bandName,
       logoUrl: settings.logoUrl,
@@ -251,6 +258,7 @@ async function trimRevisions(pageId: string): Promise<void> {
 
 export async function savePage(page: PageConfig): Promise<boolean> {
   try {
+    await requirePermission('manage_pages');
     await snapshotCurrentPage(page.id);
     await db.insert(pages).values({
       id: page.id,
@@ -291,6 +299,7 @@ export async function savePage(page: PageConfig): Promise<boolean> {
 
 export async function deletePage(pageId: string): Promise<boolean> {
   try {
+    await requirePermission('manage_pages');
     await db.delete(pages).where(eq(pages.id, pageId));
     revalidateTag('cms', 'max');
     return true;
@@ -301,6 +310,7 @@ export async function deletePage(pageId: string): Promise<boolean> {
 
 export async function savePages(pageList: PageConfig[]): Promise<boolean> {
   try {
+    await requirePermission('manage_pages');
     for (const page of pageList) {
       await snapshotCurrentPage(page.id);
       await db.insert(pages).values({
@@ -452,6 +462,7 @@ export async function getPageRevision(revisionId: string): Promise<PageConfig | 
 
 export async function restorePageRevision(revisionId: string): Promise<PageConfig | null> {
   try {
+    await requirePermission('manage_pages')
     const restored = await getPageRevision(revisionId);
     if (!restored) return null;
     const ok = await savePage(restored);

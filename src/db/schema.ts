@@ -45,6 +45,16 @@ export const pageRevisions = sqliteTable('page_revisions', {
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
 });
 
+export const rolePermissions = sqliteTable('role_permissions', {
+  role: text('role').primaryKey(),
+  canAccessAdmin: integer('can_access_admin', { mode: 'boolean' }).notNull().default(false),
+  canManageUsers: integer('can_manage_users', { mode: 'boolean' }).notNull().default(false),
+  canManagePages: integer('can_manage_pages', { mode: 'boolean' }).notNull().default(false),
+  canManageArchive: integer('can_manage_archive', { mode: 'boolean' }).notNull().default(false),
+  canManageSettings: integer('can_manage_settings', { mode: 'boolean' }).notNull().default(false),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+});
+
 export const contactMessages = sqliteTable('contact_messages', {
   id: text('id').primaryKey(),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),

@@ -14,7 +14,7 @@ import {
   PanelLeft,
   Archive
 } from 'lucide-react';
-import { User } from '@/types';
+import { User, type PermissionKey } from '@/types';
 
 interface AdminSidebarProps {
   currentTab: string;
@@ -23,6 +23,7 @@ interface AdminSidebarProps {
   onLogout: () => void;
   collapsed: boolean;
   onToggleCollapsed: () => void;
+  can: (permission: PermissionKey) => boolean;
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ 
@@ -31,20 +32,21 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   user, 
   onLogout,
   collapsed,
-  onToggleCollapsed
+  onToggleCollapsed,
+  can,
 }) => {
   const [hoverExpanded, setHoverExpanded] = useState(false);
   const isExpanded = !collapsed || hoverExpanded;
 
-  const menuItems = [
-    { id: 'overview', label: 'Dashboard', icon: <LayoutDashboard size={20}/>, roles: ['ADMIN', 'EDITOR'] },
-    { id: 'pages', label: 'Page Content', icon: <FileText size={20}/>, roles: ['ADMIN', 'EDITOR'] },
-    { id: 'archive', label: 'Archive', icon: <Archive size={20}/>, roles: ['ADMIN', 'EDITOR'] },
-    { id: 'users', label: 'Team & RBAC', icon: <Users size={20}/>, roles: ['ADMIN'] },
-    { id: 'settings', label: 'Site Settings', icon: <Settings size={20}/>, roles: ['ADMIN'] },
+  const menuItems: { id: string; label: string; icon: React.ReactNode; permission: PermissionKey }[] = [
+    { id: 'overview', label: 'Dashboard', icon: <LayoutDashboard size={20}/>, permission: 'access_admin' },
+    { id: 'pages', label: 'Page Content', icon: <FileText size={20}/>, permission: 'manage_pages' },
+    { id: 'archive', label: 'Archive', icon: <Archive size={20}/>, permission: 'manage_archive' },
+    { id: 'users', label: 'Team & RBAC', icon: <Users size={20}/>, permission: 'manage_users' },
+    { id: 'settings', label: 'Site Settings', icon: <Settings size={20}/>, permission: 'manage_settings' },
   ];
 
-  const filteredItems = menuItems.filter(item => item.roles.includes(user.role));
+  const filteredItems = menuItems.filter(item => can(item.permission));
 
   const sidebarContent = (
     <>

@@ -5,6 +5,59 @@ export enum UserRole {
   GUEST = 'GUEST'
 }
 
+// --- RBAC permission keys ---
+
+export const PERMISSION_KEYS = [
+  'access_admin',
+  'manage_users',
+  'manage_pages',
+  'manage_archive',
+  'manage_settings',
+] as const;
+
+export type PermissionKey = (typeof PERMISSION_KEYS)[number];
+
+export const PERMISSION_LABELS: Record<PermissionKey, string> = {
+  access_admin: 'Access Admin Panel',
+  manage_users: 'Manage Users & Roles',
+  manage_pages: 'Manage Pages',
+  manage_archive: 'Manage Archive',
+  manage_settings: 'Manage Site Settings',
+};
+
+export type RolePermissionMap = Record<PermissionKey, boolean>;
+
+export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, RolePermissionMap> = {
+  [UserRole.ADMIN]: {
+    access_admin: true,
+    manage_users: true,
+    manage_pages: true,
+    manage_archive: true,
+    manage_settings: true,
+  },
+  [UserRole.EDITOR]: {
+    access_admin: true,
+    manage_users: false,
+    manage_pages: true,
+    manage_archive: true,
+    manage_settings: false,
+  },
+  [UserRole.MEMBER]: {
+    access_admin: false,
+    manage_users: false,
+    manage_pages: false,
+    manage_archive: false,
+    manage_settings: false,
+  },
+  [UserRole.GUEST]: {
+    access_admin: false,
+    manage_users: false,
+    manage_pages: false,
+    manage_archive: false,
+    manage_settings: false,
+  },
+};
+
 export interface User {
   id: string;
   username: string;

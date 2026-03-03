@@ -3,6 +3,10 @@ import { jwtVerify } from 'jose';
 
 const COOKIE_NAME = 'session_token';
 
+// Roles allowed through the /admin route gate.
+// This is a fast pre-check; fine-grained permissions are enforced by server actions.
+const ADMIN_ALLOWED_ROLES = new Set(['ADMIN', 'EDITOR']);
+
 export async function proxy(request: NextRequest) {
   if (!request.nextUrl.pathname.startsWith('/admin')) {
     return NextResponse.next();
@@ -21,7 +25,15 @@ export async function proxy(request: NextRequest) {
   }
 
   try {
-    await jwtVerify(token, new TextEncoder().encode(secret));
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
+    const role = typeof payload.role === 'string' ? payload.role : '';
+
+    if (!ADMIN_ALLOWED_ROLES.has(role)) {
+      const redirect = new URL('/', request.url);
+      redirect.searchParams.set('login', '1');
+      return NextResponse.redirect(redirect);
+    }
+
     return NextResponse.next();
   } catch {
     const redirect = new URL('/', request.url);

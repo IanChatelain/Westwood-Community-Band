@@ -3,7 +3,9 @@
 import { db } from '@/db';
 import { profiles } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { requireAdmin } from '@/lib/auth';
+import { hash } from 'bcryptjs';
+import { v4 as uuidv4 } from 'uuid';
+import { requirePermission } from '@/lib/rbac';
 import type { UserRole } from '@/types';
 
 export async function updateProfileRole(
@@ -11,9 +13,9 @@ export async function updateProfileRole(
   newRole: UserRole,
 ): Promise<{ error: string | null }> {
   try {
-    await requireAdmin();
+    await requirePermission('manage_users');
   } catch {
-    return { error: 'Only admins can change roles' };
+    return { error: 'You do not have permission to change roles' };
   }
 
   const validRoles = ['ADMIN', 'EDITOR', 'MEMBER', 'GUEST'];
@@ -38,7 +40,7 @@ export async function listProfiles(): Promise<{
   email: string;
 }[]> {
   try {
-    await requireAdmin();
+    await requirePermission('manage_users');
   } catch {
     return [];
   }
@@ -59,4 +61,69 @@ export async function listProfiles(): Promise<{
     role: r.role,
     email: r.email ?? '',
   }));
+}
+
+export async function createProfile(
+  username: string,
+  email: string,
+  role: UserRole,
+  password: string,
+): Promise<{ error: string | null; user?: { id: string; username: string; role: string; email: string } }> {
+  try {
+    await requirePermission('manage_users');
+  } catch {
+    return { error: 'You do not have permission to create users' };
+  }
+
+  if (!username.trim()) return { error: 'Username is required' };
+  if (!email.trim()) return { error: 'Email is required' };
+  if (!password || password.length < 8) return { error: 'Password must be at least 8 characters' };
+
+  const validRoles = ['ADMIN', 'EDITOR', 'MEMBER', 'GUEST'];
+  if (!validRoles.includes(role)) return { error: 'Invalid role' };
+
+  try {
+    const existing = await db
+      .select({ id: profiles.id })
+      .from(profiles)
+      .where(eq(profiles.email, email.trim()));
+    if (existing.length > 0) return { error: 'A user with that email already exists' };
+
+    const passwordHash = await hash(password, 12);
+    const id = uuidv4();
+    await db.insert(profiles).values({
+      id,
+      username: username.trim(),
+      email: email.trim(),
+      role,
+      passwordHash,
+      updatedAt: new Date().toISOString(),
+    });
+
+    return {
+      error: null,
+      user: { id, username: username.trim(), role, email: email.trim() },
+    };
+  } catch (err) {
+    console.error('createProfile failed:', err);
+    return { error: 'Failed to create user' };
+  }
+}
+
+export async function deleteProfile(
+  profileId: string,
+): Promise<{ error: string | null }> {
+  try {
+    await requirePermission('manage_users');
+  } catch {
+    return { error: 'You do not have permission to delete users' };
+  }
+
+  try {
+    await db.delete(profiles).where(eq(profiles.id, profileId));
+    return { error: null };
+  } catch (err) {
+    console.error('deleteProfile failed:', err);
+    return { error: 'Failed to delete user' };
+  }
 }
