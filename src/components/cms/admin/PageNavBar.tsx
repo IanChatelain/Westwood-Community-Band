@@ -26,6 +26,7 @@ export default function PageNavBar({
   const [newPageTitle, setNewPageTitle] = useState('');
   const [addToNav, setAddToNav] = useState(true);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [archiveConfirmId, setArchiveConfirmId] = useState<string | null>(null);
 
   function slugify(text: string): string {
     return text
@@ -77,7 +78,7 @@ export default function PageNavBar({
             </button>
             {onArchivePage && (
               <button
-                onClick={() => onArchivePage(p.id)}
+                onClick={() => setArchiveConfirmId(p.id)}
                 disabled={p.slug === '/'}
                 className="p-2 text-slate-400 hover:text-amber-600 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-amber-500"
                 aria-label={`Archive ${p.title}`}
@@ -154,6 +155,30 @@ export default function PageNavBar({
               Delete and remove from menu
             </button>
             <button onClick={() => setDeleteConfirmId(null)} className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg font-bold">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {archiveConfirmId && onArchivePage && (
+        <div className="bg-white rounded-xl shadow-sm ring-1 ring-slate-900/5 p-6 max-w-md">
+          <h4 className="font-bold text-slate-900 mb-2">Archive this page?</h4>
+          <p className="text-sm text-slate-600 mb-4">
+            This page will be removed from navigation and hidden from the public site. You can restore it later from the Archive tab.
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                onArchivePage(archiveConfirmId);
+                setArchiveConfirmId(null);
+                onSetAdminTab('pages');
+              }}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg"
+            >
+              Archive page
+            </button>
+            <button onClick={() => setArchiveConfirmId(null)} className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg font-bold">
               Cancel
             </button>
           </div>

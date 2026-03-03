@@ -162,7 +162,7 @@ export default function AdminDashboard() {
   const handleRestorePage = async (pageId: string) => {
     const page = state.pages.find((p) => p.id === pageId);
     if (!page) return;
-    await updatePage({ ...page, isArchived: false });
+    await updatePage({ ...page, isArchived: false, showInNav: true });
   };
 
   if (cmsLoadError) {

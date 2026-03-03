@@ -25,7 +25,7 @@ export default function ArchiveTab({
         </div>
         <h3 className="text-lg font-bold text-slate-900 mb-2">No archived pages</h3>
         <p className="text-sm text-slate-500 max-w-sm">
-          Pages you archive from Page Content will appear here. Archived pages are hidden from the public site.
+          Pages you archive from Page Content will appear here. Archived pages are removed from navigation and hidden from the public site.
         </p>
       </div>
     );
@@ -34,7 +34,7 @@ export default function ArchiveTab({
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-600">
-        Archived pages are hidden from the public site and navigation. Restore a page to make it available again.
+        Archived pages are removed from navigation and hidden from the public site. Restoring a page will return it to the navigation and make it publicly accessible again.
       </p>
       <div className="grid gap-3">
         {archivedPages.map((p) => (
