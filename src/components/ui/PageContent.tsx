@@ -146,24 +146,23 @@ export function SidebarBlockContent({ block }: { block: SidebarBlock }) {
     );
   }
   if (block.type === 'fees') {
-    const defaultFees = [
-      { label: 'Annual Fee', amount: '$100.00' },
-      { label: 'Students', amount: '$50.00' },
-      { label: 'Polo Shirt', amount: '$25.00' },
-    ];
-    const fees = (block.feeItems && block.feeItems.length > 0) ? block.feeItems : defaultFees;
+    const fees = block.feeItems ?? [];
     const season = block.seasonLabel || 'Band Season: September to June';
     return (
       <div className="bg-white p-5 rounded-xl shadow-sm ring-1 ring-slate-900/5">
         <h4 className="text-base font-bold mb-4 text-slate-900">{block.title || 'Membership Fees'}</h4>
-        <ul className="space-y-3 text-sm">
-          {fees.map((item, idx) => (
-            <li key={idx} className="flex justify-between text-slate-700">
-              <span>{item.label}</span>
-              <span className="font-bold text-slate-900">{item.amount}</span>
-            </li>
-          ))}
-        </ul>
+        {fees.length > 0 ? (
+          <ul className="space-y-3 text-sm">
+            {fees.map((item, idx) => (
+              <li key={idx} className="flex justify-between text-slate-700">
+                <span>{item.label}</span>
+                <span className="font-bold text-slate-900">{item.amount}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-slate-400 italic">Fee information coming soon.</p>
+        )}
         <p className="text-xs text-slate-500 mt-4">{season}</p>
       </div>
     );

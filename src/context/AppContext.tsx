@@ -13,7 +13,7 @@ import {
   PageBuilderActions,
   PageBuilderState,
 } from '@/types';
-import { createEmptyPage, DEFAULT_SETTINGS, INITIAL_PAGES, INITIAL_USERS } from '@/constants';
+import { createEmptyPage, DEFAULT_SETTINGS, INITIAL_USERS } from '@/constants';
 import { cloneBlock } from '@/lib/builder/factory';
 import { createInitialBuilderState } from '@/lib/builder/state';
 import { loadCmsState, saveSettings, savePages, savePage, deletePage, restorePageRevision as restoreRevisionAction } from '@/lib/cms';
@@ -193,17 +193,7 @@ export function AppProvider({ children, initialCmsState }: AppProviderProps) {
           };
         });
       } else {
-        // Admin: show error state so UI can show "database unavailable". Public: fallback to default content.
-        if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
-          setCmsLoadError(true);
-        } else {
-          setState(prev => ({
-            ...prev,
-            settings: DEFAULT_SETTINGS,
-            pages: INITIAL_PAGES,
-            pageBuilder: createInitialBuilderState(INITIAL_PAGES),
-          }));
-        }
+        setCmsLoadError(true);
       }
       setLoading(false);
     });

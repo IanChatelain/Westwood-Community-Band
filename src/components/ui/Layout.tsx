@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { SiteSettings, NavLink } from '@/types';
 import { Menu, X, Music, Mail, Phone, MapPin } from 'lucide-react';
 import Link from 'next/link';
@@ -54,8 +55,8 @@ const Layout: React.FC<LayoutProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             <Link href="/" className="flex items-center gap-3 cursor-pointer group">
-              <div className="w-35 h-10">
-                <img src="/BannerLogo.png" alt="Westwood Community Band Logo" />
+              <div className="relative w-35 h-10">
+                <Image src="/BannerLogo.png" alt="Westwood Community Band Logo" fill className="object-contain object-left" sizes="140px" priority />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-slate-900 tracking-tight leading-none">
