@@ -4,10 +4,14 @@ import { cookies } from 'next/headers';
 const COOKIE_NAME = 'session_token';
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
-function getSecret() {
+function getSecret(): Uint8Array {
   const secret = process.env.AUTH_SECRET;
   if (!secret) throw new Error('AUTH_SECRET environment variable is required');
   return new TextEncoder().encode(secret);
+}
+
+export function isAuthConfigured(): boolean {
+  return !!process.env.AUTH_SECRET;
 }
 
 export interface SessionPayload {

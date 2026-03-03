@@ -9,12 +9,18 @@ import {
   setSessionCookie,
   clearSessionCookie,
   getSession,
+  isAuthConfigured,
 } from '@/lib/auth';
 
 export async function login(
   email: string,
   password: string,
 ): Promise<{ error: string | null; user?: { id: string; username: string; role: string; email: string; isContactRecipient: boolean; contactLabel?: string } }> {
+  if (!isAuthConfigured()) {
+    console.error('Login failed: AUTH_SECRET environment variable is not set');
+    return { error: 'Auth is not configured. Please contact the site administrator.' };
+  }
+
   try {
     const rows = await db
       .select()
@@ -54,7 +60,8 @@ export async function login(
       },
     };
   } catch (err) {
-    console.error('Login failed:', err);
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('Login failed:', message, err);
     return { error: 'An unexpected error occurred' };
   }
 }
