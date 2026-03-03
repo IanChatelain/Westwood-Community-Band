@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { SiteSettings, SidebarBlock, SidebarBlockType, SidebarFeeItem } from '@/types';
 import { DEFAULT_SIDEBAR_BLOCKS } from '@/constants';
-import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface SettingsTabProps {
   settings: SiteSettings;
@@ -26,7 +25,6 @@ const DEFAULT_SIDEBAR_FEE_ITEMS: SidebarFeeItem[] = [
 
 export default function SettingsTab({ settings, onUpdateSettings, onApply }: SettingsTabProps) {
   const [feedback, setFeedback] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const sidebarBlocks: SidebarBlock[] = settings.globalSidebarBlocks !== undefined
     ? settings.globalSidebarBlocks
@@ -58,20 +56,23 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div className="bg-white rounded-xl shadow-sm ring-1 ring-slate-900/5 p-8 space-y-6">
-        <p className="text-sm text-slate-600">Band name and footer text are used across the site.</p>
+      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-900/5 p-6 space-y-6">
+        <div>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Site identity</p>
+          <p className="text-sm text-slate-600">Band name and footer text are used across the site.</p>
+        </div>
         <div className="space-y-4">
-          <label className="block text-sm font-bold text-slate-900">Band Identity Name</label>
+          <label className="block text-base font-bold text-slate-900">Band Identity Name</label>
           <input
-            className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-slate-900 placeholder:text-slate-400"
+            className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-red-800 focus:border-red-800 text-slate-900 placeholder:text-slate-400"
             value={settings.bandName}
             onChange={(e) => onUpdateSettings({ ...settings, bandName: e.target.value })}
           />
         </div>
         <div className="space-y-4">
-          <label className="block text-sm font-bold text-slate-900">Footer Attribution</label>
+          <label className="block text-base font-bold text-slate-900">Footer Attribution</label>
           <textarea
-            className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none text-slate-900 placeholder:text-slate-400"
+            className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-red-800 focus:border-red-800 resize-none text-slate-900 placeholder:text-slate-400"
             rows={3}
             value={settings.footerText}
             onChange={(e) => onUpdateSettings({ ...settings, footerText: e.target.value })}
@@ -80,24 +81,17 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
       </div>
 
       {/* Global Sidebar Editor */}
-      <div className="bg-white rounded-xl shadow-sm ring-1 ring-slate-900/5 p-8 space-y-4">
-        <button
-          type="button"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="w-full flex items-center justify-between"
-        >
-          <div>
-            <h3 className="text-sm font-bold text-slate-900">Global Sidebar Content</h3>
-            <p className="text-[11px] text-slate-500 mt-0.5">
-              These blocks appear in the sidebar on every page that uses a sidebar layout. Remove all blocks to hide the sidebar and let content fill the full width.
-            </p>
-          </div>
-          {sidebarOpen ? <ChevronUp size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
-        </button>
+      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-900/5 p-6 space-y-5">
+        <div>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Global sidebar</p>
+          <h3 className="text-base font-bold text-slate-900">Global Sidebar Content</h3>
+          <p className="text-sm text-slate-600 mt-1">
+            These blocks appear in the sidebar on every page that uses a sidebar layout. Remove all blocks to hide the sidebar and let content fill the full width.
+          </p>
+        </div>
 
-        {sidebarOpen && (
-          <div className="space-y-4 pt-2">
-            <div className="space-y-2">
+        <div className="space-y-5 pt-1">
+            <div className="space-y-4">
               {[...sidebarBlocks].sort((a, b) => a.order - b.order).map((block) => {
                 const isRehearsals = block.type === 'rehearsals';
                 const isFees = block.type === 'fees';
@@ -112,57 +106,57 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
                       : [];
 
                 return (
-                  <div key={block.id} className="p-2.5 bg-slate-50 rounded-lg text-xs space-y-2">
+                  <div key={block.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-500 uppercase tracking-wide">{block.type}</span>
+                      <span className="text-sm font-semibold text-slate-700 capitalize">{block.type}</span>
                       <button
                         onClick={() => removeSidebarBlock(block.id)}
-                        className="text-red-600 hover:text-red-800 text-sm leading-none"
+                        className="text-slate-500 hover:text-red-800 text-base leading-none transition-colors"
                       >
                         &times;
                       </button>
                     </div>
 
                     {isRehearsals && (
-                      <div className="grid grid-cols-2 gap-1.5">
+                      <div className="grid grid-cols-2 gap-2">
                         <input
-                          className="col-span-2 p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          className="col-span-2 p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-sm focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400"
                           value={block.title ?? 'Rehearsals'}
                           onChange={(e) => updateSidebarBlock(block.id, { title: e.target.value })}
                           placeholder="Title (e.g. Rehearsals)"
                         />
                         <input
-                          className="p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          className="p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-sm focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400"
                           value={block.day ?? 'Thursday Evenings'}
                           onChange={(e) => updateSidebarBlock(block.id, { day: e.target.value })}
                           placeholder="Day (e.g. Thursday Evenings)"
                         />
                         <input
-                          className="p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          className="p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-sm focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400"
                           value={block.time ?? '7:15 to 9:15 p.m.'}
                           onChange={(e) => updateSidebarBlock(block.id, { time: e.target.value })}
                           placeholder="Time (e.g. 7:15 to 9:15 p.m.)"
                         />
                         <input
-                          className="col-span-2 p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          className="col-span-2 p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-sm focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400"
                           value={block.venueName ?? 'The Band Room'}
                           onChange={(e) => updateSidebarBlock(block.id, { venueName: e.target.value })}
                           placeholder="Venue (e.g. The Band Room)"
                         />
                         <input
-                          className="col-span-2 p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          className="col-span-2 p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-sm focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400"
                           value={block.addressLine1 ?? 'John Taylor Collegiate'}
                           onChange={(e) => updateSidebarBlock(block.id, { addressLine1: e.target.value })}
                           placeholder="Address line 1 (e.g. John Taylor Collegiate)"
                         />
                         <input
-                          className="col-span-2 p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          className="col-span-2 p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-sm focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400"
                           value={block.addressLine2 ?? '470 Hamilton Avenue, Winnipeg, Manitoba'}
                           onChange={(e) => updateSidebarBlock(block.id, { addressLine2: e.target.value })}
                           placeholder="Address line 2 (e.g. 470 Hamilton Ave, Winnipeg)"
                         />
                         <input
-                          className="col-span-2 p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          className="col-span-2 p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-sm focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400"
                           value={
                             block.mapUrl ?? 'https://maps.google.ca/maps?q=470+Hamilton+Avenue,+Winnipeg,+MB'
                           }
@@ -173,25 +167,25 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
                     )}
 
                     {isFees && (
-                      <div className="space-y-1.5">
+                      <div className="space-y-3">
                         <input
-                          className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-sm focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400"
                           value={block.title ?? 'Membership Fees'}
                           onChange={(e) => updateSidebarBlock(block.id, { title: e.target.value })}
                           placeholder="Title (e.g. Membership Fees)"
                         />
                         <input
-                          className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-sm focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400"
                           value={block.seasonLabel ?? 'Band Season: September to June'}
                           onChange={(e) => updateSidebarBlock(block.id, { seasonLabel: e.target.value })}
                           placeholder="Season note (e.g. Band Season: September to June)"
                         />
-                        <div className="space-y-1">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase">Fee items</span>
+                        <div className="space-y-2">
+                          <span className="block text-xs font-semibold text-slate-600">Fee items</span>
                           {effectiveFeeItems.map((item, idx) => (
-                            <div key={idx} className="flex gap-1">
+                            <div key={idx} className="flex gap-2">
                               <input
-                                className="flex-1 min-w-0 p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                                className="flex-1 min-w-0 p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-sm focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400"
                                 value={item.label}
                                 onChange={(e) => {
                                   const items = [...effectiveFeeItems];
@@ -201,7 +195,7 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
                                 placeholder="Label"
                               />
                               <input
-                                className="w-24 p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                                className="w-24 p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-sm focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400"
                                 value={item.amount}
                                 onChange={(e) => {
                                   const items = [...effectiveFeeItems];
@@ -211,7 +205,7 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
                                 placeholder="Amount"
                               />
                               <button
-                                className="text-red-600 hover:text-red-800 px-1"
+                                className="text-slate-500 hover:text-red-800 px-2 transition-colors"
                                 onClick={() => {
                                   const items = effectiveFeeItems.filter((_, i) => i !== idx);
                                   updateSidebarBlock(block.id, { feeItems: items });
@@ -222,7 +216,7 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
                             </div>
                           ))}
                           <button
-                            className="text-xs text-slate-600 hover:text-red-700 border border-slate-300 rounded px-2 py-1 hover:border-red-400"
+                            className="text-sm text-slate-600 hover:text-red-800 border border-slate-200 rounded-lg px-3 py-2 hover:border-red-800/40 transition-colors"
                             onClick={() => {
                               const items: SidebarFeeItem[] = [...effectiveFeeItems, { label: '', amount: '' }];
                               updateSidebarBlock(block.id, { feeItems: items });
@@ -235,29 +229,29 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
                     )}
 
                     {isContact && (
-                      <div className="space-y-1.5">
+                      <div className="space-y-3">
                         <input
-                          className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-sm focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400"
                           value={block.title ?? 'Contact'}
                           onChange={(e) => updateSidebarBlock(block.id, { title: e.target.value })}
                           placeholder="Title (e.g. Contact)"
                         />
                         <textarea
-                          className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900 resize-y"
+                          className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-sm focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400 resize-y"
                           rows={2}
                           value={block.body ?? ''}
                           onChange={(e) => updateSidebarBlock(block.id, { body: e.target.value })}
                           placeholder="Body text above the button"
                         />
-                        <div className="grid grid-cols-2 gap-1.5">
+                        <div className="grid grid-cols-2 gap-2">
                           <input
-                            className="p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                            className="p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-sm focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400"
                             value={block.linkLabel ?? 'Get in Touch'}
                             onChange={(e) => updateSidebarBlock(block.id, { linkLabel: e.target.value })}
                             placeholder="Button label (e.g. Get in Touch)"
                           />
                           <input
-                            className="p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                            className="p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-sm focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400"
                             value={block.href ?? '/contact'}
                             onChange={(e) => updateSidebarBlock(block.id, { href: e.target.value })}
                             placeholder="Button link (e.g. /contact)"
@@ -267,15 +261,15 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
                     )}
 
                     {isCustom && (
-                      <div className="space-y-1.5">
+                      <div className="space-y-3">
                         <input
-                          className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900"
+                          className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-sm focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400"
                           value={block.title ?? ''}
                           onChange={(e) => updateSidebarBlock(block.id, { title: e.target.value })}
                           placeholder="Title"
                         />
                         <textarea
-                          className="w-full p-1.5 border border-slate-300 rounded bg-white text-slate-900 resize-y"
+                          className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-sm focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400 resize-y"
                           rows={3}
                           value={block.content ?? ''}
                           onChange={(e) => updateSidebarBlock(block.id, { content: e.target.value })}
@@ -288,19 +282,18 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
               })}
             </div>
 
-            <div className="flex flex-wrap gap-1 pt-1">
+            <div className="flex flex-wrap gap-2 pt-2">
               {SIDEBAR_BLOCK_TYPES.map(({ value, label }) => (
                 <button
                   key={value}
                   onClick={() => addSidebarBlock(value)}
-                  className="px-2 py-1 text-xs border border-slate-300 rounded hover:border-red-400 hover:text-red-700"
+                  className="px-3 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg hover:border-red-800/40 hover:text-red-800 transition-colors"
                 >
                   + {label}
                 </button>
               ))}
             </div>
           </div>
-        )}
       </div>
 
       <div className="flex items-center gap-3">
@@ -313,7 +306,7 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
             setFeedback(true);
             window.setTimeout(() => setFeedback(false), 3000);
           }}
-          className="bg-gradient-to-r from-red-600 to-red-600 text-white font-bold py-3 px-6 rounded-xl hover:from-red-700 hover:to-red-700 transition-colors shadow-lg shadow-red-500/25"
+          className="bg-red-800 hover:bg-red-900 text-white font-semibold py-3 px-6 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-red-800 focus:ring-offset-2"
         >
           Apply Global Changes
         </button>
