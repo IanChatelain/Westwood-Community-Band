@@ -59,10 +59,9 @@ function profileToUser(profile: { id: string; username: string; role: string; em
 function PageLoadingSkeleton() {
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="h-8 bg-[#991b1b]" />
-      <div className="h-20 bg-white border-b border-slate-200 shadow-sm">
+      <div className="h-20 bg-white border-b border-slate-200 shadow-sm" style={{ borderTopWidth: 3, borderTopStyle: 'solid', borderTopColor: '#991b1b' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center h-full gap-4">
-          <div className="w-10 h-10 bg-slate-200 rounded-lg animate-pulse" />
+          <div className="w-[140px] h-12 bg-slate-200 rounded-lg animate-pulse" />
           <div className="space-y-1.5">
             <div className="w-40 h-4 bg-slate-200 rounded animate-pulse" />
             <div className="w-24 h-2 bg-slate-200 rounded animate-pulse" />

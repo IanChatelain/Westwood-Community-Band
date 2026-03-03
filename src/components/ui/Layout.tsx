@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { SiteSettings, NavLink } from '@/types';
-import { Menu, X, Music, Mail, Phone, MapPin } from 'lucide-react';
+import { SiteSettings, NavLink, User } from '@/types';
+import { Menu, X, Music, Mail, Phone, MapPin, ChevronDown, LogOut, LayoutDashboard, LogIn } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -13,6 +13,8 @@ interface LayoutProps {
   children: React.ReactNode;
   onLoginClick: () => void;
   isAuthenticated: boolean;
+  currentUser?: User | null;
+  onLogout?: () => void;
 }
 
 const Layout: React.FC<LayoutProps> = ({
@@ -20,42 +22,38 @@ const Layout: React.FC<LayoutProps> = ({
   navLinks,
   children,
   onLoginClick,
-  isAuthenticated
+  isAuthenticated,
+  currentUser,
+  onLogout,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+
+  const closeUserMenu = useCallback(() => setIsUserMenuOpen(false), []);
+
+  useEffect(() => {
+    if (!isUserMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        closeUserMenu();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isUserMenuOpen, closeUserMenu]);
 
   const sortedLinks = [...navLinks].sort((a, b) => a.order - b.order);
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
-      {/* Top Banner */}
-      <div className="bg-[var(--westwood-red)] text-white text-xs py-2 px-4 flex justify-between items-center">
-        {isAuthenticated ? (
-          <Link
-            href="/admin"
-            className="ml-auto text-red-100 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 focus:ring-offset-[var(--westwood-red)] rounded px-2 py-0.5"
-            aria-label="Open admin dashboard"
-          >
-            Admin Dashboard
-          </Link>
-        ) : (
-          <button
-            onClick={onLoginClick}
-            className="ml-auto text-red-100 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 focus:ring-offset-[var(--westwood-red)] rounded px-2 py-0.5"
-            aria-label="Open member login"
-          >
-            Member Login
-          </button>
-        )}
-      </div>
-
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm" style={{ borderTopWidth: 3, borderTopStyle: 'solid', borderTopColor: 'var(--westwood-red)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             <Link href="/" className="flex items-center gap-3 cursor-pointer group">
-              <div className="relative w-35 h-10">
+              <div className="relative w-[140px] h-12">
                 <Image src="/BannerLogo.png" alt="Westwood Community Band Logo" fill className="object-contain object-left" sizes="140px" priority />
               </div>
               <div>
@@ -68,22 +66,70 @@ const Layout: React.FC<LayoutProps> = ({
               </div>
             </Link>
 
-            {/* Desktop Nav */}
-            <nav className="hidden md:flex items-center gap-1">
-              {sortedLinks.map((link) => (
-                <Link
-                  key={link.id}
-                  href={link.path}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    pathname === link.path 
-                      ? 'text-slate-900 bg-slate-100 font-semibold' 
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
+            {/* Desktop Nav + Auth */}
+            <div className="hidden md:flex items-center gap-1">
+              <nav className="flex items-center gap-1">
+                {sortedLinks.map((link) => (
+                  <Link
+                    key={link.id}
+                    href={link.path}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      pathname === link.path
+                        ? 'text-[var(--westwood-red)] bg-red-50 font-semibold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+
+              <div className="ml-3 pl-3 border-l border-slate-200" ref={userMenuRef}>
+                {isAuthenticated && currentUser ? (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setIsUserMenuOpen((v) => !v)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--westwood-red)] focus:ring-offset-1"
+                    >
+                      {currentUser.username}
+                      <ChevronDown size={14} className={`transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {isUserMenuOpen && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl border border-slate-200 shadow-lg py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                        <Link
+                          href="/admin"
+                          onClick={closeUserMenu}
+                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                          <LayoutDashboard size={15} className="text-slate-400" />
+                          Admin Dashboard
+                        </Link>
+                        {onLogout && (
+                          <button
+                            type="button"
+                            onClick={() => { closeUserMenu(); onLogout(); }}
+                            className="flex items-center gap-2 w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                          >
+                            <LogOut size={15} className="text-slate-400" />
+                            Log out
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onLoginClick}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-[var(--westwood-red)] text-[var(--westwood-red)] hover:bg-red-50 transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--westwood-red)] focus:ring-offset-1"
+                  >
+                    <LogIn size={14} />
+                    Member Login
+                  </button>
+                )}
+              </div>
+            </div>
 
             {/* Mobile menu button */}
             <div className="md:hidden">
@@ -108,13 +154,47 @@ const Layout: React.FC<LayoutProps> = ({
                 onClick={() => setIsMenuOpen(false)}
                 className={`block w-full text-left px-4 py-3 rounded-xl text-base font-medium transition-colors ${
                   pathname === link.path
-                    ? 'bg-slate-100 text-slate-900 font-semibold'
+                    ? 'bg-red-50 text-[var(--westwood-red)] font-semibold'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }`}
               >
                 {link.label}
               </Link>
             ))}
+
+            <div className="border-t border-slate-200 pt-3 mt-2 space-y-1">
+              {isAuthenticated && currentUser ? (
+                <>
+                  <Link
+                    href="/admin"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-2 w-full px-4 py-3 rounded-xl text-base font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                  >
+                    <LayoutDashboard size={18} className="text-slate-400" />
+                    Admin Dashboard
+                  </Link>
+                  {onLogout && (
+                    <button
+                      type="button"
+                      onClick={() => { setIsMenuOpen(false); onLogout(); }}
+                      className="flex items-center gap-2 w-full text-left px-4 py-3 rounded-xl text-base font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                    >
+                      <LogOut size={18} className="text-slate-400" />
+                      Log out
+                    </button>
+                  )}
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { setIsMenuOpen(false); onLoginClick(); }}
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-base font-semibold border-2 border-[var(--westwood-red)] text-[var(--westwood-red)] hover:bg-red-50 transition-colors"
+                >
+                  <LogIn size={18} />
+                  Member Login
+                </button>
+              )}
+            </div>
           </div>
         )}
       </header>

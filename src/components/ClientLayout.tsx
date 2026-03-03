@@ -10,7 +10,7 @@ import { useNavigation } from '@/hooks/useNavigation';
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { state, setIsLoginModalOpen } = useAppContext();
+  const { state, setIsLoginModalOpen, logout } = useAppContext();
   const isAdminRoute = pathname?.startsWith('/admin');
   const { navLinks } = useNavigation();
 
@@ -33,6 +33,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       navLinks={navLinks}
       onLoginClick={() => setIsLoginModalOpen(true)}
       isAuthenticated={!!state.currentUser}
+      currentUser={state.currentUser}
+      onLogout={logout}
     >
       {children}
       <LoginModal />
