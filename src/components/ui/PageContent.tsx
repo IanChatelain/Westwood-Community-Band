@@ -1175,32 +1175,37 @@ export default function PageContent({ page, globalSidebarBlocks }: PageContentPr
           })}
 
           {!hasBlocks && (() => {
-            const groups = groupSectionsIntoTabGroups(contentSections);
-            return groups.map((block) => {
-              if (block.type === 'single') {
-                const section = block.section;
-                const sectionStyle: React.CSSProperties = {};
-                if (section.maxWidth && section.maxWidth < 100) {
-                  sectionStyle.maxWidth = `${section.maxWidth}%`;
-                  sectionStyle.marginLeft = 'auto';
-                  sectionStyle.marginRight = 'auto';
-                  sectionStyle.width = '100%';
-                }
-                const heroH = section.minHeight && section.minHeight > 0 ? section.minHeight : 260;
-                return (
-                  <section key={section.id} className="animate-in fade-in slide-in-from-bottom-4 duration-700" style={sectionStyle}>
-                    <div className={sectionWrapperClasses(section.style)}>
-                      <SectionInnerContent section={section} page={page} heroH={heroH} hasSidebar={showSidebar} />
+            const isContactPage = page.slug === '/contact';
+            const contactSection = isContactPage ? contentSections.find(s => s.type === 'contact') : undefined;
+            const execSection = isContactPage ? contentSections.find(s => s.type === 'text') : undefined;
+            const showContactGrid = !!(contactSection && execSection);
+
+            const filteredSections = showContactGrid
+              ? contentSections.filter(s => s !== contactSection && s !== execSection)
+              : contentSections;
+
+            const groups = groupSectionsIntoTabGroups(filteredSections);
+            return (
+              <>
+                {showContactGrid && (
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <div className="lg:col-span-1">
+                      <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm ring-1 ring-slate-900/5 h-fit lg:sticky lg:top-8">
+                        <h3 className="text-xl font-bold text-slate-900 mb-5 border-l-4 border-red-800 pl-4">{execSection!.title}</h3>
+                        <div
+                          className="prose prose-slate prose-sm max-w-none leading-relaxed"
+                          dangerouslySetInnerHTML={{ __html: textToHtml(execSection!.content) }}
+                        />
+                      </div>
                     </div>
-                  </section>
-                );
-              }
-              return (
-                <TabGroupContainer
-                  key={block.sections[0].id}
-                  sections={block.sections}
-                  page={page}
-                  renderSectionContent={(section) => {
+                    <div className="lg:col-span-2">
+                      <ContactSection section={contactSection!} />
+                    </div>
+                  </div>
+                )}
+                {groups.map((block) => {
+                  if (block.type === 'single') {
+                    const section = block.section;
                     const sectionStyle: React.CSSProperties = {};
                     if (section.maxWidth && section.maxWidth < 100) {
                       sectionStyle.maxWidth = `${section.maxWidth}%`;
@@ -1216,10 +1221,34 @@ export default function PageContent({ page, globalSidebarBlocks }: PageContentPr
                         </div>
                       </section>
                     );
-                  }}
-                />
-              );
-            });
+                  }
+                  return (
+                    <TabGroupContainer
+                      key={block.sections[0].id}
+                      sections={block.sections}
+                      page={page}
+                      renderSectionContent={(section) => {
+                        const sectionStyle: React.CSSProperties = {};
+                        if (section.maxWidth && section.maxWidth < 100) {
+                          sectionStyle.maxWidth = `${section.maxWidth}%`;
+                          sectionStyle.marginLeft = 'auto';
+                          sectionStyle.marginRight = 'auto';
+                          sectionStyle.width = '100%';
+                        }
+                        const heroH = section.minHeight && section.minHeight > 0 ? section.minHeight : 260;
+                        return (
+                          <section key={section.id} className="animate-in fade-in slide-in-from-bottom-4 duration-700" style={sectionStyle}>
+                            <div className={sectionWrapperClasses(section.style)}>
+                              <SectionInnerContent section={section} page={page} heroH={heroH} hasSidebar={showSidebar} />
+                            </div>
+                          </section>
+                        );
+                      }}
+                    />
+                  );
+                })}
+              </>
+            );
           })()}
         </div>
 
