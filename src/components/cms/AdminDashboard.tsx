@@ -300,6 +300,16 @@ export default function AdminDashboard() {
                     Band name and footer text are used across the site. Click <strong>Apply Global Changes</strong> to confirm.
                   </p>
                 </section>
+                <section>
+                  <h4 className="font-bold text-slate-900 mb-1">Team &amp; RBAC</h4>
+                  <p>
+                    <strong>Team Members</strong> lets you manage users and assign roles.
+                    Use the <strong>Contact Form</strong> toggle to control who appears as a recipient on the website contact form, and add a label (e.g. President, Treasurer) so visitors know who they are contacting.
+                  </p>
+                  <p className="mt-1">
+                    <strong>Role Capabilities</strong> controls what each role can do&mdash;such as accessing the admin panel, managing users, or editing pages.
+                  </p>
+                </section>
               </div>
             </div>
           </div>

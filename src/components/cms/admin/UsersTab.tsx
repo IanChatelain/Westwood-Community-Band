@@ -5,7 +5,7 @@ import { User, UserRole, PERMISSION_KEYS, PERMISSION_LABELS, type PermissionKey,
 import { useAppContext } from '@/context/AppContext';
 import { updateProfileRole, listProfiles, createProfile, deleteProfile, updateProfileContactSettings } from '@/app/actions/profiles';
 import { listRolePermissions, setRolePermission, fetchCurrentUserPermissions } from '@/app/actions/rbac';
-import { X, UserPlus, Shield, Trash2 } from 'lucide-react';
+import { X, UserPlus, Shield, Trash2, HelpCircle } from 'lucide-react';
 
 export default function UsersTab() {
   const { state } = useAppContext();
@@ -142,7 +142,7 @@ export default function UsersTab() {
     <div className="space-y-8">
       {/* ── User List ── */}
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           <h3 className="text-lg font-bold text-slate-900">Team Members</h3>
           {canManageUsers && (
             <button
@@ -154,6 +154,9 @@ export default function UsersTab() {
             </button>
           )}
         </div>
+        <p className="text-sm text-slate-500 mb-4">
+          Manage who can receive messages from the website contact form. Enable the toggle and add a label (e.g. President, Treasurer) to show them as an option when visitors send a message.
+        </p>
         <div className="bg-white rounded-xl shadow-sm ring-1 ring-slate-900/5 overflow-hidden">
           <table className="w-full text-left">
             <thead className="bg-slate-50 text-xs font-bold text-slate-600 uppercase tracking-widest">
@@ -161,7 +164,16 @@ export default function UsersTab() {
                 <th className="px-6 py-4" scope="col">User</th>
                 <th className="px-6 py-4" scope="col">Role</th>
                 <th className="px-6 py-4" scope="col">Email</th>
-                <th className="px-6 py-4" scope="col">Contact Form</th>
+                <th className="px-6 py-4" scope="col">
+                  <span className="inline-flex items-center gap-1">
+                    Contact Form
+                    <HelpCircle
+                      size={14}
+                      className="text-slate-400 cursor-help"
+                      title="Enable to show this person as a recipient on the website contact form. Add a label (e.g. President) to identify them in the contact dropdown."
+                    />
+                  </span>
+                </th>
                 <th className="px-6 py-4" scope="col">Actions</th>
               </tr>
             </thead>
@@ -189,13 +201,17 @@ export default function UsersTab() {
                           type="button"
                           onClick={async () => {
                             const next = !user.isContactRecipient;
-                            setUsers(prev => prev.map(u => u.id === user.id ? { ...u, isContactRecipient: next } : u));
+                            const label = next ? (user.contactLabel ?? null) : null;
+                            setUsers(prev => prev.map(u => u.id === user.id
+                              ? { ...u, isContactRecipient: next, contactLabel: next ? u.contactLabel : undefined }
+                              : u
+                            ));
                             const { error: err } = await updateProfileContactSettings(user.id, {
                               isContactRecipient: next,
-                              contactLabel: user.contactLabel ?? null,
+                              contactLabel: label,
                             });
                             if (err) {
-                              setUsers(prev => prev.map(u => u.id === user.id ? { ...u, isContactRecipient: !next } : u));
+                              setUsers(prev => prev.map(u => u.id === user.id ? { ...u, isContactRecipient: !next, contactLabel: user.contactLabel } : u));
                               setError(err);
                             }
                           }}
@@ -209,23 +225,30 @@ export default function UsersTab() {
                           }`} />
                         </button>
                         {user.isContactRecipient && (
-                          <input
-                            type="text"
-                            className="w-36 px-2 py-1 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400"
-                            placeholder={user.username}
-                            value={user.contactLabel ?? ''}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setUsers(prev => prev.map(u => u.id === user.id ? { ...u, contactLabel: val || undefined } : u));
-                            }}
-                            onBlur={async () => {
-                              const { error: err } = await updateProfileContactSettings(user.id, {
-                                isContactRecipient: user.isContactRecipient,
-                                contactLabel: user.contactLabel ?? null,
-                              });
-                              if (err) setError(err);
-                            }}
-                          />
+                          <div className="flex flex-col gap-0.5">
+                            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
+                              Label (e.g. President)
+                            </label>
+                            <input
+                              type="text"
+                              className="w-36 px-2 py-1 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400"
+                              placeholder={user.username}
+                              value={user.contactLabel ?? ''}
+                              aria-label={`Contact form label for ${user.username}`}
+                              title="Label shown in the contact form recipient dropdown, e.g. President or Treasurer"
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setUsers(prev => prev.map(u => u.id === user.id ? { ...u, contactLabel: val || undefined } : u));
+                              }}
+                              onBlur={async () => {
+                                const { error: err } = await updateProfileContactSettings(user.id, {
+                                  isContactRecipient: user.isContactRecipient,
+                                  contactLabel: user.contactLabel ?? null,
+                                });
+                                if (err) setError(err);
+                              }}
+                            />
+                          </div>
                         )}
                       </div>
                     ) : (

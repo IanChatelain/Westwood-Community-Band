@@ -80,11 +80,12 @@ export async function updateProfileContactSettings(
   }
 
   try {
+    const contactLabel = settings.isContactRecipient ? settings.contactLabel : null;
     await db
       .update(profiles)
       .set({
         isContactRecipient: settings.isContactRecipient,
-        contactLabel: settings.contactLabel,
+        contactLabel,
         updatedAt: new Date().toISOString(),
       })
       .where(eq(profiles.id, profileId));
