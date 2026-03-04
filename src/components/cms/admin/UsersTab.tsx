@@ -167,11 +167,9 @@ export default function UsersTab() {
                 <th className="px-6 py-4" scope="col">
                   <span className="inline-flex items-center gap-1">
                     Contact Form
-                    <HelpCircle
-                      size={14}
-                      className="text-slate-400 cursor-help"
-                      title="Enable to show this person as a recipient on the website contact form. Add a label (e.g. President) to identify them in the contact dropdown."
-                    />
+                    <span title="Enable to show this person as a recipient on the website contact form. Add a label (e.g. President) to identify them in the contact dropdown.">
+                      <HelpCircle size={14} className="text-slate-400 cursor-help" aria-hidden="true" />
+                    </span>
                   </span>
                 </th>
                 <th className="px-6 py-4" scope="col">Actions</th>
