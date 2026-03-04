@@ -3,7 +3,7 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { SiteSettings, NavLink, User } from '@/types';
-import { Menu, X, Music, Mail, Phone, MapPin, ChevronDown, LogOut, LayoutDashboard, LogIn } from 'lucide-react';
+import { Menu, X, Music, Mail, Phone, MapPin, ChevronDown, LogOut, LayoutDashboard, LogIn, Facebook, Instagram, Youtube } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -206,7 +206,7 @@ const Layout: React.FC<LayoutProps> = ({
 
       {/* Footer */}
       <footer className="bg-gradient-to-b from-slate-900 to-slate-950 text-slate-300 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 gap-12">
           <div>
             <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
               <div className="p-1.5 rounded-lg" style={{ backgroundColor: 'var(--westwood-red)' }}>
@@ -214,38 +214,45 @@ const Layout: React.FC<LayoutProps> = ({
               </div>
               {settings.bandName}
             </h3>
-            <p className="text-sm leading-relaxed mb-6 text-slate-400">
-              Empowering local musicians and enriching our community through the universal language of music.
-            </p>
+            {(settings.footerTagline) && (
+              <p className="text-sm leading-relaxed mb-6 text-slate-400">
+                {settings.footerTagline}
+              </p>
+            )}
             <div className="flex space-x-3">
-              <div className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center cursor-pointer hover:bg-[var(--westwood-red)] transition-colors text-slate-400 hover:text-white">f</div>
-              <div className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center cursor-pointer hover:bg-pink-600 transition-colors text-slate-400 hover:text-white">i</div>
-              <div className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center cursor-pointer hover:bg-[var(--westwood-red)] transition-colors text-slate-400 hover:text-white">y</div>
+              {settings.facebookUrl && (
+                <a href={settings.facebookUrl} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center hover:bg-[var(--westwood-red)] transition-colors text-slate-400 hover:text-white" aria-label="Facebook">
+                  <Facebook size={18} />
+                </a>
+              )}
+              {settings.instagramUrl && (
+                <a href={settings.instagramUrl} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center hover:bg-pink-600 transition-colors text-slate-400 hover:text-white" aria-label="Instagram">
+                  <Instagram size={18} />
+                </a>
+              )}
+              {settings.youtubeUrl && (
+                <a href={settings.youtubeUrl} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center hover:bg-[var(--westwood-red)] transition-colors text-slate-400 hover:text-white" aria-label="YouTube">
+                  <Youtube size={18} />
+                </a>
+              )}
             </div>
-          </div>
-          
-          <div>
-            <h4 className="text-white font-semibold mb-5 text-sm tracking-wide">Quick Links</h4>
-            <ul className="space-y-3">
-              {sortedLinks.map(link => (
-                <li key={link.id}>
-                  <Link 
-                    href={link.path}
-                    className="text-slate-400 hover:text-slate-300 transition-colors text-sm"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
           </div>
 
           <div>
             <h4 className="text-white font-semibold mb-5 text-sm tracking-wide">Connect</h4>
             <ul className="space-y-3 text-sm">
-              <li className="flex items-center gap-3 text-slate-400"><MapPin size={16} className="text-slate-400" /> Westwood Community Arts Center</li>
-              <li className="flex items-center gap-3 text-slate-400"><Mail size={16} className="text-slate-400" /> hello@westwoodband.ca</li>
-              <li className="flex items-center gap-3 text-slate-400"><Phone size={16} className="text-slate-400" /> (555) 123-4567</li>
+              {settings.contactAddress && (
+                <li className="flex items-center gap-3 text-slate-400"><MapPin size={16} className="shrink-0 text-slate-400" /> {settings.contactAddress}</li>
+              )}
+              <li className="flex items-center gap-3">
+                <Mail size={16} className="shrink-0 text-slate-400" />
+                <Link href={settings.contactPageSlug || '/contact'} className="text-slate-400 hover:text-slate-300 transition-colors">
+                  Contact Us
+                </Link>
+              </li>
+              {settings.contactPhone && (
+                <li className="flex items-center gap-3 text-slate-400"><Phone size={16} className="shrink-0 text-slate-400" /> {settings.contactPhone}</li>
+              )}
             </ul>
           </div>
         </div>

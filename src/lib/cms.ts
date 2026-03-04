@@ -102,6 +102,13 @@ function rowToSettings(row: typeof siteSettings.$inferSelect): SiteSettings {
     primaryColor: row.primaryColor,
     secondaryColor: row.secondaryColor,
     footerText: row.footerText,
+    footerTagline: row.footerTagline ?? undefined,
+    contactAddress: row.contactAddress ?? undefined,
+    contactPhone: row.contactPhone ?? undefined,
+    contactPageSlug: row.contactPageSlug ?? undefined,
+    facebookUrl: row.facebookUrl ?? undefined,
+    instagramUrl: row.instagramUrl ?? undefined,
+    youtubeUrl: row.youtubeUrl ?? undefined,
     globalSidebarBlocks: row.globalSidebarBlocks
       ? (Array.isArray(row.globalSidebarBlocks) ? row.globalSidebarBlocks as SiteSettings['globalSidebarBlocks'] : undefined)
       : undefined,
@@ -206,6 +213,13 @@ export async function saveSettings(settings: SiteSettings): Promise<boolean> {
       primaryColor: settings.primaryColor,
       secondaryColor: settings.secondaryColor,
       footerText: settings.footerText,
+      footerTagline: settings.footerTagline ?? null,
+      contactAddress: settings.contactAddress ?? null,
+      contactPhone: settings.contactPhone ?? null,
+      contactPageSlug: settings.contactPageSlug ?? null,
+      facebookUrl: settings.facebookUrl ?? null,
+      instagramUrl: settings.instagramUrl ?? null,
+      youtubeUrl: settings.youtubeUrl ?? null,
       globalSidebarBlocks: (settings.globalSidebarBlocks ?? null) as unknown[] | null,
       updatedAt: new Date().toISOString(),
     }).where(eq(siteSettings.id, 1));

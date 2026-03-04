@@ -252,6 +252,13 @@ export interface SiteSettings {
   primaryColor: string;
   secondaryColor: string;
   footerText: string;
+  footerTagline?: string;
+  contactAddress?: string;
+  contactPhone?: string;
+  contactPageSlug?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  youtubeUrl?: string;
   globalSidebarBlocks?: SidebarBlock[];
 }
 

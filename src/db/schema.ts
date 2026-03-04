@@ -8,6 +8,13 @@ export const siteSettings = sqliteTable('site_settings', {
   primaryColor: text('primary_color').notNull().default('#991b1b'),
   secondaryColor: text('secondary_color').notNull().default('#1e3a8a'),
   footerText: text('footer_text').notNull().default(''),
+  footerTagline: text('footer_tagline'),
+  contactAddress: text('contact_address'),
+  contactPhone: text('contact_phone'),
+  contactPageSlug: text('contact_page_slug'),
+  facebookUrl: text('facebook_url'),
+  instagramUrl: text('instagram_url'),
+  youtubeUrl: text('youtube_url'),
   globalSidebarBlocks: text('global_sidebar_blocks', { mode: 'json' }).$type<unknown[] | null>(),
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
 });
