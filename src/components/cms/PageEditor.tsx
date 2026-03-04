@@ -1,12 +1,14 @@
 'use client';
 
 import React from 'react';
-import { PageConfig } from '@/types';
+import { PageConfig, SidebarBlock } from '@/types';
 import { useAppContext } from '@/context/AppContext';
-import { Save, Layout as LayoutIcon, Undo2, X, History, RotateCcw } from 'lucide-react';
+import { Save, Layout as LayoutIcon, Undo2, X, History, RotateCcw, PanelRight } from 'lucide-react';
 import { SectionEditor } from '@/components/cms/SectionEditor';
 import PageContent from '@/components/ui/PageContent';
-import { getPageRevisions, type PageRevisionSummary } from '@/lib/cms';
+import { getPageRevisions, saveSettings, type PageRevisionSummary } from '@/lib/cms';
+import GlobalSidebarEditor from '@/components/cms/admin/GlobalSidebarEditor';
+import { DEFAULT_SIDEBAR_BLOCKS } from '@/constants';
 
 interface PageEditorProps {
   page: PageConfig;
@@ -20,7 +22,7 @@ function pageConfigEqual(a: PageConfig, b: PageConfig): boolean {
 }
 
 const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, onRegisterSave }) => {
-  const { revertPage, state, moveSectionToPage, addPage, setAdminTab, restorePageRevision } = useAppContext();
+  const { revertPage, state, setState, moveSectionToPage, addPage, setAdminTab, restorePageRevision, can } = useAppContext();
   const lastSavedRef = React.useRef<PageConfig>(page);
   const [editedPage, setEditedPage] = React.useState<PageConfig>(() => {
     return { ...page, blocks: undefined };
@@ -35,6 +37,37 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
   const [loadingHistory, setLoadingHistory] = React.useState(false);
   const [restoringId, setRestoringId] = React.useState<string | null>(null);
   const [lastRestoredRevisionId, setLastRestoredRevisionId] = React.useState<string | null>(null);
+
+  const [sidebarEditorOpen, setSidebarEditorOpen] = React.useState(false);
+  const [sidebarDraft, setSidebarDraft] = React.useState<SidebarBlock[]>([]);
+  const [savingSidebar, setSavingSidebar] = React.useState(false);
+  const [sidebarSaveError, setSidebarSaveError] = React.useState<string | null>(null);
+  const [sidebarSavedFeedback, setSidebarSavedFeedback] = React.useState(false);
+
+  const openSidebarEditor = () => {
+    const current = state.settings.globalSidebarBlocks !== undefined
+      ? state.settings.globalSidebarBlocks
+      : [...DEFAULT_SIDEBAR_BLOCKS];
+    setSidebarDraft(current);
+    setSidebarSaveError(null);
+    setSidebarEditorOpen(true);
+  };
+
+  const handleSaveSidebar = async () => {
+    setSavingSidebar(true);
+    setSidebarSaveError(null);
+    const updatedSettings = { ...state.settings, globalSidebarBlocks: sidebarDraft };
+    setState(prev => ({ ...prev, settings: updatedSettings }));
+    const ok = await saveSettings(updatedSettings);
+    setSavingSidebar(false);
+    if (ok) {
+      setSidebarEditorOpen(false);
+      setSidebarSavedFeedback(true);
+      window.setTimeout(() => setSidebarSavedFeedback(false), 3000);
+    } else {
+      setSidebarSaveError('Failed to save sidebar changes. Please try again.');
+    }
+  };
 
   function slugify(text: string): string {
     return text
@@ -170,7 +203,21 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
               className="w-20 h-1.5 bg-slate-200 rounded accent-red-600"
             />
             <span className="text-xs text-slate-600 w-6">{editedPage.sidebarWidth}%</span>
-            <span className="text-[10px] text-slate-400">Sidebar content is managed in Site Settings. Remove all blocks to hide the sidebar.</span>
+            {can('manage_settings') ? (
+              <button
+                type="button"
+                onClick={openSidebarEditor}
+                className="px-3 py-1.5 rounded-lg font-semibold text-xs border-2 border-red-600 text-red-600 hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5"
+              >
+                <PanelRight size={14} />
+                Edit sidebar
+              </button>
+            ) : (
+              <span className="text-[10px] text-slate-400">Sidebar content is managed in Site Settings.</span>
+            )}
+            {sidebarSavedFeedback && (
+              <span className="text-[10px] font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">Sidebar saved</span>
+            )}
           </div>
         )}
 
@@ -376,6 +423,52 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
               </button>
               <button onClick={() => setMoveToNewPageSectionId(null)} className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg font-bold">
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sidebarEditorOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setSidebarEditorOpen(false)}>
+          <div className="bg-white rounded-xl shadow-xl ring-1 ring-slate-900/5 w-full max-w-2xl max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 pb-4 border-b border-slate-200">
+              <div className="flex justify-between items-center">
+                <h4 className="font-bold text-slate-900 flex items-center gap-2">
+                  <PanelRight size={18} />
+                  Edit global sidebar
+                </h4>
+                <button onClick={() => setSidebarEditorOpen(false)} className="p-1 text-slate-500 hover:text-slate-700" aria-label="Close">
+                  <X size={20} />
+                </button>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                These blocks appear on every page that uses a sidebar layout. Changes are saved immediately to the site.
+              </p>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <GlobalSidebarEditor blocks={sidebarDraft} onChange={setSidebarDraft} />
+            </div>
+            <div className="p-6 pt-4 border-t border-slate-200 flex items-center gap-3">
+              {sidebarSaveError && (
+                <span className="text-xs font-medium text-red-700 bg-red-100 px-2 py-1 rounded flex-1">{sidebarSaveError}</span>
+              )}
+              <div className="flex-1" />
+              <button
+                type="button"
+                onClick={() => setSidebarEditorOpen(false)}
+                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveSidebar}
+                disabled={savingSidebar}
+                className="px-5 py-2 rounded-lg font-bold text-sm bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white flex items-center gap-1.5"
+              >
+                <Save size={16} />
+                {savingSidebar ? 'Saving...' : 'Save sidebar'}
               </button>
             </div>
           </div>
