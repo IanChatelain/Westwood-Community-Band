@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { PageConfig, SidebarBlock } from '@/types';
+import { PageConfig, SidebarBlock, ContainerMaxWidth } from '@/types';
 import { useAppContext } from '@/context/AppContext';
 import { Save, Layout as LayoutIcon, Undo2, X, History, RotateCcw, PanelRight } from 'lucide-react';
 import { SectionEditor } from '@/components/cms/SectionEditor';
@@ -187,6 +187,29 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
             >
               <LayoutIcon size={14} />
               {layout.replace('-', ' ')}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] font-bold text-slate-500 uppercase">Width</span>
+          {([
+            ['narrow', '5xl'],
+            ['medium', '6xl'],
+            ['default', '7xl'],
+            ['wide', 'Wide'],
+            ['full', 'Full'],
+          ] as [ContainerMaxWidth, string][]).map(([value, label]) => (
+            <button
+              key={value}
+              onClick={() => setEditedPage((prev) => ({ ...prev, containerMaxWidth: value }))}
+              className={`px-2 py-1 border rounded-md text-[10px] font-medium transition-all ${
+                (editedPage.containerMaxWidth ?? 'default') === value
+                  ? 'border-red-600 bg-red-600 text-white'
+                  : 'border-slate-300 hover:border-red-400 text-slate-600'
+              }`}
+            >
+              {label}
             </button>
           ))}
         </div>

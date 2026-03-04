@@ -220,12 +220,16 @@ export interface SidebarBlock {
   href?: string;
 }
 
+export type ContainerMaxWidth = 'narrow' | 'medium' | 'default' | 'wide' | 'full';
+
 export interface PageConfig {
   id: string;
   title: string;
   slug: string;
   layout: 'full' | 'sidebar-left' | 'sidebar-right';
   sidebarWidth: number;
+  /** Max-width of the page container. Default 'default' (1280px / max-w-7xl). */
+  containerMaxWidth?: ContainerMaxWidth;
   sections: PageSection[];
   /** Optional block-based builder content for visual editor. */
   blocks?: BuilderBlock[];

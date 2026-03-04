@@ -4,7 +4,7 @@ import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { BuilderBlock, PageConfig } from '@/types';
+import type { BuilderBlock, PageConfig, ContainerMaxWidth } from '@/types';
 import { useAppContext } from '@/context/AppContext';
 import { BuilderBlockView, blockWrapperClassesAndStyle } from '@/components/ui/PageContent';
 import { GripVertical, Trash2, ChevronUp, ChevronDown, Copy } from 'lucide-react';
@@ -146,8 +146,17 @@ export function LivePreviewEditor({ page, pageId }: LivePreviewEditorProps) {
   const effectiveSidebarBlocks = getEffectiveSidebarBlocks(page, state.settings.globalSidebarBlocks);
   const showSidebar = page.layout !== 'full' && effectiveSidebarBlocks.length > 0;
 
+  const containerWidthStyles: Record<ContainerMaxWidth, string> = {
+    narrow: 'max-w-5xl',
+    medium: 'max-w-6xl',
+    default: 'max-w-7xl',
+    wide: 'max-w-[90rem]',
+    full: '',
+  };
+  const containerClass = containerWidthStyles[page.containerMaxWidth ?? 'default'];
+
   return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row gap-12 min-h-0">
+      <div className={`${containerClass} mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row gap-12 min-h-0`}>
         <div
           ref={setCanvasRef}
           className={`flex-grow space-y-16 min-w-0 ${

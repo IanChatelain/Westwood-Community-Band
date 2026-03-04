@@ -2,8 +2,16 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { PageConfig, SidebarBlock, PageSection, SectionStyle, BuilderBlock, BlockWrapperStyle, GalleryEvent, GalleryMediaItem, DownloadItem, DownloadGroup, PerformanceItem } from '@/types';
+import { PageConfig, SidebarBlock, PageSection, SectionStyle, BuilderBlock, BlockWrapperStyle, GalleryEvent, GalleryMediaItem, DownloadItem, DownloadGroup, PerformanceItem, ContainerMaxWidth } from '@/types';
 import { DEFAULT_SIDEBAR_BLOCKS } from '@/constants';
+
+const CONTAINER_WIDTH_STYLES: Record<ContainerMaxWidth, string> = {
+  narrow: 'max-w-5xl',
+  medium: 'max-w-6xl',
+  default: 'max-w-7xl',
+  wide: 'max-w-[90rem]',
+  full: '',
+};
 
 /** Convert plain text (with \n) to HTML paragraphs. Pass HTML through unchanged. */
 function textToHtml(text: string): string {
@@ -1144,8 +1152,10 @@ export default function PageContent({ page, globalSidebarBlocks }: PageContentPr
   const heroSections = !hasBlocks ? page.sections.filter(s => s.type === 'hero') : [];
   const contentSections = !hasBlocks ? page.sections.filter(s => s.type !== 'hero') : [];
 
+  const containerClass = CONTAINER_WIDTH_STYLES[page.containerMaxWidth ?? 'default'];
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-12">
+    <div className={`${containerClass} mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-12`}>
       {/* Full-width hero banner(s) above the sidebar */}
       {heroSections.map((section) => {
         const heroH = section.minHeight && section.minHeight > 0 ? section.minHeight : 260;
