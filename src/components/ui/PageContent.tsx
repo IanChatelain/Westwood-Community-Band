@@ -1197,39 +1197,39 @@ export default function PageContent({ page, globalSidebarBlocks }: PageContentPr
             const groups = groupSectionsIntoTabGroups(filteredSections);
             return (
               <>
-                {showContactGrid && (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    <div className="lg:col-span-1">
-                      <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm ring-1 ring-slate-900/5 h-fit lg:sticky lg:top-8">
-                        <h3 className="text-xl font-bold text-slate-900 mb-5 border-l-4 border-red-800 pl-4">{execSection!.title}</h3>
+                {showContactGrid && (() => {
+                  const execW = execSection!.maxWidth ?? 33;
+                  const contactW = contactSection!.maxWidth ?? 67;
+                  const execStyle: React.CSSProperties = {};
+                  if (execSection!.minHeight && execSection!.minHeight > 0) {
+                    execStyle.minHeight = execSection!.minHeight;
+                  }
+                  const contactStyle: React.CSSProperties = {};
+                  if (contactSection!.minHeight && contactSection!.minHeight > 0) {
+                    contactStyle.minHeight = contactSection!.minHeight;
+                  }
+                  return (
+                    <div className="flex flex-col lg:flex-row gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                      <div className="w-full" style={{ flex: `${execW} 1 0%` }}>
                         <div
-                          className="prose prose-slate prose-sm max-w-none leading-relaxed"
-                          dangerouslySetInnerHTML={{ __html: textToHtml(execSection!.content) }}
-                        />
+                          className="bg-white p-6 md:p-8 rounded-2xl shadow-sm ring-1 ring-slate-900/5 h-fit lg:sticky lg:top-8"
+                          style={execStyle}
+                        >
+                          <h3 className="text-xl font-bold text-slate-900 mb-5 border-l-4 border-red-800 pl-4">{execSection!.title}</h3>
+                          <div
+                            className="prose prose-slate prose-sm max-w-none leading-relaxed"
+                            dangerouslySetInnerHTML={{ __html: textToHtml(execSection!.content) }}
+                          />
+                        </div>
+                      </div>
+                      <div className="w-full" style={{ flex: `${contactW} 1 0%` }}>
+                        <div style={contactStyle}>
+                          <ContactSection section={contactSection!} />
+                        </div>
                       </div>
                     </div>
-                    <div className="lg:col-span-2">
-                      {(() => {
-                        const c = contactSection!;
-                        const style: React.CSSProperties = {};
-                        if (c.minHeight && c.minHeight > 0) {
-                          style.minHeight = c.minHeight;
-                        }
-                        if (c.maxWidth && c.maxWidth < 100) {
-                          style.maxWidth = `${c.maxWidth}%`;
-                          style.marginLeft = 'auto';
-                          style.marginRight = 'auto';
-                          style.width = '100%';
-                        }
-                        return (
-                          <div style={style}>
-                            <ContactSection section={c} />
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
                 {groups.map((block) => {
                   if (block.type === 'single') {
                     const section = block.section;
