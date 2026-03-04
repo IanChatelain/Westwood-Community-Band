@@ -1,9 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { SiteSettings, SidebarBlock } from '@/types';
-import { DEFAULT_SIDEBAR_BLOCKS } from '@/constants';
-import GlobalSidebarEditor from './GlobalSidebarEditor';
+import { SiteSettings } from '@/types';
 
 interface SettingsTabProps {
   settings: SiteSettings;
@@ -13,10 +11,6 @@ interface SettingsTabProps {
 
 export default function SettingsTab({ settings, onUpdateSettings, onApply }: SettingsTabProps) {
   const [feedback, setFeedback] = useState(false);
-
-  const sidebarBlocks: SidebarBlock[] = settings.globalSidebarBlocks !== undefined
-    ? settings.globalSidebarBlocks
-    : [...DEFAULT_SIDEBAR_BLOCKS];
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -42,22 +36,6 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
             onChange={(e) => onUpdateSettings({ ...settings, footerText: e.target.value })}
           />
         </div>
-      </div>
-
-      {/* Global Sidebar Editor */}
-      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-900/5 p-6 space-y-5">
-        <div>
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Global sidebar</p>
-          <h3 className="text-base font-bold text-slate-900">Global Sidebar Content</h3>
-          <p className="text-sm text-slate-600 mt-1">
-            These blocks appear in the sidebar on every page that uses a sidebar layout. You can also edit this from the page editor. Remove all blocks to hide the sidebar.
-          </p>
-        </div>
-
-        <GlobalSidebarEditor
-          blocks={sidebarBlocks}
-          onChange={(blocks) => onUpdateSettings({ ...settings, globalSidebarBlocks: blocks })}
-        />
       </div>
 
       <div className="flex items-center gap-3">

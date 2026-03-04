@@ -213,7 +213,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
                 Edit sidebar
               </button>
             ) : (
-              <span className="text-[10px] text-slate-400">Sidebar content is managed in Site Settings.</span>
+              <span className="text-[10px] text-slate-400">Sidebar content is managed globally by an admin.</span>
             )}
             {sidebarSavedFeedback && (
               <span className="text-[10px] font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">Sidebar saved</span>
