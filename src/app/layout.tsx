@@ -14,8 +14,34 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://westwoodcommunityband.ca"),
   title: "Westwood Community Band",
-  description: "A non-profit organization dedicated to bringing quality music to our local community.",
+  description:
+    "Winnipeg's community concert band — forty-five years of making music. Join us for performances, rehearsals, and musical fellowship.",
+  openGraph: {
+    title: "Westwood Community Band",
+    description:
+      "Winnipeg's community concert band — forty-five years of making music. Join us for performances, rehearsals, and musical fellowship.",
+    url: "/",
+    siteName: "Westwood Community Band",
+    type: "website",
+    locale: "en_CA",
+    images: [
+      {
+        url: "/og-westwood-community-band.png",
+        width: 1200,
+        height: 630,
+        alt: "Westwood Community Band — Forty-Five Years of Making Music",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Westwood Community Band",
+    description:
+      "Winnipeg's community concert band — forty-five years of making music.",
+    images: ["/og-westwood-community-band.png"],
+  },
 };
 
 export default function RootLayout({
