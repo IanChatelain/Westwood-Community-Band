@@ -77,6 +77,7 @@ export async function submitContactMessage(data: {
 
       if (emailResult.error) {
         console.error('Email delivery failed (message was still saved):', emailResult.error);
+        return { error: 'Your message was saved but we could not send the email notification. The team will still see your message.' };
       }
     }
 
