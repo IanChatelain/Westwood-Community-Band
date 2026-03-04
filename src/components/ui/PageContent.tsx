@@ -1209,7 +1209,24 @@ export default function PageContent({ page, globalSidebarBlocks }: PageContentPr
                       </div>
                     </div>
                     <div className="lg:col-span-2">
-                      <ContactSection section={contactSection!} />
+                      {(() => {
+                        const c = contactSection!;
+                        const style: React.CSSProperties = {};
+                        if (c.minHeight && c.minHeight > 0) {
+                          style.minHeight = c.minHeight;
+                        }
+                        if (c.maxWidth && c.maxWidth < 100) {
+                          style.maxWidth = `${c.maxWidth}%`;
+                          style.marginLeft = 'auto';
+                          style.marginRight = 'auto';
+                          style.width = '100%';
+                        }
+                        return (
+                          <div style={style}>
+                            <ContactSection section={c} />
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 )}
