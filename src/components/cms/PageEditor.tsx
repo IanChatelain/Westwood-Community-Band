@@ -191,35 +191,37 @@ const PageEditor: React.FC<PageEditorProps> = ({ page, onSave, onDirtyChange, on
           ))}
         </div>
 
-        {editedPage.layout !== 'full' && (
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] font-bold text-slate-500 uppercase">Sidebar width</span>
-            <input
-              type="range"
-              min="15"
-              max="40"
-              value={editedPage.sidebarWidth}
-              onChange={(e) => setEditedPage((prev) => ({ ...prev, sidebarWidth: parseInt(e.target.value) }))}
-              className="w-20 h-1.5 bg-slate-200 rounded accent-red-600"
-            />
-            <span className="text-xs text-slate-600 w-6">{editedPage.sidebarWidth}%</span>
-            {can('manage_settings') ? (
-              <button
-                type="button"
-                onClick={openSidebarEditor}
-                className="px-3 py-1.5 rounded-lg font-semibold text-xs border-2 border-red-600 text-red-600 hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5"
-              >
-                <PanelRight size={14} />
-                Edit sidebar
-              </button>
-            ) : (
-              <span className="text-[10px] text-slate-400">Sidebar content is managed globally by an admin.</span>
-            )}
-            {sidebarSavedFeedback && (
-              <span className="text-[10px] font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">Sidebar saved</span>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {editedPage.layout !== 'full' && (
+            <>
+              <span className="text-[10px] font-bold text-slate-500 uppercase">Sidebar width</span>
+              <input
+                type="range"
+                min="15"
+                max="40"
+                value={editedPage.sidebarWidth}
+                onChange={(e) => setEditedPage((prev) => ({ ...prev, sidebarWidth: parseInt(e.target.value) }))}
+                className="w-20 h-1.5 bg-slate-200 rounded accent-red-600"
+              />
+              <span className="text-xs text-slate-600 w-6">{editedPage.sidebarWidth}%</span>
+            </>
+          )}
+          {can('manage_settings') ? (
+            <button
+              type="button"
+              onClick={openSidebarEditor}
+              className="px-3 py-1.5 rounded-lg font-semibold text-xs border-2 border-red-600 text-red-600 hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5"
+            >
+              <PanelRight size={14} />
+              Edit sidebar
+            </button>
+          ) : (
+            <span className="text-[10px] text-slate-400">Sidebar content is managed globally by an admin.</span>
+          )}
+          {sidebarSavedFeedback && (
+            <span className="text-[10px] font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">Sidebar saved</span>
+          )}
+        </div>
 
         <div className="flex-1" />
         <div className="flex items-center gap-2">
