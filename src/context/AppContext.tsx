@@ -240,6 +240,21 @@ export function AppProvider({ children, initialCmsState }: AppProviderProps) {
     });
   }, [mounted]);
 
+  const clearAuthState = useCallback(() => {
+    setState(prev => ({ ...prev, currentUser: null }));
+    setPermissions(null);
+    setIsAdminMode(false);
+    loadCmsState().then((loaded) => {
+      if (loaded?.pages) {
+        setState(prev => ({
+          ...prev,
+          pages: loaded.pages!,
+          pageBuilder: createInitialBuilderState(loaded.pages!),
+        }));
+      }
+    });
+  }, []);
+
   // Cross-tab logout: listen for logout broadcast from other tabs via localStorage
   useEffect(() => {
     if (!mounted) return;
@@ -263,21 +278,6 @@ export function AppProvider({ children, initialCmsState }: AppProviderProps) {
     }, HEARTBEAT_MS);
     return () => clearInterval(id);
   }, [mounted, isAdminMode, clearAuthState]);
-
-  const clearAuthState = useCallback(() => {
-    setState(prev => ({ ...prev, currentUser: null }));
-    setPermissions(null);
-    setIsAdminMode(false);
-    loadCmsState().then((loaded) => {
-      if (loaded?.pages) {
-        setState(prev => ({
-          ...prev,
-          pages: loaded.pages!,
-          pageBuilder: createInitialBuilderState(loaded.pages!),
-        }));
-      }
-    });
-  }, []);
 
   const logout = useCallback(async () => {
     await logoutAction();

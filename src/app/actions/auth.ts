@@ -12,6 +12,7 @@ import {
   requireAuth,
   isAuthConfigured,
 } from '@/lib/auth';
+import { sanitizeEmail, validateEmail } from '@/lib/validation';
 
 export async function login(
   email: string,
@@ -22,11 +23,16 @@ export async function login(
     return { error: 'Auth is not configured. Please contact the site administrator.' };
   }
 
+  const normalizedEmail = sanitizeEmail(email);
+  const emailErr = validateEmail(normalizedEmail);
+  if (emailErr) return { error: 'Invalid email or password' };
+  if (!password || password.length > 128) return { error: 'Invalid email or password' };
+
   try {
     const rows = await db
       .select()
       .from(profiles)
-      .where(eq(profiles.email, email));
+      .where(eq(profiles.email, normalizedEmail));
 
     if (rows.length === 0) {
       return { error: 'Invalid email or password' };
@@ -114,8 +120,14 @@ export async function changeOwnPassword(params: {
   newPassword: string;
 }): Promise<{ error: string | null }> {
   const { currentPassword, newPassword } = params;
+  if (!currentPassword || currentPassword.length > 128) {
+    return { error: 'Current password is required.' };
+  }
   if (!newPassword || newPassword.length < 8) {
     return { error: 'New password must be at least 8 characters.' };
+  }
+  if (newPassword.length > 128) {
+    return { error: 'Password must be 128 characters or fewer.' };
   }
 
   try {

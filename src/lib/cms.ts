@@ -4,10 +4,12 @@ import { revalidateTag } from 'next/cache';
 import { db } from '@/db';
 import { siteSettings, pages, pageRevisions } from '@/db/schema';
 import { eq, asc, desc } from 'drizzle-orm';
-import type { AppState, SiteSettings, PageConfig, PageSection, BuilderBlockType } from '@/types';
+import type { AppState, SiteSettings, PageConfig, PageSection, SidebarBlock, BuilderBlockType } from '@/types';
 import { DEFAULT_SETTINGS, INITIAL_PAGES, INITIAL_USERS } from '@/constants';
 import { v4 as uuidv4 } from 'uuid';
 import { seedRolePermissions, requirePermission } from '@/lib/rbac';
+import { sanitizeRichText } from '@/lib/sanitizeHtml';
+import { sanitizeSingleLine, sanitizeString } from '@/lib/validation';
 
 const MAX_REVISIONS_PER_PAGE = 15;
 
@@ -204,9 +206,90 @@ export async function loadCmsState(): Promise<Partial<AppState> | null> {
   }
 }
 
-export async function saveSettings(settings: SiteSettings): Promise<boolean> {
+function sanitizeSection(s: PageSection): PageSection {
+  const richTextTypes = new Set(['hero', 'text', 'image-text']);
+  const content = richTextTypes.has(s.type) ? sanitizeRichText(s.content) : s.content;
+  const title = sanitizeSingleLine(s.title, 300);
+
+  const sanitized: PageSection = { ...s, title, content };
+
+  if (sanitized.tableData) {
+    sanitized.tableData = {
+      headers: sanitized.tableData.headers.map(h => sanitizeRichText(h)),
+      rows: sanitized.tableData.rows.map(row => row.map(cell => sanitizeRichText(cell))),
+    };
+  }
+
+  if (sanitized.performanceItems) {
+    sanitized.performanceItems = sanitized.performanceItems.map(p => ({
+      ...p,
+      title: sanitizeSingleLine(p.title, 300),
+      venue: p.venue ? sanitizeSingleLine(p.venue, 300) : undefined,
+      description: p.description ? sanitizeString(p.description, 2000) : undefined,
+    }));
+  }
+
+  if (sanitized.downloadItems) {
+    sanitized.downloadItems = sanitized.downloadItems.map(d => ({
+      ...d,
+      label: sanitizeSingleLine(d.label, 300),
+      description: d.description ? sanitizeString(d.description, 1000) : undefined,
+    }));
+  }
+
+  if (sanitized.downloadGroups) {
+    sanitized.downloadGroups = sanitized.downloadGroups.map(g => ({
+      title: sanitizeSingleLine(g.title, 300),
+      items: g.items.map(d => ({
+        ...d,
+        label: sanitizeSingleLine(d.label, 300),
+        description: d.description ? sanitizeString(d.description, 1000) : undefined,
+      })),
+    }));
+  }
+
+  return sanitized;
+}
+
+function sanitizeSidebarBlocks(blocks: SidebarBlock[]): SidebarBlock[] {
+  return blocks.map(b => ({
+    ...b,
+    title: b.title ? sanitizeSingleLine(b.title, 200) : undefined,
+    content: b.content ? sanitizeRichText(b.content) : undefined,
+    body: b.body ? sanitizeRichText(b.body) : undefined,
+  }));
+}
+
+function sanitizePageConfig(page: PageConfig): PageConfig {
+  return {
+    ...page,
+    title: sanitizeSingleLine(page.title, 300),
+    navLabel: page.navLabel ? sanitizeSingleLine(page.navLabel, 100) : undefined,
+    sections: page.sections.map(sanitizeSection),
+    sidebarBlocks: page.sidebarBlocks ? sanitizeSidebarBlocks(page.sidebarBlocks) : undefined,
+  };
+}
+
+function sanitizeSiteSettings(settings: SiteSettings): SiteSettings {
+  return {
+    ...settings,
+    bandName: sanitizeSingleLine(settings.bandName, 200),
+    footerText: sanitizeString(settings.footerText, 500),
+    footerTagline: settings.footerTagline ? sanitizeSingleLine(settings.footerTagline, 200) : undefined,
+    contactAddress: settings.contactAddress ? sanitizeSingleLine(settings.contactAddress, 300) : undefined,
+    contactPhone: settings.contactPhone ? sanitizeSingleLine(settings.contactPhone, 30) : undefined,
+    contactPageSlug: settings.contactPageSlug ? sanitizeSingleLine(settings.contactPageSlug, 200) : undefined,
+    facebookUrl: settings.facebookUrl ? settings.facebookUrl.trim().slice(0, 2000) : undefined,
+    instagramUrl: settings.instagramUrl ? settings.instagramUrl.trim().slice(0, 2000) : undefined,
+    youtubeUrl: settings.youtubeUrl ? settings.youtubeUrl.trim().slice(0, 2000) : undefined,
+    globalSidebarBlocks: settings.globalSidebarBlocks ? sanitizeSidebarBlocks(settings.globalSidebarBlocks) : undefined,
+  };
+}
+
+export async function saveSettings(rawSettings: SiteSettings): Promise<boolean> {
   try {
     await requirePermission('manage_settings');
+    const settings = sanitizeSiteSettings(rawSettings);
     await db.update(siteSettings).set({
       bandName: settings.bandName,
       logoUrl: settings.logoUrl,
@@ -270,9 +353,10 @@ async function trimRevisions(pageId: string): Promise<void> {
   }
 }
 
-export async function savePage(page: PageConfig): Promise<boolean> {
+export async function savePage(rawPage: PageConfig): Promise<boolean> {
   try {
     await requirePermission('manage_pages');
+    const page = sanitizePageConfig(rawPage);
     await snapshotCurrentPage(page.id);
     await db.insert(pages).values({
       id: page.id,
@@ -322,10 +406,11 @@ export async function deletePage(pageId: string): Promise<boolean> {
   }
 }
 
-export async function savePages(pageList: PageConfig[]): Promise<boolean> {
+export async function savePages(rawPageList: PageConfig[]): Promise<boolean> {
   try {
     await requirePermission('manage_pages');
-    for (const page of pageList) {
+    for (const rawPage of rawPageList) {
+      const page = sanitizePageConfig(rawPage);
       await snapshotCurrentPage(page.id);
       await db.insert(pages).values({
         id: page.id,

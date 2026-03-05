@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { resetPassword } from '@/app/actions/passwordReset';
 import { Lock, AlertTriangle } from 'lucide-react';
+import { validatePassword } from '@/lib/validation';
 
 export default function ResetPasswordConfirmPage() {
   const searchParams = useSearchParams();
@@ -48,10 +49,8 @@ export default function ResetPasswordConfirmPage() {
     e.preventDefault();
     setError(null);
 
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters.');
-      return;
-    }
+    const pwErr = validatePassword(newPassword);
+    if (pwErr) { setError(pwErr); return; }
     if (newPassword !== confirmPassword) {
       setError('Passwords do not match.');
       return;

@@ -6,6 +6,7 @@ import { db } from '@/db';
 import { profiles } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { sendPasswordResetEmail } from '@/lib/email';
+import { sanitizeEmail, validateEmail, validatePassword } from '@/lib/validation';
 
 const TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
 
@@ -35,8 +36,8 @@ function safeEquals(a: string, b: string): boolean {
 export async function requestPasswordReset(
   email: string,
 ): Promise<{ error: string | null }> {
-  const normalised = email.trim().toLowerCase();
-  if (!normalised) return { error: null };
+  const normalised = sanitizeEmail(email);
+  if (!normalised || validateEmail(normalised)) return { error: null };
 
   try {
     const rows = await db
@@ -76,14 +77,15 @@ export async function resetPassword(params: {
   newPassword: string;
 }): Promise<{ error: string | null }> {
   const { email, token, newPassword } = params;
-  const normalised = email.trim().toLowerCase();
+  const normalised = sanitizeEmail(email);
 
   if (!normalised || !token || !newPassword) {
     return { error: 'Missing required fields.' };
   }
-  if (newPassword.length < 8) {
-    return { error: 'Password must be at least 8 characters.' };
-  }
+  const emailErr = validateEmail(normalised);
+  if (emailErr) return { error: 'Invalid or expired reset link.' };
+  const pwErr = validatePassword(newPassword);
+  if (pwErr) return { error: pwErr };
 
   try {
     const rows = await db

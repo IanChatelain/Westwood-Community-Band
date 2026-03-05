@@ -5,18 +5,26 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { requestPasswordReset } from '@/app/actions/passwordReset';
 import { Lock, ArrowLeft } from 'lucide-react';
+import { sanitizeEmail, validateEmail } from '@/lib/validation';
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState(searchParams?.get('email') ?? '');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
+    const trimmedEmail = sanitizeEmail(email);
+    const emailErr = validateEmail(trimmedEmail);
+    if (emailErr) { setError(emailErr); return; }
+
     setLoading(true);
     try {
-      await requestPasswordReset(email);
+      await requestPasswordReset(trimmedEmail);
     } finally {
       setSubmitted(true);
       setLoading(false);
@@ -68,6 +76,9 @@ export default function ResetPasswordPage() {
                 placeholder="you@example.com"
               />
             </div>
+            {error && (
+              <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg" role="alert">{error}</p>
+            )}
             <button
               type="submit"
               disabled={loading}

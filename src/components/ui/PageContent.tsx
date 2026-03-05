@@ -89,6 +89,7 @@ import { Calendar, ArrowRight, Mail, MapPin, Clock, Send, FileDown, ExternalLink
 import { useAudioManager } from './AudioManagerProvider';
 import Link from 'next/link';
 import { submitContactMessage, listContactRecipients } from '@/app/actions/contact';
+import { sanitizeString, sanitizeSingleLine, sanitizeEmail, validateEmail, validateRequired, validateMaxLength } from '@/lib/validation';
 
 function sectionWrapperClasses(style?: SectionStyle): string {
   if (!style) return '';
@@ -228,6 +229,28 @@ function ContactSection({ section }: { section: PageSection }) {
     setSubmitError(null);
     setSubmitSuccess(false);
 
+    const trimmedName = sanitizeSingleLine(name, 100);
+    const trimmedEmail = sanitizeEmail(email);
+    const trimmedSubject = sanitizeSingleLine(subject, 200);
+    const trimmedMessage = sanitizeString(message, 5000);
+
+    const nameErr = validateRequired(trimmedName, 'Name');
+    if (nameErr) { setSubmitError(nameErr); return; }
+
+    const emailErr = validateEmail(trimmedEmail);
+    if (emailErr) { setSubmitError(emailErr); return; }
+
+    const nameLenErr = validateMaxLength(trimmedName, 100, 'Name');
+    if (nameLenErr) { setSubmitError(nameLenErr); return; }
+
+    const msgErr = validateRequired(trimmedMessage, 'Message');
+    if (msgErr) { setSubmitError(msgErr); return; }
+
+    if (trimmedMessage.length < 10) {
+      setSubmitError('Please write a message of at least 10 characters.');
+      return;
+    }
+
     const parsed = parseInt(mathAnswer.trim(), 10);
     if (Number.isNaN(parsed) || parsed !== 20) {
       setSubmitError('Please answer the anti-spam question correctly.');
@@ -242,10 +265,10 @@ function ContactSection({ section }: { section: PageSection }) {
       setIsSubmitting(true);
       const selected = recipients.find((r) => r.id === recipientId);
       const result = await submitContactMessage({
-        senderName: name.trim(),
-        senderEmail: email.trim(),
-        subject: subject.trim() || null,
-        message: message.trim(),
+        senderName: trimmedName,
+        senderEmail: trimmedEmail,
+        subject: trimmedSubject || null,
+        message: trimmedMessage,
         recipientLabel: selected?.label ?? recipientId,
         recipientId,
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,

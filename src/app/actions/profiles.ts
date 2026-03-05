@@ -9,6 +9,7 @@ import { randomBytes } from 'crypto';
 import { requirePermission } from '@/lib/rbac';
 import { requestPasswordReset } from '@/app/actions/passwordReset';
 import type { UserRole } from '@/types';
+import { sanitizeString, sanitizeEmail, sanitizeSingleLine, validateEmail, validateRequired, validatePassword } from '@/lib/validation';
 
 export async function updateProfileRole(
   profileId: string,
@@ -82,7 +83,8 @@ export async function updateProfileContactSettings(
   }
 
   try {
-    const contactLabel = settings.isContactRecipient ? settings.contactLabel : null;
+    const rawLabel = settings.isContactRecipient ? settings.contactLabel : null;
+    const contactLabel = rawLabel ? sanitizeSingleLine(rawLabel, 80) || null : null;
     await db
       .update(profiles)
       .set({
@@ -110,9 +112,15 @@ export async function createProfile(
     return { error: 'You do not have permission to create users' };
   }
 
-  if (!username.trim()) return { error: 'Username is required' };
-  if (!email.trim()) return { error: 'Email is required' };
-  if (!password || password.length < 8) return { error: 'Password must be at least 8 characters' };
+  const cleanUsername = sanitizeString(username, 80);
+  const cleanEmail = sanitizeEmail(email);
+
+  const nameErr = validateRequired(cleanUsername, 'Username');
+  if (nameErr) return { error: nameErr };
+  const emailErr = validateEmail(cleanEmail);
+  if (emailErr) return { error: emailErr };
+  const pwErr = validatePassword(password);
+  if (pwErr) return { error: pwErr };
 
   const validRoles = ['ADMIN', 'EDITOR', 'MEMBER', 'GUEST'];
   if (!validRoles.includes(role)) return { error: 'Invalid role' };
@@ -121,15 +129,15 @@ export async function createProfile(
     const existing = await db
       .select({ id: profiles.id })
       .from(profiles)
-      .where(eq(profiles.email, email.trim()));
+      .where(eq(profiles.email, cleanEmail));
     if (existing.length > 0) return { error: 'A user with that email already exists' };
 
     const passwordHash = await hash(password, 12);
     const id = uuidv4();
     await db.insert(profiles).values({
       id,
-      username: username.trim(),
-      email: email.trim(),
+      username: cleanUsername,
+      email: cleanEmail,
       role,
       passwordHash,
       updatedAt: new Date().toISOString(),
@@ -137,7 +145,7 @@ export async function createProfile(
 
     return {
       error: null,
-      user: { id, username: username.trim(), role, email: email.trim() },
+      user: { id, username: cleanUsername, role, email: cleanEmail },
     };
   } catch (err) {
     console.error('createProfile failed:', err);

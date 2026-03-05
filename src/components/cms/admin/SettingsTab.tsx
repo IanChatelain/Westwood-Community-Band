@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { SiteSettings } from '@/types';
+import { validateUrl } from '@/lib/validation';
 
 interface SettingsTabProps {
   settings: SiteSettings;
@@ -11,6 +12,20 @@ interface SettingsTabProps {
 
 export default function SettingsTab({ settings, onUpdateSettings, onApply }: SettingsTabProps) {
   const [feedback, setFeedback] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  const validateBeforeApply = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!settings.bandName.trim()) errors.bandName = 'Band name is required.';
+    const fbErr = settings.facebookUrl ? validateUrl(settings.facebookUrl, 'Facebook URL') : null;
+    if (fbErr) errors.facebookUrl = fbErr;
+    const igErr = settings.instagramUrl ? validateUrl(settings.instagramUrl, 'Instagram URL') : null;
+    if (igErr) errors.instagramUrl = igErr;
+    const ytErr = settings.youtubeUrl ? validateUrl(settings.youtubeUrl, 'YouTube URL') : null;
+    if (ytErr) errors.youtubeUrl = ytErr;
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -24,14 +39,17 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
           <input
             className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-red-800 focus:border-red-800 text-slate-900 placeholder:text-slate-400"
             value={settings.bandName}
-            onChange={(e) => onUpdateSettings({ ...settings, bandName: e.target.value })}
+            maxLength={200}
+            onChange={(e) => { onUpdateSettings({ ...settings, bandName: e.target.value }); setValidationErrors(prev => ({ ...prev, bandName: '' })); }}
           />
+          {validationErrors.bandName && <p className="text-xs text-red-600 mt-1">{validationErrors.bandName}</p>}
         </div>
         <div className="space-y-4">
           <label className="block text-base font-bold text-slate-900">Footer Attribution</label>
           <textarea
             className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-red-800 focus:border-red-800 resize-none text-slate-900 placeholder:text-slate-400"
             rows={3}
+            maxLength={500}
             value={settings.footerText}
             onChange={(e) => onUpdateSettings({ ...settings, footerText: e.target.value })}
           />
@@ -48,6 +66,7 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
           <input
             className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-red-800 focus:border-red-800 text-slate-900 placeholder:text-slate-400"
             placeholder="Short tagline shown under the band name in the footer"
+            maxLength={200}
             value={settings.footerTagline ?? ''}
             onChange={(e) => onUpdateSettings({ ...settings, footerTagline: e.target.value })}
           />
@@ -57,6 +76,7 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
           <input
             className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-red-800 focus:border-red-800 text-slate-900 placeholder:text-slate-400"
             placeholder="e.g. Westwood Community Arts Center"
+            maxLength={300}
             value={settings.contactAddress ?? ''}
             onChange={(e) => onUpdateSettings({ ...settings, contactAddress: e.target.value })}
           />
@@ -66,6 +86,7 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
           <input
             className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-red-800 focus:border-red-800 text-slate-900 placeholder:text-slate-400"
             placeholder="e.g. (555) 123-4567"
+            maxLength={30}
             value={settings.contactPhone ?? ''}
             onChange={(e) => onUpdateSettings({ ...settings, contactPhone: e.target.value })}
           />
@@ -75,6 +96,7 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
           <input
             className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-red-800 focus:border-red-800 text-slate-900 placeholder:text-slate-400"
             placeholder="/contact"
+            maxLength={200}
             value={settings.contactPageSlug ?? ''}
             onChange={(e) => onUpdateSettings({ ...settings, contactPageSlug: e.target.value })}
           />
@@ -93,8 +115,10 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
             className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-red-800 focus:border-red-800 text-slate-900 placeholder:text-slate-400"
             placeholder="https://facebook.com/..."
             value={settings.facebookUrl ?? ''}
-            onChange={(e) => onUpdateSettings({ ...settings, facebookUrl: e.target.value })}
+            maxLength={2000}
+            onChange={(e) => { onUpdateSettings({ ...settings, facebookUrl: e.target.value }); setValidationErrors(prev => ({ ...prev, facebookUrl: '' })); }}
           />
+          {validationErrors.facebookUrl && <p className="text-xs text-red-600 mt-1">{validationErrors.facebookUrl}</p>}
         </div>
         <div className="space-y-4">
           <label className="block text-base font-bold text-slate-900">Instagram URL</label>
@@ -102,8 +126,10 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
             className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-red-800 focus:border-red-800 text-slate-900 placeholder:text-slate-400"
             placeholder="https://instagram.com/..."
             value={settings.instagramUrl ?? ''}
-            onChange={(e) => onUpdateSettings({ ...settings, instagramUrl: e.target.value })}
+            maxLength={2000}
+            onChange={(e) => { onUpdateSettings({ ...settings, instagramUrl: e.target.value }); setValidationErrors(prev => ({ ...prev, instagramUrl: '' })); }}
           />
+          {validationErrors.instagramUrl && <p className="text-xs text-red-600 mt-1">{validationErrors.instagramUrl}</p>}
         </div>
         <div className="space-y-4">
           <label className="block text-base font-bold text-slate-900">YouTube URL</label>
@@ -111,8 +137,10 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
             className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-red-800 focus:border-red-800 text-slate-900 placeholder:text-slate-400"
             placeholder="https://youtube.com/..."
             value={settings.youtubeUrl ?? ''}
-            onChange={(e) => onUpdateSettings({ ...settings, youtubeUrl: e.target.value })}
+            maxLength={2000}
+            onChange={(e) => { onUpdateSettings({ ...settings, youtubeUrl: e.target.value }); setValidationErrors(prev => ({ ...prev, youtubeUrl: '' })); }}
           />
+          {validationErrors.youtubeUrl && <p className="text-xs text-red-600 mt-1">{validationErrors.youtubeUrl}</p>}
         </div>
       </div>
 
@@ -122,6 +150,7 @@ export default function SettingsTab({ settings, onUpdateSettings, onApply }: Set
         )}
         <button
           onClick={() => {
+            if (!validateBeforeApply()) return;
             onApply();
             setFeedback(true);
             window.setTimeout(() => setFeedback(false), 3000);

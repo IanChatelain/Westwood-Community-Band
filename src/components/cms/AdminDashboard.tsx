@@ -13,6 +13,7 @@ import SettingsTab from '@/components/cms/admin/SettingsTab';
 import UsersTab from '@/components/cms/admin/UsersTab';
 import { changeOwnPassword } from '@/app/actions/auth';
 import { ShieldCheck, HelpCircle, X, LogIn, AlertTriangle, Save, Trash2, Lock } from 'lucide-react';
+import { validatePassword } from '@/lib/validation';
 
 function UnsavedChangesModal({
   onSave,
@@ -166,7 +167,9 @@ export default function AdminDashboard() {
   const handleSubmitPasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     setPwError(null);
-    if (newPw.length < 8) { setPwError('New password must be at least 8 characters.'); return; }
+    if (!currentPw.trim()) { setPwError('Current password is required.'); return; }
+    const pwErr = validatePassword(newPw);
+    if (pwErr) { setPwError(pwErr); return; }
     if (newPw !== confirmPw) { setPwError('Passwords do not match.'); return; }
     setPwSaving(true);
     const result = await changeOwnPassword({ currentPassword: currentPw, newPassword: newPw });

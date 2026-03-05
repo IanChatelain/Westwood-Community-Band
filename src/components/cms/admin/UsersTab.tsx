@@ -1,11 +1,82 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { User, UserRole, PERMISSION_KEYS, PERMISSION_LABELS, type PermissionKey, type RolePermissionMap } from '@/types';
 import { useAppContext } from '@/context/AppContext';
 import { updateProfileRole, listProfiles, createProfile, deleteProfile, updateProfileContactSettings, adminSendPasswordReset, adminSetTemporaryPassword } from '@/app/actions/profiles';
 import { listRolePermissions, setRolePermission, fetchCurrentUserPermissions } from '@/app/actions/rbac';
 import { X, UserPlus, Shield, Trash2, HelpCircle } from 'lucide-react';
+import { sanitizeString, sanitizeEmail, validateEmail, validatePassword, validateRequired } from '@/lib/validation';
+
+const CONTACT_FORM_TOOLTIP_ID = 'contact-form-help-tooltip';
+
+function ContactFormHelpTooltip() {
+  const [visible, setVisible] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  const show = () => {
+    if (hideTimer.current) { clearTimeout(hideTimer.current); hideTimer.current = null; }
+    setVisible(true);
+  };
+  const scheduleHide = () => {
+    hideTimer.current = setTimeout(() => setVisible(false), 150);
+  };
+
+  useEffect(() => {
+    if (!visible || !triggerRef.current) { setPos(null); return; }
+    const rect = triggerRef.current.getBoundingClientRect();
+    setPos({ top: rect.bottom + 6, left: Math.min(rect.left, window.innerWidth - 340) });
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setVisible(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [visible]);
+
+  const bubble = visible && pos ? createPortal(
+    <div
+      id={CONTACT_FORM_TOOLTIP_ID}
+      role="tooltip"
+      className="fixed z-50 w-72 bg-white rounded-xl shadow-xl border border-slate-200 p-4 space-y-2"
+      style={{ top: pos.top, left: pos.left }}
+      onMouseEnter={show}
+      onMouseLeave={scheduleHide}
+    >
+      <p className="text-[10px] font-bold text-slate-700 uppercase tracking-wide">Contact Form</p>
+      <p className="text-xs text-slate-600 leading-relaxed">
+        Enable the toggle to show this person as a selectable recipient on the public website contact form.
+      </p>
+      <p className="text-xs text-slate-600 leading-relaxed">
+        Add a <strong>label</strong> (e.g. President, Treasurer) so visitors know who they are contacting. If no label is set, their username is used.
+      </p>
+    </div>,
+    document.body,
+  ) : null;
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        className="p-0.5 rounded-full text-slate-400 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+        aria-label="Contact form help"
+        aria-describedby={visible ? CONTACT_FORM_TOOLTIP_ID : undefined}
+        onMouseEnter={show}
+        onMouseLeave={scheduleHide}
+        onFocus={show}
+        onBlur={scheduleHide}
+      >
+        <HelpCircle size={14} />
+      </button>
+      {bubble}
+    </>
+  );
+}
 
 export default function UsersTab() {
   const { state } = useAppContext();
@@ -83,13 +154,25 @@ export default function UsersTab() {
   };
 
   const handleAddUser = async () => {
-    setAddSaving(true);
     setAddError(null);
+
+    const username = sanitizeString(addForm.username, 80);
+    const email = sanitizeEmail(addForm.email);
+    const password = addForm.password;
+
+    const nameErr = validateRequired(username, 'Username');
+    if (nameErr) { setAddError(nameErr); return; }
+    const emailErr = validateEmail(email);
+    if (emailErr) { setAddError(emailErr); return; }
+    const pwErr = validatePassword(password);
+    if (pwErr) { setAddError(pwErr); return; }
+
+    setAddSaving(true);
     const { error: err, user } = await createProfile(
-      addForm.username,
-      addForm.email,
+      username,
+      email,
       addForm.role,
-      addForm.password,
+      password,
     );
     setAddSaving(false);
     if (err) { setAddError(err); return; }
@@ -193,9 +276,7 @@ export default function UsersTab() {
                 <th className="px-6 py-4" scope="col">
                   <span className="inline-flex items-center gap-1">
                     Contact Form
-                    <span title="Enable to show this person as a recipient on the website contact form. Add a label (e.g. President) to identify them in the contact dropdown.">
-                      <HelpCircle size={14} className="text-slate-400 cursor-help" aria-hidden="true" />
-                    </span>
+                    <ContactFormHelpTooltip />
                   </span>
                 </th>
                 <th className="px-6 py-4" scope="col">Actions</th>
@@ -261,13 +342,15 @@ export default function UsersTab() {
                               aria-label={`Contact form label for ${user.username}`}
                               title="Label shown in the contact form recipient dropdown, e.g. President or Treasurer"
                               onChange={(e) => {
-                                const val = e.target.value;
+                                const val = e.target.value.slice(0, 60);
                                 setUsers(prev => prev.map(u => u.id === user.id ? { ...u, contactLabel: val || undefined } : u));
                               }}
                               onBlur={async () => {
+                                const sanitized = sanitizeString(user.contactLabel ?? '', 60) || null;
+                                setUsers(prev => prev.map(u => u.id === user.id ? { ...u, contactLabel: sanitized ?? undefined } : u));
                                 const { error: err } = await updateProfileContactSettings(user.id, {
                                   isContactRecipient: user.isContactRecipient,
-                                  contactLabel: user.contactLabel ?? null,
+                                  contactLabel: sanitized,
                                 });
                                 if (err) setError(err);
                               }}

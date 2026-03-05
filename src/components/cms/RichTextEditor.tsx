@@ -17,9 +17,15 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
     editorRef.current.innerHTML = value || '';
   }, [value]);
 
+  const stripScripts = (html: string): string =>
+    html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/\son\w+\s*=\s*"[^"]*"/gi, '');
+
   const handleInput = useCallback(() => {
     if (!editorRef.current) return;
-    onChange(editorRef.current.innerHTML);
+    const raw = editorRef.current.innerHTML;
+    const clean = stripScripts(raw);
+    if (clean !== raw) editorRef.current.innerHTML = clean;
+    onChange(clean);
   }, [onChange]);
 
   const exec = useCallback((command: string, valueArg?: string) => {

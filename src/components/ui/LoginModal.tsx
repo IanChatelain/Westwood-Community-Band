@@ -7,6 +7,7 @@ import { useAppContext } from '@/context/AppContext';
 import { login } from '@/app/actions/auth';
 import type { User } from '@/types';
 import { Lock, ArrowRight, X } from 'lucide-react';
+import { sanitizeEmail, validateEmail } from '@/lib/validation';
 
 export default function LoginModal() {
   const router = useRouter();
@@ -22,9 +23,17 @@ export default function LoginModal() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    const trimmedEmail = sanitizeEmail(email);
+    const trimmedPassword = password.trim();
+
+    const emailErr = validateEmail(trimmedEmail);
+    if (emailErr) { setError(emailErr); return; }
+    if (!trimmedPassword) { setError('Password is required.'); return; }
+
     setLoading(true);
     try {
-      const result = await login(email, password);
+      const result = await login(trimmedEmail, trimmedPassword);
       if (!result || typeof result !== 'object') {
         throw new Error('Unexpected response from login');
       }
