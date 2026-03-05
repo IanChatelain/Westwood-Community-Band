@@ -240,8 +240,31 @@ export function AppProvider({ children, initialCmsState }: AppProviderProps) {
     });
   }, [mounted]);
 
-  const logout = useCallback(async () => {
-    await logoutAction();
+  // Cross-tab logout: listen for logout broadcast from other tabs via localStorage
+  useEffect(() => {
+    if (!mounted) return;
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'westwood_logout') {
+        clearAuthState();
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [mounted, clearAuthState]);
+
+  // Periodic session heartbeat: verify session is still valid while in admin mode
+  useEffect(() => {
+    if (!mounted || !isAdminMode) return;
+    const HEARTBEAT_MS = 2 * 60 * 1000; // 2 minutes
+    const id = setInterval(() => {
+      getCurrentUser().then((user) => {
+        if (!user) clearAuthState();
+      });
+    }, HEARTBEAT_MS);
+    return () => clearInterval(id);
+  }, [mounted, isAdminMode, clearAuthState]);
+
+  const clearAuthState = useCallback(() => {
     setState(prev => ({ ...prev, currentUser: null }));
     setPermissions(null);
     setIsAdminMode(false);
@@ -255,6 +278,14 @@ export function AppProvider({ children, initialCmsState }: AppProviderProps) {
       }
     });
   }, []);
+
+  const logout = useCallback(async () => {
+    await logoutAction();
+    clearAuthState();
+    try {
+      localStorage.setItem('westwood_logout', Date.now().toString());
+    } catch { /* localStorage unavailable (SSR / private browsing) */ }
+  }, [clearAuthState]);
 
   const updatePage = useCallback(async (updatedPage: PageConfig): Promise<boolean> => {
     setState(prev => {

@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { resetPassword } from '@/app/actions/passwordReset';
-import { Lock } from 'lucide-react';
+import { Lock, AlertTriangle } from 'lucide-react';
 
 export default function ResetPasswordConfirmPage() {
   const searchParams = useSearchParams();
@@ -16,11 +17,28 @@ export default function ResetPasswordConfirmPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const resetRequestHref = email
+    ? `/reset-password?email=${encodeURIComponent(email)}`
+    : '/reset-password';
+
   if (!email || !token) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-10 ring-1 ring-slate-900/5 text-center">
-          <p className="text-red-600 font-bold">Invalid or missing reset link.</p>
+          <div className="w-16 h-16 bg-gradient-to-br from-amber-100 to-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/10">
+            <AlertTriangle size={32} className="text-amber-600" />
+          </div>
+          <h1 className="text-xl font-black text-slate-900 mb-2">Reset link is incomplete</h1>
+          <p className="text-slate-600 text-sm mb-6">
+            This password reset link appears to be incomplete or was corrupted by
+            your email client. You can request a new one below.
+          </p>
+          <Link
+            href={resetRequestHref}
+            className="inline-block w-full bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white py-3 rounded-xl font-bold transition-all focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 shadow-lg shadow-slate-900/25"
+          >
+            Request a new reset link
+          </Link>
         </div>
       </div>
     );

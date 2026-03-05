@@ -74,7 +74,9 @@ export async function sendPasswordResetEmail(params: {
     '',
     'If you did not make this request, you can safely ignore this email.',
     '',
-    `To reset your password, open this link: ${resetUrl}`,
+    'To reset your password, open this link:',
+    '',
+    `<${resetUrl}>`,
     '',
     'This link will expire in 1 hour.',
   ].join('\n');
