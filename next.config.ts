@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withBotId } from "botid/next/config";
 
 function getR2RemotePatterns(): NextConfig["images"] extends { remotePatterns?: infer R } ? R : never {
   try {
@@ -27,4 +28,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withBotId(nextConfig);

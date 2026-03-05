@@ -104,7 +104,13 @@ Optional:
 - **Public:** Caching is handled by Next.js (Data Cache + optional Full Route Cache). With `revalidate = 60` and `revalidateTag('cms', 'max')` on CMS writes, you don’t need a separate cron or external cache; the next request after a save will revalidate in the background (stale-while-revalidate with `'max'`).
 - **Admin:** `force-dynamic` on `/admin` is set in the app; the deployment will run these requests on the server and skip caching for that segment.
 
-### 3.3 Optional: Edge vs Node
+### 3.3 Bot protection (Vercel BotID)
+
+- The public contact form is protected with **Vercel BotID** (invisible bot protection).
+- There are **no extra env vars** for BotID, but you must enable **Bot Protection** for this project in the Vercel dashboard (Hobby tier is enough).
+- Locally and in environments where BotID is unavailable, the `checkBotId` call in `submitContactMessage` falls back to allowing requests so development isn’t blocked.
+
+### 3.4 Optional: Edge vs Node
 
 - The app works with the default Node server. If you later move the public segment to Edge, ensure Turso and any server-only code used for public (e.g. `getCachedCmsState()` → `loadCmsState()`) are supported on Edge (e.g. Turso Edge SDK / HTTP client). Admin can stay on Node if needed.
 
@@ -117,6 +123,7 @@ Optional:
 - [ ] R2 public URL configured (public bucket **or** custom domain); `R2_PUBLIC_URL` set in deployment **and** at build time (same env in Vercel is fine).
 - [ ] `AUTH_SECRET` set in deployment (and locally if you test auth).
 - [ ] `RESEND_API_KEY` and `RESEND_FROM_EMAIL` set (for contact form email delivery).
+- [ ] **Bot protection:** BotID enabled for this project in Vercel (Settings → Security → Bot Protection).
 - [ ] After first deploy, open a public page and an R2 image URL: confirm the image loads via `/_next/image?url=...` (Next.js Image optimization).
 - [ ] Open `/admin`, make a change, save: confirm the public site shows the update within the next request or revalidate window.
 - [ ] (Optional) Simulate Turso down: confirm admin shows “We’re having trouble connecting” and Retry works when Turso is back.

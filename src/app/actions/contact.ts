@@ -2,6 +2,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { eq, and, isNotNull } from 'drizzle-orm';
+import { checkBotId } from 'botid/server';
 import { db } from '@/db';
 import { contactMessages, profiles } from '@/db/schema';
 import { sendContactEmail } from '@/lib/email';
@@ -43,6 +44,15 @@ export async function submitContactMessage(data: {
   recipientId: string;
   userAgent: string | null;
 }): Promise<{ error: string | null }> {
+  try {
+    const verification = await checkBotId();
+    if (verification.isBot && !verification.isVerifiedBot) {
+      return { error: 'Failed to send message. Please try again later.' };
+    }
+  } catch {
+    // BotID unavailable (e.g. local dev) — allow through
+  }
+
   const senderName = sanitizeSingleLine(data.senderName, 100);
   const senderEmail = sanitizeEmail(data.senderEmail);
   const subject = data.subject ? sanitizeSingleLine(data.subject, 200) : null;

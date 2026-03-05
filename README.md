@@ -19,6 +19,7 @@ A modern, self-hosted CMS and public website for the [Westwood Community Band](h
 | Database | [Turso](https://turso.tech/) (libSQL) via Drizzle ORM |
 | Media Storage | [Cloudflare R2](https://developers.cloudflare.com/r2/) (S3-compatible) |
 | Email | [Resend](https://resend.com/) |
+| Bot protection | [Vercel BotID](https://vercel.com/docs/botid) (invisible, for forms) |
 | Hosting | [Vercel](https://vercel.com/) |
 
 ## Getting Started
@@ -84,8 +85,9 @@ Copy the relevant example and fill in your values. Key variables:
 
 1. Push the repo to GitHub and import it in [Vercel](https://vercel.com).
 2. Add the required environment variables listed above (`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `R2_*`, `AUTH_SECRET`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`).
-3. **Important:** `R2_PUBLIC_URL` must be set at build time for Next.js image optimization to work.
-4. Deploy.
+3. In your Vercel project settings, enable **Bot Protection (BotID)** for this project (Hobby tier is sufficient). The contact form uses BotID as its primary anti-spam layer.
+4. **Important:** `R2_PUBLIC_URL` must be set at build time for Next.js image optimization to work.
+5. Deploy.
 
 ### Custom Domain
 

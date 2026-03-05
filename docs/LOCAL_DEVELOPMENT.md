@@ -45,6 +45,8 @@ npm run dev
 
 Public site: http://localhost:3000. Admin: http://localhost:3000/admin.
 
+> **Note:** The production contact form uses Vercel BotID for invisible bot protection. In local development, BotID is not active; the `checkBotId` call simply falls back to allowing requests so you can test the form normally.
+
 ---
 
 ## Env vars (`.env.local`)

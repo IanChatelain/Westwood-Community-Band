@@ -207,7 +207,6 @@ function ContactSection({ section }: { section: PageSection }) {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [recipientId, setRecipientId] = useState(fallbackRecipients[0]?.id ?? '');
-  const [mathAnswer, setMathAnswer] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -251,11 +250,6 @@ function ContactSection({ section }: { section: PageSection }) {
       return;
     }
 
-    const parsed = parseInt(mathAnswer.trim(), 10);
-    if (Number.isNaN(parsed) || parsed !== 20) {
-      setSubmitError('Please answer the anti-spam question correctly.');
-      return;
-    }
     if (!recipientId) {
       setSubmitError('Please select who you would like to contact.');
       return;
@@ -283,7 +277,6 @@ function ContactSection({ section }: { section: PageSection }) {
       setEmail('');
       setSubject('');
       setMessage('');
-      setMathAnswer('');
       setSubmitSuccess(true);
     } catch (error) {
       console.error('Error submitting contact form', error);
@@ -370,19 +363,6 @@ function ContactSection({ section }: { section: PageSection }) {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">
-            What is four times five? <span className="text-red-800">*</span>
-          </label>
-          <input
-            type="text"
-            required
-            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-800 focus:border-red-800 outline-none placeholder:text-slate-400 text-slate-900 transition-colors"
-            placeholder="Answer"
-            value={mathAnswer}
-            onChange={(e) => setMathAnswer(e.target.value)}
           />
         </div>
         {submitError && (

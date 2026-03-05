@@ -30,6 +30,7 @@
     "@tailwindcss/typography": "^0.5.19",
     "@vercel/analytics": "^1.6.1",
     "bcryptjs": "^3.0.3",
+    "botid": "^1.5.11",
     "dotenv": "^17.3.1",
     "drizzle-orm": "^0.45.1",
     "jose": "^6.1.3",
