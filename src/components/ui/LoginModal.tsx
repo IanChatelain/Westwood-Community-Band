@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
 import { login } from '@/app/actions/auth';
 import type { User } from '@/types';
@@ -9,6 +10,7 @@ import { Lock, ArrowRight, X } from 'lucide-react';
 
 export default function LoginModal() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isLoginModalOpen, setIsLoginModalOpen, setState } = useAppContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -64,6 +66,11 @@ export default function LoginModal() {
           </div>
           <h3 className="text-3xl font-black text-slate-900">Admin Portal</h3>
           <p className="text-slate-600 mt-2">Sign in with your account.</p>
+          {searchParams?.get('reset') === '1' && (
+            <p className="mt-3 text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">
+              Your password has been updated. Sign in with your new password.
+            </p>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -105,9 +112,14 @@ export default function LoginModal() {
             <ArrowRight className="group-hover:translate-x-1 transition-transform" size={16} />
           </button>
         </form>
-        <p className="text-center text-xs text-slate-500 mt-6">
-          Authorized access only.
-        </p>
+        <div className="text-center text-xs text-slate-500 mt-6 space-y-1">
+          <p>Authorized access only.</p>
+          <p>
+            <Link href="/reset-password" className="text-red-700 hover:underline" onClick={() => setIsLoginModalOpen(false)}>
+              Forgot your password? Reset it here
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

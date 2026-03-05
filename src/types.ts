@@ -65,6 +65,7 @@ export interface User {
   email: string;
   isContactRecipient: boolean;
   contactLabel?: string;
+  mustChangePassword?: boolean;
 }
 
 export interface NavLink {

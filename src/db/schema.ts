@@ -43,6 +43,9 @@ export const profiles = sqliteTable('profiles', {
   passwordHash: text('password_hash'),
   isContactRecipient: integer('is_contact_recipient', { mode: 'boolean' }).notNull().default(false),
   contactLabel: text('contact_label'),
+  passwordResetTokenHash: text('password_reset_token_hash'),
+  passwordResetTokenExpiresAt: text('password_reset_token_expires_at'),
+  mustChangePassword: integer('must_change_password', { mode: 'boolean' }).notNull().default(false),
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
 });
 

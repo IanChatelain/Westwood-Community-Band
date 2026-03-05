@@ -1,6 +1,6 @@
 'use server';
 
-import { compare } from 'bcryptjs';
+import { compare, hash } from 'bcryptjs';
 import { db } from '@/db';
 import { profiles } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -9,13 +9,14 @@ import {
   setSessionCookie,
   clearSessionCookie,
   getSession,
+  requireAuth,
   isAuthConfigured,
 } from '@/lib/auth';
 
 export async function login(
   email: string,
   password: string,
-): Promise<{ error: string | null; user?: { id: string; username: string; role: string; email: string; isContactRecipient: boolean; contactLabel?: string } }> {
+): Promise<{ error: string | null; user?: { id: string; username: string; role: string; email: string; isContactRecipient: boolean; contactLabel?: string; mustChangePassword: boolean } }> {
   if (!isAuthConfigured()) {
     console.error('Login failed: AUTH_SECRET environment variable is not set');
     return { error: 'Auth is not configured. Please contact the site administrator.' };
@@ -57,6 +58,7 @@ export async function login(
         email: profile.email ?? '',
         isContactRecipient: profile.isContactRecipient,
         contactLabel: profile.contactLabel ?? undefined,
+        mustChangePassword: profile.mustChangePassword ?? false,
       },
     };
   } catch (err) {
@@ -77,6 +79,7 @@ export async function getCurrentUser(): Promise<{
   email: string;
   isContactRecipient: boolean;
   contactLabel?: string;
+  mustChangePassword: boolean;
 } | null> {
   const session = await getSession();
   if (!session) return null;
@@ -89,6 +92,7 @@ export async function getCurrentUser(): Promise<{
       email: profiles.email,
       isContactRecipient: profiles.isContactRecipient,
       contactLabel: profiles.contactLabel,
+      mustChangePassword: profiles.mustChangePassword,
     })
     .from(profiles)
     .where(eq(profiles.id, session.sub));
@@ -101,5 +105,49 @@ export async function getCurrentUser(): Promise<{
     email: rows[0].email ?? '',
     isContactRecipient: rows[0].isContactRecipient,
     contactLabel: rows[0].contactLabel ?? undefined,
+    mustChangePassword: rows[0].mustChangePassword ?? false,
   };
+}
+
+export async function changeOwnPassword(params: {
+  currentPassword: string;
+  newPassword: string;
+}): Promise<{ error: string | null }> {
+  const { currentPassword, newPassword } = params;
+  if (!newPassword || newPassword.length < 8) {
+    return { error: 'New password must be at least 8 characters.' };
+  }
+
+  try {
+    const session = await requireAuth();
+    const rows = await db
+      .select({ id: profiles.id, passwordHash: profiles.passwordHash })
+      .from(profiles)
+      .where(eq(profiles.id, session.sub));
+
+    if (rows.length === 0) return { error: 'User not found.' };
+
+    const profile = rows[0];
+    if (profile.passwordHash) {
+      const valid = await compare(currentPassword, profile.passwordHash);
+      if (!valid) return { error: 'Current password is incorrect.' };
+    }
+
+    const newHash = await hash(newPassword, 12);
+    await db
+      .update(profiles)
+      .set({
+        passwordHash: newHash,
+        mustChangePassword: false,
+        passwordResetTokenHash: null,
+        passwordResetTokenExpiresAt: null,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(profiles.id, session.sub));
+
+    return { error: null };
+  } catch (err) {
+    console.error('changeOwnPassword failed:', err);
+    return { error: 'An unexpected error occurred.' };
+  }
 }

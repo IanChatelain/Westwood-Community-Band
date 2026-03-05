@@ -54,7 +54,7 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-function profileToUser(profile: { id: string; username: string; role: string; email: string; isContactRecipient?: boolean; contactLabel?: string | null }): User {
+function profileToUser(profile: { id: string; username: string; role: string; email: string; isContactRecipient?: boolean; contactLabel?: string | null; mustChangePassword?: boolean }): User {
   return {
     id: profile.id,
     username: profile.username,
@@ -62,6 +62,7 @@ function profileToUser(profile: { id: string; username: string; role: string; em
     email: profile.email,
     isContactRecipient: profile.isContactRecipient ?? false,
     contactLabel: profile.contactLabel ?? undefined,
+    mustChangePassword: profile.mustChangePassword ?? false,
   };
 }
 

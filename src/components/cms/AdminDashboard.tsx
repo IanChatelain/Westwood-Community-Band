@@ -11,7 +11,8 @@ import PageNavBar from '@/components/cms/admin/PageNavBar';
 import ArchiveTab from '@/components/cms/admin/ArchiveTab';
 import SettingsTab from '@/components/cms/admin/SettingsTab';
 import UsersTab from '@/components/cms/admin/UsersTab';
-import { ShieldCheck, HelpCircle, X, LogIn, AlertTriangle, Save, Trash2 } from 'lucide-react';
+import { changeOwnPassword } from '@/app/actions/auth';
+import { ShieldCheck, HelpCircle, X, LogIn, AlertTriangle, Save, Trash2, Lock } from 'lucide-react';
 
 function UnsavedChangesModal({
   onSave,
@@ -78,6 +79,13 @@ export default function AdminDashboard() {
   const { state, setState, logout, updatePage, addPage, removePage, persist, adminTab, setAdminTab, setIsLoginModalOpen, refreshCmsState, cmsLoadError, can } = useAppContext();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+
+  // Forced password change state
+  const [currentPw, setCurrentPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwSaving, setPwSaving] = useState(false);
 
   const editorDirtyRef = useRef(false);
   const editorSaveFnRef = useRef<(() => Promise<void>) | null>(null);
@@ -153,6 +161,26 @@ export default function AdminDashboard() {
     router.push('/');
   };
 
+  const mustChangePassword = state.currentUser?.mustChangePassword === true;
+
+  const handleSubmitPasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwError(null);
+    if (newPw.length < 8) { setPwError('New password must be at least 8 characters.'); return; }
+    if (newPw !== confirmPw) { setPwError('Passwords do not match.'); return; }
+    setPwSaving(true);
+    const result = await changeOwnPassword({ currentPassword: currentPw, newPassword: newPw });
+    setPwSaving(false);
+    if (result.error) { setPwError(result.error); return; }
+    setState((prev) => ({
+      ...prev,
+      currentUser: prev.currentUser ? { ...prev.currentUser, mustChangePassword: false } : prev.currentUser,
+    }));
+    setCurrentPw('');
+    setNewPw('');
+    setConfirmPw('');
+  };
+
   const handleArchivePage = async (pageId: string) => {
     const page = state.pages.find((p) => p.id === pageId);
     if (!page || page.slug === '/') return;
@@ -220,6 +248,40 @@ export default function AdminDashboard() {
               Return to site
             </button>
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (mustChangePassword) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-100">
+        <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-10 ring-1 ring-slate-900/5">
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-red-100 to-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-red-500/10">
+              <Lock size={32} className="text-red-600" />
+            </div>
+            <h1 className="text-2xl font-black text-slate-900">Password change required</h1>
+            <p className="text-slate-600 mt-2">Your account has been flagged to set a new password before continuing.</p>
+          </div>
+          <form onSubmit={handleSubmitPasswordChange} className="space-y-4">
+            <div>
+              <label htmlFor="cp-current" className="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">Current / Temporary Password</label>
+              <input id="cp-current" type="password" value={currentPw} onChange={(e) => setCurrentPw(e.target.value)} required autoComplete="current-password" className="w-full px-4 py-3 border border-slate-300 rounded-xl text-slate-900 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none" />
+            </div>
+            <div>
+              <label htmlFor="cp-new" className="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">New Password</label>
+              <input id="cp-new" type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} required autoComplete="new-password" className="w-full px-4 py-3 border border-slate-300 rounded-xl text-slate-900 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none" placeholder="Min. 8 characters" />
+            </div>
+            <div>
+              <label htmlFor="cp-confirm" className="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">Confirm New Password</label>
+              <input id="cp-confirm" type="password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} required autoComplete="new-password" className="w-full px-4 py-3 border border-slate-300 rounded-xl text-slate-900 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none" />
+            </div>
+            {pwError && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg" role="alert">{pwError}</p>}
+            <button type="submit" disabled={pwSaving} className="w-full bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 disabled:opacity-70 text-white py-4 rounded-xl font-bold transition-all focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 shadow-lg shadow-slate-900/25">
+              {pwSaving ? 'Saving…' : 'Set new password'}
+            </button>
+          </form>
         </div>
       </div>
     );

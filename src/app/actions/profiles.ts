@@ -5,7 +5,9 @@ import { profiles } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { hash } from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
+import { randomBytes } from 'crypto';
 import { requirePermission } from '@/lib/rbac';
+import { requestPasswordReset } from '@/app/actions/passwordReset';
 import type { UserRole } from '@/types';
 
 export async function updateProfileRole(
@@ -158,5 +160,76 @@ export async function deleteProfile(
   } catch (err) {
     console.error('deleteProfile failed:', err);
     return { error: 'Failed to delete user' };
+  }
+}
+
+function generateTemporaryPassword(length = 14): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
+  const bytes = randomBytes(length);
+  return Array.from(bytes, (b) => chars[b % chars.length]).join('');
+}
+
+export async function adminSendPasswordReset(
+  profileId: string,
+): Promise<{ error: string | null }> {
+  try {
+    await requirePermission('manage_users');
+  } catch {
+    return { error: 'You do not have permission to manage users' };
+  }
+
+  try {
+    const rows = await db
+      .select({ email: profiles.email })
+      .from(profiles)
+      .where(eq(profiles.id, profileId));
+
+    if (rows.length === 0) return { error: 'User not found' };
+
+    const email = rows[0].email;
+    if (!email) return { error: 'User has no email address' };
+
+    return requestPasswordReset(email);
+  } catch (err) {
+    console.error('adminSendPasswordReset failed:', err);
+    return { error: 'Failed to send reset email' };
+  }
+}
+
+export async function adminSetTemporaryPassword(
+  profileId: string,
+): Promise<{ error: string | null; tempPassword?: string }> {
+  try {
+    await requirePermission('manage_users');
+  } catch {
+    return { error: 'You do not have permission to manage users' };
+  }
+
+  try {
+    const rows = await db
+      .select({ id: profiles.id })
+      .from(profiles)
+      .where(eq(profiles.id, profileId));
+
+    if (rows.length === 0) return { error: 'User not found' };
+
+    const tempPassword = generateTemporaryPassword();
+    const passwordHash = await hash(tempPassword, 12);
+
+    await db
+      .update(profiles)
+      .set({
+        passwordHash,
+        mustChangePassword: true,
+        passwordResetTokenHash: null,
+        passwordResetTokenExpiresAt: null,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(profiles.id, profileId));
+
+    return { error: null, tempPassword };
+  } catch (err) {
+    console.error('adminSetTemporaryPassword failed:', err);
+    return { error: 'Failed to set temporary password' };
   }
 }

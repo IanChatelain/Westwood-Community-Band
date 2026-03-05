@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { User, UserRole, PERMISSION_KEYS, PERMISSION_LABELS, type PermissionKey, type RolePermissionMap } from '@/types';
 import { useAppContext } from '@/context/AppContext';
-import { updateProfileRole, listProfiles, createProfile, deleteProfile, updateProfileContactSettings } from '@/app/actions/profiles';
+import { updateProfileRole, listProfiles, createProfile, deleteProfile, updateProfileContactSettings, adminSendPasswordReset, adminSetTemporaryPassword } from '@/app/actions/profiles';
 import { listRolePermissions, setRolePermission, fetchCurrentUserPermissions } from '@/app/actions/rbac';
 import { X, UserPlus, Shield, Trash2, HelpCircle } from 'lucide-react';
 
@@ -33,6 +33,12 @@ export default function UsersTab() {
 
   // Current user's permissions
   const [myPerms, setMyPerms] = useState<RolePermissionMap | null>(null);
+
+  // Password reset actions
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [sendingResetForId, setSendingResetForId] = useState<string | null>(null);
+  const [generatingTempForId, setGeneratingTempForId] = useState<string | null>(null);
+  const [tempPasswordInfo, setTempPasswordInfo] = useState<{ username: string; password: string } | null>(null);
 
   const currentUser = state.currentUser;
   const canManageUsers = myPerms?.manage_users ?? currentUser?.role === UserRole.ADMIN;
@@ -128,6 +134,26 @@ export default function UsersTab() {
       setError(err);
     }
     setPermsSaving(null);
+  };
+
+  const handleSendResetLink = async (user: User) => {
+    setSendingResetForId(user.id);
+    setActionMessage(null);
+    const { error: err } = await adminSendPasswordReset(user.id);
+    setSendingResetForId(null);
+    if (err) { setError(err); return; }
+    setActionMessage(`Password reset link sent to ${user.email}`);
+  };
+
+  const handleSetTemporaryPassword = async (user: User) => {
+    setGeneratingTempForId(user.id);
+    setActionMessage(null);
+    const result = await adminSetTemporaryPassword(user.id);
+    setGeneratingTempForId(null);
+    if (result.error) { setError(result.error); return; }
+    if (result.tempPassword) {
+      setTempPasswordInfo({ username: user.username, password: result.tempPassword });
+    }
   };
 
   if (loading) {
@@ -255,22 +281,42 @@ export default function UsersTab() {
                   </td>
                   <td className="px-6 py-4">
                     {canManageUsers && user.id !== currentUser?.id && (
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => { setEditUser(user); setNewRole(user.role); setError(null); }}
-                          className="text-red-600 hover:underline text-sm font-bold"
-                        >
-                          Edit Role
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeleteTarget(user)}
-                          className="text-slate-400 hover:text-red-600 transition-colors"
-                          title="Delete user"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => { setEditUser(user); setNewRole(user.role); setError(null); }}
+                            className="text-red-600 hover:underline text-xs font-bold"
+                          >
+                            Edit role
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTarget(user)}
+                            className="text-slate-400 hover:text-red-600 transition-colors"
+                            title="Delete user"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-2 text-[11px] text-slate-700">
+                          <button
+                            type="button"
+                            onClick={() => handleSendResetLink(user)}
+                            disabled={sendingResetForId === user.id}
+                            className="hover:underline disabled:opacity-60"
+                          >
+                            {sendingResetForId === user.id ? 'Sending…' : 'Send reset link'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSetTemporaryPassword(user)}
+                            disabled={generatingTempForId === user.id}
+                            className="hover:underline disabled:opacity-60"
+                          >
+                            {generatingTempForId === user.id ? 'Creating…' : 'Set temp password'}
+                          </button>
+                        </div>
                       </div>
                     )}
                   </td>
@@ -449,6 +495,45 @@ export default function UsersTab() {
                   {addSaving ? 'Creating…' : 'Create User'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Action Message Banner ── */}
+      {actionMessage && (
+        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg text-sm flex justify-between items-center">
+          <span>{actionMessage}</span>
+          <button type="button" onClick={() => setActionMessage(null)} className="text-green-600 hover:text-green-800">
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* ── Temporary Password Modal ── */}
+      {tempPasswordInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60" aria-modal="true" role="dialog">
+          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-slate-900">Temporary Password</h3>
+              <button type="button" onClick={() => setTempPasswordInfo(null)} className="p-2 text-slate-500 hover:text-slate-700 rounded-lg" aria-label="Close">
+                <X size={20} />
+              </button>
+            </div>
+            <p className="text-sm text-slate-600 mb-3">
+              A temporary password has been set for <strong>{tempPasswordInfo.username}</strong>.
+              They will be required to change it on next login.
+            </p>
+            <div className="bg-slate-100 rounded-lg px-4 py-3 font-mono text-sm text-slate-900 select-all break-all">
+              {tempPasswordInfo.password}
+            </div>
+            <p className="text-xs text-slate-500 mt-3">
+              Copy this password now and share it securely. It will not be shown again.
+            </p>
+            <div className="flex justify-end mt-4">
+              <button type="button" onClick={() => setTempPasswordInfo(null)} className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800">
+                Done
+              </button>
             </div>
           </div>
         </div>
