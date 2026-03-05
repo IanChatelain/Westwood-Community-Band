@@ -12,7 +12,8 @@ import {
   ExternalLink,
   PanelLeftClose,
   PanelLeft,
-  Archive
+  Archive,
+  KeyRound,
 } from 'lucide-react';
 import { User, type PermissionKey } from '@/types';
 
@@ -119,6 +120,18 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
             </div>
           )}
         </div>
+        <button
+          onClick={() => setTab('my-account')}
+          title={!isExpanded ? 'My Account' : undefined}
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium mb-2 transition-all focus:outline-none focus:ring-2 focus:ring-red-800 focus:ring-offset-2 focus:ring-offset-slate-900 ${
+            currentTab === 'my-account'
+              ? 'bg-slate-800 text-white'
+              : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+          } ${!isExpanded ? 'justify-center px-2' : ''}`}
+        >
+          <KeyRound size={18} />
+          {isExpanded && 'My Account'}
+        </button>
         <button
           onClick={onLogout}
           title={!isExpanded ? 'Sign Out' : undefined}

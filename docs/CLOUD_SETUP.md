@@ -87,6 +87,7 @@ Set these in the deployment project (e.g. Vercel → Settings → Environment Va
 | `R2_BUCKET_NAME` | Yes (for uploads) | Runtime | e.g. `cms-uploads`. |
 | `R2_PUBLIC_URL` | Yes (for images) | **Build** (and runtime) | Public base URL for R2 (used for `remotePatterns` at build and for resolving image URLs at runtime). |
 | `AUTH_SECRET` | Yes | Runtime | Secret for JWT signing (auth). |
+| `APP_BASE_URL` | Yes (for auth emails) | Build + Runtime | Public-facing site URL (e.g. `https://westwoodcommunityband.org`) used when generating password reset and other auth-related links. Do **not** rely on `VERCEL_URL` in production. |
 | `RESEND_API_KEY` | Yes (for contact form) | Runtime | Resend API key for sending contact emails. |
 | `RESEND_FROM_EMAIL` | Yes (for contact form) | Runtime | Sender address, e.g. `Westwood Community Band <no-reply@yourdomain.com>`. |
 

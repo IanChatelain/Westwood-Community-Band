@@ -11,11 +11,25 @@ import { sanitizeEmail, validateEmail, validatePassword } from '@/lib/validation
 const TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
 
 function getBaseUrl(): string {
-  return (
-    process.env.APP_BASE_URL ??
-    process.env.NEXT_PUBLIC_APP_BASE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
-  );
+  const explicit =
+    process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_BASE_URL;
+
+  if (explicit) return explicit;
+
+  if (process.env.VERCEL_URL) {
+    console.warn(
+      '[passwordReset] APP_BASE_URL is not set; falling back to VERCEL_URL. Password reset links will use the Vercel deployment URL instead of your public domain.',
+    );
+    return `https://${process.env.VERCEL_URL}`;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    console.warn(
+      '[passwordReset] APP_BASE_URL and VERCEL_URL are not set; falling back to http://localhost:3000 for password reset links.',
+    );
+  }
+
+  return 'http://localhost:3000';
 }
 
 function generateResetToken(): string {

@@ -11,6 +11,7 @@ import PageNavBar from '@/components/cms/admin/PageNavBar';
 import ArchiveTab from '@/components/cms/admin/ArchiveTab';
 import SettingsTab from '@/components/cms/admin/SettingsTab';
 import UsersTab from '@/components/cms/admin/UsersTab';
+import MyAccountTab from '@/components/cms/admin/MyAccountTab';
 import { changeOwnPassword } from '@/app/actions/auth';
 import { ShieldCheck, HelpCircle, X, LogIn, AlertTriangle, Save, Trash2, Lock } from 'lucide-react';
 import { validatePassword } from '@/lib/validation';
@@ -285,6 +286,19 @@ export default function AdminDashboard() {
               {pwSaving ? 'Saving…' : 'Set new password'}
             </button>
           </form>
+          <p className="mt-6 text-xs text-slate-500 text-center">
+            Prefer to sign in with a different account?{' '}
+            <button
+              type="button"
+              onClick={async () => {
+                await logout();
+                router.push('/');
+              }}
+              className="font-semibold text-red-700 hover:text-red-900 hover:underline"
+            >
+              Sign out
+            </button>
+          </p>
         </div>
       </div>
     );
@@ -432,6 +446,10 @@ export default function AdminDashboard() {
         )}
 
         {adminTab === 'users' && <UsersTab />}
+
+        {adminTab === 'my-account' && state.currentUser && (
+          <MyAccountTab user={state.currentUser} />
+        )}
       </main>
 
       {pendingTab && pendingTab !== '__logout__' && (
