@@ -1385,7 +1385,7 @@ function PerformancesEditor({
 }) {
   const addItem = () => {
     const id = Math.random().toString(36).substring(2, 11);
-    onChange([...items, { id, date: '', title: 'New Performance', venue: '', time: '', description: '' }]);
+    onChange([...items, { id, date: '', title: 'New Performance', venue: '', time: '', description: '', address: '', program: '', ticketUrl: '', ticketInfo: '' }]);
   };
   const updateItem = (idx: number, updates: Partial<PerformanceItem>) => {
     onChange(items.map((it, i) => i === idx ? { ...it, ...updates } : it));
@@ -1423,8 +1423,14 @@ function PerformancesEditor({
                 <input type="text" className={inputClass} value={item.date} onChange={(e) => updateItem(idx, { date: e.target.value })} placeholder="Date (e.g. March 15, 2025)" />
                 <input type="text" className={inputClass} value={item.time ?? ''} onChange={(e) => updateItem(idx, { time: e.target.value })} placeholder="Time (e.g. 7:00 PM)" />
               </div>
-              <input type="text" className={inputClass} value={item.venue ?? ''} onChange={(e) => updateItem(idx, { venue: e.target.value })} placeholder="Venue" />
+              <input type="text" className={inputClass} value={item.venue ?? ''} onChange={(e) => updateItem(idx, { venue: e.target.value })} placeholder="Venue name" />
+              <input type="text" className={inputClass} value={item.address ?? ''} onChange={(e) => updateItem(idx, { address: e.target.value })} placeholder="Address (for maps link, optional)" />
               <input type="text" className={inputClass} value={item.description ?? ''} onChange={(e) => updateItem(idx, { description: e.target.value })} placeholder="Description (optional)" />
+              <textarea className={inputClass} rows={2} value={item.program ?? ''} onChange={(e) => updateItem(idx, { program: e.target.value })} placeholder="Program / pieces (one per line, optional)" />
+              <div className="flex gap-2">
+                <input type="text" className={inputClass} value={item.ticketUrl ?? ''} onChange={(e) => updateItem(idx, { ticketUrl: e.target.value })} placeholder="Ticket / RSVP URL (optional)" />
+                <input type="text" className={inputClass} value={item.ticketInfo ?? ''} onChange={(e) => updateItem(idx, { ticketInfo: e.target.value })} placeholder="Ticket info text (optional)" />
+              </div>
             </div>
             <div className="flex flex-col gap-0.5 flex-shrink-0">
               {targetSections && targetSections.length > 0 && onMoveToSection && (

@@ -85,7 +85,8 @@ export function blockWrapperClassesAndStyle(s?: BlockWrapperStyle): { className:
   else if (s.shadow === 'none') classes.push('shadow-none');
   return { className: classes.join(' ').trim(), style };
 }
-import { Calendar, ArrowRight, Mail, MapPin, Clock, Send, FileDown, ExternalLink, Music, Image as ImageIcon, Video, Play, Pause, Download } from 'lucide-react';
+import { Calendar, ArrowRight, Mail, MapPin, Clock, Send, FileDown, ExternalLink, Music, Image as ImageIcon, Video, Play, Pause, Download, X, Ticket } from 'lucide-react';
+import { splitPerformances, getMapsUrl } from '@/lib/performances';
 import { useAudioManager } from './AudioManagerProvider';
 import Link from 'next/link';
 import { submitContactMessage, listContactRecipients } from '@/app/actions/contact';
@@ -1080,6 +1081,248 @@ function GallerySection({ section, pageSlug }: { section: PageSection; pageSlug:
   );
 }
 
+function PerformanceCard({ perf, isPast, onClick }: { perf: PerformanceItem; isPast: boolean; onClick: () => void }) {
+  const mapsUrl = getMapsUrl(perf);
+  const venueDisplay = perf.venue || perf.address;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-xl border p-5 text-left transition-all w-full ${
+        isPast
+          ? 'border-slate-200 bg-slate-100/60 hover:shadow hover:border-slate-300 opacity-60 hover:opacity-80'
+          : 'border-slate-200 bg-slate-50 hover:shadow-md hover:border-slate-300'
+      }`}
+    >
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <span
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+            isPast ? 'bg-slate-400 text-white' : 'bg-red-800 text-white'
+          }`}
+        >
+          <Calendar size={12} />
+          {perf.date}
+        </span>
+        {perf.time && (
+          <span
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+              isPast ? 'bg-slate-200 text-slate-500' : 'bg-slate-200 text-slate-700'
+            }`}
+          >
+            <Clock size={11} />
+            {perf.time}
+          </span>
+        )}
+        {isPast && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-200 text-slate-500">
+            Past
+          </span>
+        )}
+      </div>
+      <h4 className={`text-lg font-bold mb-1 ${isPast ? 'text-slate-600' : 'text-slate-900'}`}>
+        {perf.title}
+      </h4>
+      {venueDisplay && (
+        <p className={`text-sm flex items-center gap-1.5 mb-2 ${isPast ? 'text-slate-400' : 'text-slate-500'}`}>
+          <MapPin size={13} className="flex-shrink-0" />
+          <span className={mapsUrl ? 'underline decoration-dotted underline-offset-2' : ''}>
+            {venueDisplay}
+          </span>
+        </p>
+      )}
+      {perf.description && (
+        <p className={`text-sm leading-relaxed line-clamp-2 ${isPast ? 'text-slate-400' : 'text-slate-600'}`}>
+          {perf.description}
+        </p>
+      )}
+    </button>
+  );
+}
+
+function PerformanceDetailModal({ perf, onClose }: { perf: PerformanceItem; onClose: () => void }) {
+  const mapsUrl = getMapsUrl(perf);
+  const venueDisplay = perf.venue || perf.address;
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKey);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handleKey);
+      document.body.style.overflow = '';
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={perf.title}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-300"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between p-6 pb-0">
+          <h3 className="text-xl font-bold text-slate-900 pr-4">{perf.title}</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors flex-shrink-0"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-red-800 text-white">
+              <Calendar size={12} />
+              {perf.date}
+            </span>
+            {perf.time && (
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-200 text-slate-700">
+                <Clock size={12} />
+                {perf.time}
+              </span>
+            )}
+          </div>
+
+          {venueDisplay && (
+            <div className="flex items-start gap-2 text-sm text-slate-700">
+              <MapPin size={15} className="flex-shrink-0 mt-0.5 text-slate-500" />
+              <div>
+                <span className="font-medium">{venueDisplay}</span>
+                {perf.address && perf.venue && (
+                  <span className="block text-slate-500 mt-0.5">{perf.address}</span>
+                )}
+                {mapsUrl && (
+                  <a
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-red-800 hover:text-red-900 hover:underline mt-1"
+                  >
+                    <ExternalLink size={11} />
+                    Open in Maps
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+
+          {perf.description && (
+            <p className="text-sm text-slate-600 leading-relaxed">{perf.description}</p>
+          )}
+
+          {perf.program && (
+            <div>
+              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Program</h4>
+              <div className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
+                {perf.program}
+              </div>
+            </div>
+          )}
+
+          {(perf.ticketUrl || perf.ticketInfo) && (
+            <div className="pt-2 border-t border-slate-200">
+              {perf.ticketInfo && (
+                <p className="text-sm text-slate-600 mb-2">{perf.ticketInfo}</p>
+              )}
+              {perf.ticketUrl && (
+                <a
+                  href={perf.ticketUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold bg-red-800 text-white hover:bg-red-900 transition-colors shadow-sm"
+                >
+                  <Ticket size={15} />
+                  Tickets / RSVP
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PerformancesSection({ section }: { section: PageSection }) {
+  const [selectedPerf, setSelectedPerf] = useState<PerformanceItem | null>(null);
+  const allItems = section.performanceItems ?? [];
+  const { upcoming, past } = splitPerformances(allItems);
+  const hasAny = allItems.length > 0;
+
+  return (
+    <div
+      className="bg-white p-8 md:p-12 rounded-2xl shadow-sm ring-1 ring-slate-900/5"
+      style={section.minHeight ? { minHeight: section.minHeight } : undefined}
+    >
+      <h3 className="text-2xl font-bold text-slate-900 mb-8 border-l-4 border-red-800 pl-6">
+        {section.title}
+      </h3>
+
+      {!hasAny && (
+        <div className="text-center py-12 text-slate-400">
+          <Music className="mx-auto mb-3 opacity-50" size={36} />
+          <p className="text-sm">No performances scheduled yet. Add events via the admin panel.</p>
+        </div>
+      )}
+
+      {hasAny && upcoming.length === 0 && past.length > 0 && (
+        <p className="text-sm text-slate-500 mb-6 italic">No upcoming performances scheduled.</p>
+      )}
+
+      {upcoming.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {upcoming.map((perf) => (
+            <PerformanceCard
+              key={perf.id}
+              perf={perf}
+              isPast={false}
+              onClick={() => setSelectedPerf(perf)}
+            />
+          ))}
+        </div>
+      )}
+
+      {past.length > 0 && (
+        <div className={upcoming.length > 0 ? 'mt-10' : ''}>
+          {upcoming.length > 0 && (
+            <h4 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
+              Past Performances
+            </h4>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {past.map((perf) => (
+              <PerformanceCard
+                key={perf.id}
+                perf={perf}
+                isPast={true}
+                onClick={() => setSelectedPerf(perf)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {selectedPerf && (
+        <PerformanceDetailModal
+          perf={selectedPerf}
+          onClose={() => setSelectedPerf(null)}
+        />
+      )}
+    </div>
+  );
+}
+
 type SectionBlock = { type: 'single'; section: PageSection } | { type: 'group'; sections: PageSection[] };
 
 const MEDIA_SECTION_TYPES = ['gallery', 'audio-playlist', 'video-gallery'] as const;
@@ -1397,44 +1640,7 @@ function SectionInnerContent({ section, page, heroH, hasSidebar }: { section: Pa
             )}
 
             {section.type === 'performances' && (
-              <div className="bg-white p-8 md:p-12 rounded-2xl shadow-sm ring-1 ring-slate-900/5" style={section.minHeight ? { minHeight: section.minHeight } : undefined}>
-                <h3 className="text-2xl font-bold text-slate-900 mb-8 border-l-4 border-red-800 pl-6">{section.title}</h3>
-                {section.performanceItems && section.performanceItems.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {section.performanceItems.map((perf) => (
-                      <div key={perf.id} className="rounded-xl border border-slate-200 bg-slate-50 p-5 hover:shadow-md hover:border-slate-300 transition-all">
-                        <div className="flex flex-wrap items-center gap-2 mb-3">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-800 text-white">
-                            <Calendar size={12} />
-                            {perf.date}
-                          </span>
-                          {perf.time && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-200 text-slate-700">
-                              <Clock size={11} />
-                              {perf.time}
-                            </span>
-                          )}
-                        </div>
-                        <h4 className="text-lg font-bold text-slate-900 mb-1">{perf.title}</h4>
-                        {perf.venue && (
-                          <p className="text-sm text-slate-500 flex items-center gap-1.5 mb-2">
-                            <MapPin size={13} className="flex-shrink-0" />
-                            {perf.venue}
-                          </p>
-                        )}
-                        {perf.description && (
-                          <p className="text-sm text-slate-600 leading-relaxed">{perf.description}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-slate-400">
-                    <Music className="mx-auto mb-3 opacity-50" size={36} />
-                    <p className="text-sm">No performances scheduled yet. Add events via the admin panel.</p>
-                  </div>
-                )}
-              </div>
+              <PerformancesSection section={section} />
             )}
 
             {section.type === 'table' && section.tableData && (

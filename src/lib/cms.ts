@@ -226,6 +226,10 @@ function sanitizeSection(s: PageSection): PageSection {
       title: sanitizeSingleLine(p.title, 300),
       venue: p.venue ? sanitizeSingleLine(p.venue, 300) : undefined,
       description: p.description ? sanitizeString(p.description, 2000) : undefined,
+      address: p.address ? sanitizeSingleLine(p.address, 500) : undefined,
+      program: p.program ? sanitizeString(p.program, 5000) : undefined,
+      ticketUrl: p.ticketUrl ? p.ticketUrl.trim().slice(0, 2000) : undefined,
+      ticketInfo: p.ticketInfo ? sanitizeSingleLine(p.ticketInfo, 500) : undefined,
     }));
   }
 

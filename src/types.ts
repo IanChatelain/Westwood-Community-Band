@@ -98,6 +98,10 @@ export interface PerformanceItem {
   venue?: string;
   time?: string;
   description?: string;
+  address?: string;
+  program?: string;
+  ticketUrl?: string;
+  ticketInfo?: string;
 }
 
 export interface DownloadLink {
