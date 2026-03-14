@@ -51,16 +51,16 @@ const Layout: React.FC<LayoutProps> = ({
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm" style={{ borderTopWidth: 3, borderTopStyle: 'solid', borderTopColor: 'var(--westwood-red)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <Link href="/" className="flex items-center gap-3 cursor-pointer group">
-              <div className="relative w-[140px] h-12">
-                <Image src="/BannerLogo.png" alt="Westwood Community Band Logo" fill className="object-contain object-left" sizes="140px" priority />
+          <div className="flex justify-between items-center h-16 sm:h-20">
+            <Link href="/" className="flex items-center gap-2 sm:gap-3 cursor-pointer group min-w-0">
+              <div className="relative w-[100px] sm:w-[140px] h-10 sm:h-12 flex-shrink-0">
+                <Image src="/BannerLogo.png" alt="Westwood Community Band Logo" fill className="object-contain object-left" sizes="(max-width: 640px) 100px, 140px" priority />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900 tracking-tight leading-none">
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-xl font-bold text-slate-900 tracking-tight leading-none truncate">
                   {settings.bandName}
                 </h1>
-                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mt-0.5" style={{ color: 'var(--westwood-red)' }}>
+                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mt-0.5 hidden sm:block" style={{ color: 'var(--westwood-red)' }}>
                   Community Excellence
                 </p>
               </div>

@@ -70,7 +70,7 @@ function VideoLightbox({ items, activeIndex, onClose, onNavigate }: VideoLightbo
       <button
         type="button"
         onClick={onClose}
-        className="absolute top-4 right-4 z-10 px-3 py-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+        className="absolute top-3 right-3 z-10 px-4 py-2.5 rounded-full bg-black/60 text-sm font-medium text-white hover:bg-black/80 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
       >
         Close
       </button>
@@ -79,7 +79,7 @@ function VideoLightbox({ items, activeIndex, onClose, onNavigate }: VideoLightbo
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onNavigate(activeIndex - 1); }}
-          className="absolute left-4 z-10 p-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+          className="absolute left-2 sm:left-4 z-10 p-3 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors focus:outline-none focus:ring-2 focus:ring-white text-xl"
           aria-label="Previous video"
         >
           ‹
@@ -90,7 +90,7 @@ function VideoLightbox({ items, activeIndex, onClose, onNavigate }: VideoLightbo
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onNavigate(activeIndex + 1); }}
-          className="absolute right-4 z-10 p-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+          className="absolute right-2 sm:right-4 z-10 p-3 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors focus:outline-none focus:ring-2 focus:ring-white text-xl"
           aria-label="Next video"
         >
           ›
@@ -98,10 +98,10 @@ function VideoLightbox({ items, activeIndex, onClose, onNavigate }: VideoLightbo
       )}
 
       <div
-        className="relative max-w-[90vw] max-h-[90vh] w-full md:w-auto flex flex-col items-center"
+        className="relative w-full max-w-[90vw] max-h-[90vh] md:w-auto flex flex-col items-center px-2 sm:px-0"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="w-[90vw] max-w-5xl">
+        <div className="w-full sm:w-[90vw] max-w-5xl">
           {embedUrl ? (
             <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black shadow-2xl">
               <iframe
@@ -262,7 +262,7 @@ function AudioPlayer({ item }: { item: GalleryMediaItem }) {
               <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-red-800 border-2 border-white shadow-sm opacity-0 group-hover/bar:opacity-100 transition-opacity" />
             </div>
           </div>
-          <span className="text-[11px] text-slate-500 tabular-nums flex-shrink-0 w-20 text-right">
+          <span className="text-[11px] text-slate-500 tabular-nums flex-shrink-0 w-16 sm:w-20 text-right">
             {currentTime} / {totalDuration}
           </span>
         </div>
@@ -460,13 +460,13 @@ export default function GalleryEventPage({ event, parentSlug }: GalleryEventPage
         <>
           {showTabs && (
             <div className="mb-8">
-              <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
+              <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-full sm:w-fit overflow-x-auto">
                 {availableTabs.map((tab) => (
                   <button
                     key={tab.key}
                     type="button"
                     onClick={() => setActiveTab(tab.key)}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                       activeTab === tab.key
                         ? 'bg-white text-slate-900 shadow-sm'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'

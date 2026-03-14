@@ -48,7 +48,7 @@ export default function GalleryLightbox({ items, activeIndex, onClose, onNavigat
       {/* Close button */}
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+        className="absolute top-3 right-3 z-10 p-3 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
         aria-label="Close"
       >
         <X size={24} />
@@ -58,7 +58,7 @@ export default function GalleryLightbox({ items, activeIndex, onClose, onNavigat
       {hasPrev && (
         <button
           onClick={(e) => { e.stopPropagation(); onNavigate(activeIndex - 1); }}
-          className="absolute left-4 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+          className="absolute left-2 sm:left-4 z-10 p-3 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
           aria-label="Previous image"
         >
           <ChevronLeft size={28} />
@@ -69,7 +69,7 @@ export default function GalleryLightbox({ items, activeIndex, onClose, onNavigat
       {hasNext && (
         <button
           onClick={(e) => { e.stopPropagation(); onNavigate(activeIndex + 1); }}
-          className="absolute right-4 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+          className="absolute right-2 sm:right-4 z-10 p-3 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
           aria-label="Next image"
         >
           <ChevronRight size={28} />

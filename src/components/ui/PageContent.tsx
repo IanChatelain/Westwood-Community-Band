@@ -654,7 +654,7 @@ function MediaHubAudioPlayer({ item }: { item: GalleryMediaItem }) {
               <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-red-800 border-2 border-white shadow-sm opacity-0 group-hover/bar:opacity-100 transition-opacity" />
             </div>
           </div>
-          <span className="text-[11px] text-slate-500 tabular-nums flex-shrink-0 w-20 text-right">{currentTime} / {totalDuration}</span>
+          <span className="text-[11px] text-slate-500 tabular-nums flex-shrink-0 w-16 sm:w-20 text-right">{currentTime} / {totalDuration}</span>
         </div>
       </div>
     </div>
@@ -721,7 +721,7 @@ function VideoLightbox({ items, activeIndex, onClose, onNavigate }: VideoLightbo
       <button
         type="button"
         onClick={onClose}
-        className="absolute top-4 right-4 z-10 px-3 py-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+        className="absolute top-3 right-3 z-10 px-4 py-2.5 rounded-full bg-black/60 text-sm font-medium text-white hover:bg-black/80 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
       >
         Close
       </button>
@@ -730,7 +730,7 @@ function VideoLightbox({ items, activeIndex, onClose, onNavigate }: VideoLightbo
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onNavigate(activeIndex - 1); }}
-          className="absolute left-4 z-10 p-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+          className="absolute left-2 sm:left-4 z-10 p-3 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors focus:outline-none focus:ring-2 focus:ring-white text-xl"
           aria-label="Previous video"
         >
           ‹
@@ -741,7 +741,7 @@ function VideoLightbox({ items, activeIndex, onClose, onNavigate }: VideoLightbo
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onNavigate(activeIndex + 1); }}
-          className="absolute right-4 z-10 p-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+          className="absolute right-2 sm:right-4 z-10 p-3 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors focus:outline-none focus:ring-2 focus:ring-white text-xl"
           aria-label="Next video"
         >
           ›
@@ -749,10 +749,10 @@ function VideoLightbox({ items, activeIndex, onClose, onNavigate }: VideoLightbo
       )}
 
       <div
-        className="relative max-w-[90vw] max-h-[90vh] w-full md:w-auto flex flex-col items-center"
+        className="relative w-full max-w-[90vw] max-h-[90vh] md:w-auto flex flex-col items-center px-2 sm:px-0"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="w-[90vw] max-w-5xl">
+        <div className="w-full sm:w-[90vw] max-w-5xl">
           {embedUrl ? (
             <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black shadow-2xl">
               <iframe
@@ -1367,13 +1367,13 @@ function TabGroupContainer({ sections, page, renderSectionContent }: { sections:
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-6">
-        <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
+        <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-full sm:w-fit overflow-x-auto">
           {tabs.map((tab) => (
             <button
               key={tab.index}
               type="button"
               onClick={() => setActiveIndex(tab.index)}
-              className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${activeIndex === tab.index ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
+              className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${activeIndex === tab.index ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
             >
               {tab.label}
             </button>
@@ -1417,10 +1417,7 @@ export default function PageContent({ page, globalSidebarBlocks }: PageContentPr
       {/* Content + Sidebar row */}
       <div className="flex flex-col md:flex-row gap-12">
         {/* Main Content Area */}
-        <div 
-          className="flex-grow space-y-16"
-          style={{ width: showSidebar ? `${100 - page.sidebarWidth}%` : '100%' }}
-        >
+        <div className="flex-1 min-w-0 space-y-16">
           {hasBlocks && page.blocks!.map((block) => {
             const { className, style } = blockWrapperClassesAndStyle(block.wrapperStyle);
             return (
@@ -1528,8 +1525,8 @@ export default function PageContent({ page, globalSidebarBlocks }: PageContentPr
         {/* Sidebar Area */}
         {showSidebar && (
           <aside
-            className={`space-y-6 ${page.layout === 'sidebar-left' ? '-order-1' : ''}`}
-            style={{ width: `${page.sidebarWidth}%`, minWidth: '280px' }}
+            className={`flex-shrink-0 space-y-6 ${page.layout === 'sidebar-left' ? 'md:-order-1' : ''}`}
+            style={{ flexBasis: `${page.sidebarWidth}%` }}
           >
             {effectiveSidebarBlocks.map((block) => (
               <SidebarBlockContent key={block.id} block={block} />
