@@ -266,8 +266,8 @@ export default function UsersTab() {
         <p className="text-sm text-slate-500 mb-4">
           Manage who can receive messages from the website contact form. Enable the toggle and add a label (e.g. President, Treasurer) to show them as an option when visitors send a message.
         </p>
-        <div className="bg-white rounded-xl shadow-sm ring-1 ring-slate-900/5 overflow-hidden">
-          <table className="w-full text-left">
+        <div className="bg-white rounded-xl shadow-sm ring-1 ring-slate-900/5 overflow-x-auto">
+          <table className="w-full min-w-[56rem] text-left">
             <thead className="bg-slate-50 text-xs font-bold text-slate-600 uppercase tracking-widest">
               <tr>
                 <th className="px-6 py-4" scope="col">User</th>
@@ -422,7 +422,7 @@ export default function UsersTab() {
               Loading permissions…
             </div>
           ) : rolePerms && (
-            <div className="bg-white rounded-xl shadow-sm ring-1 ring-slate-900/5 overflow-hidden">
+            <div className="bg-white rounded-xl shadow-sm ring-1 ring-slate-900/5 overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-slate-50 text-xs font-bold text-slate-600 uppercase tracking-widest">
                   <tr>

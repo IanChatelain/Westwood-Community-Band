@@ -1,5 +1,8 @@
 import { SiteSettings, PageConfig, User, UserRole, SidebarBlock } from './types';
 
+/** Canonical public site URL (used for metadata and links in emails). */
+export const SITE_URL = 'https://westwoodcommunityband.ca';
+
 /** Default sidebar blocks used when a page has sidebar layout but no custom sidebarBlocks. */
 export const DEFAULT_SIDEBAR_BLOCKS: SidebarBlock[] = [
   { id: 'sb-rehearsals', type: 'rehearsals', order: 0 },
