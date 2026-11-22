@@ -6,6 +6,7 @@ import { db } from '@/db';
 import { profiles } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { sendPasswordResetEmail } from '@/lib/email';
+import { SITE_URL } from '@/constants';
 import { sanitizeEmail, validateEmail, validatePassword } from '@/lib/validation';
 
 const TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
@@ -14,19 +15,26 @@ function getBaseUrl(): string {
   const explicit =
     process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_BASE_URL;
 
-  if (explicit) return explicit;
+  if (explicit) return explicit.replace(/\/+$/, '');
 
-  if (process.env.VERCEL_URL) {
+  // Never send production users to a *.vercel.app deployment URL.
+  if (process.env.VERCEL_ENV === 'production') {
     console.warn(
-      '[passwordReset] APP_BASE_URL is not set; falling back to VERCEL_URL. Password reset links will use the Vercel deployment URL instead of your public domain.',
+      `[passwordReset] APP_BASE_URL is not set; using canonical site URL ${SITE_URL} for password reset links.`,
     );
+    return SITE_URL;
+  }
+
+  // Preview deployments: link back to the preview itself.
+  if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
   }
 
   if (process.env.NODE_ENV === 'production') {
     console.warn(
-      '[passwordReset] APP_BASE_URL and VERCEL_URL are not set; falling back to http://localhost:3000 for password reset links.',
+      `[passwordReset] APP_BASE_URL is not set; using canonical site URL ${SITE_URL} for password reset links.`,
     );
+    return SITE_URL;
   }
 
   return 'http://localhost:3000';

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
+import { SITE_URL } from "@/constants";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,7 +20,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://westwoodcommunityband.ca"),
+  metadataBase: new URL(SITE_URL),
   title: "Westwood Community Band",
   description:
     "Winnipeg's community concert band — forty-five years of making music. Join us for performances, rehearsals, and musical fellowship.",
