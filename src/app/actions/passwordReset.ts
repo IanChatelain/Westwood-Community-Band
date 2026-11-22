@@ -55,6 +55,41 @@ function safeEquals(a: string, b: string): boolean {
   return crypto.timingSafeEqual(bufA, bufB);
 }
 
+const MAX_ACTIVE_TOKENS = 5;
+const INVALID_LINK_MESSAGE =
+  'This reset link is no longer valid. It may have already been used or replaced by a newer email. Please request a new link.';
+
+type StoredToken = { h: string; e: string };
+
+/**
+ * Parse the stored reset tokens. Supports the JSON array format
+ * ([{ h: hash, e: expiresAtISO }]) and the legacy single-hash format.
+ */
+function parseTokens(raw: string | null, legacyExpiresAt: string | null): StoredToken[] {
+  if (!raw) return [];
+  const trimmed = raw.trim();
+  if (trimmed.startsWith('[')) {
+    try {
+      const parsed: unknown = JSON.parse(trimmed);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter(
+        (t): t is StoredToken =>
+          !!t && typeof t === 'object' &&
+          typeof (t as StoredToken).h === 'string' &&
+          typeof (t as StoredToken).e === 'string',
+      );
+    } catch {
+      return [];
+    }
+  }
+  return legacyExpiresAt ? [{ h: trimmed, e: legacyExpiresAt }] : [];
+}
+
+function isExpired(t: StoredToken, now = Date.now()): boolean {
+  const ts = new Date(t.e).getTime();
+  return Number.isNaN(ts) || ts < now;
+}
+
 export async function requestPasswordReset(
   email: string,
 ): Promise<{ error: string | null }> {
@@ -63,7 +98,12 @@ export async function requestPasswordReset(
 
   try {
     const rows = await db
-      .select({ id: profiles.id, email: profiles.email })
+      .select({
+        id: profiles.id,
+        email: profiles.email,
+        passwordResetTokenHash: profiles.passwordResetTokenHash,
+        passwordResetTokenExpiresAt: profiles.passwordResetTokenExpiresAt,
+      })
       .from(profiles)
       .where(eq(profiles.email, normalised));
 
@@ -74,10 +114,20 @@ export async function requestPasswordReset(
     const tokenHash = hashToken(rawToken);
     const expiresAt = new Date(Date.now() + TOKEN_EXPIRY_MS).toISOString();
 
+    // Keep earlier unexpired links working so that requesting a second email
+    // doesn't silently invalidate the first one.
+    const tokens = parseTokens(
+      profile.passwordResetTokenHash,
+      profile.passwordResetTokenExpiresAt,
+    )
+      .filter((t) => !isExpired(t))
+      .concat({ h: tokenHash, e: expiresAt })
+      .slice(-MAX_ACTIVE_TOKENS);
+
     await db
       .update(profiles)
       .set({
-        passwordResetTokenHash: tokenHash,
+        passwordResetTokenHash: JSON.stringify(tokens),
         passwordResetTokenExpiresAt: expiresAt,
         updatedAt: new Date().toISOString(),
       })
@@ -105,7 +155,7 @@ export async function resetPassword(params: {
     return { error: 'Missing required fields.' };
   }
   const emailErr = validateEmail(normalised);
-  if (emailErr) return { error: 'Invalid or expired reset link.' };
+  if (emailErr) return { error: INVALID_LINK_MESSAGE };
   const pwErr = validatePassword(newPassword);
   if (pwErr) return { error: pwErr };
 
@@ -120,21 +170,30 @@ export async function resetPassword(params: {
       .where(eq(profiles.email, normalised));
 
     if (rows.length === 0) {
-      return { error: 'Invalid or expired reset link.' };
+      console.warn('[passwordReset] reset rejected: no profile for email');
+      return { error: INVALID_LINK_MESSAGE };
     }
 
     const profile = rows[0];
-    if (!profile.passwordResetTokenHash || !profile.passwordResetTokenExpiresAt) {
-      return { error: 'Invalid or expired reset link.' };
-    }
-
-    if (new Date(profile.passwordResetTokenExpiresAt) < new Date()) {
-      return { error: 'This reset link has expired. Please request a new one.' };
+    const tokens = parseTokens(
+      profile.passwordResetTokenHash,
+      profile.passwordResetTokenExpiresAt,
+    );
+    if (tokens.length === 0) {
+      console.warn(`[passwordReset] reset rejected: no token (profile ${profile.id})`);
+      return { error: INVALID_LINK_MESSAGE };
     }
 
     const incomingHash = hashToken(token);
-    if (!safeEquals(incomingHash, profile.passwordResetTokenHash)) {
-      return { error: 'Invalid or expired reset link.' };
+    const match = tokens.find((t) => safeEquals(incomingHash, t.h));
+    if (!match) {
+      console.warn(`[passwordReset] reset rejected: token mismatch (profile ${profile.id}, ${tokens.length} active)`);
+      return { error: INVALID_LINK_MESSAGE };
+    }
+
+    if (isExpired(match)) {
+      console.warn(`[passwordReset] reset rejected: expired (profile ${profile.id})`);
+      return { error: 'This reset link has expired. Please request a new one.' };
     }
 
     const passwordHash = await hash(newPassword, 12);

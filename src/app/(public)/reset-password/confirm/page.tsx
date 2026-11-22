@@ -114,7 +114,12 @@ export default function ResetPasswordConfirmPage() {
             />
           </div>
           {error && (
-            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg" role="alert">{error}</p>
+            <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg" role="alert">
+              <p>{error}</p>
+              <Link href={resetRequestHref} className="mt-1 inline-block font-bold underline">
+                Request a new reset link
+              </Link>
+            </div>
           )}
           <button
             type="submit"
