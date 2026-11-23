@@ -12,7 +12,15 @@ const MAX_VIDEO_SIZE = 250 * 1024 * 1024;
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const AUDIO_TYPES = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/webm', 'audio/ogg', 'audio/flac', 'audio/aac', 'audio/mp4'];
-const VIDEO_TYPES = ['video/mp4', 'video/webm'];
+const VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v'];
+
+// iPhone .mov/.m4v files are usually H.264/HEVC in an MP4-compatible container.
+// Browsers often refuse to play `video/quicktime` but will play the same file
+// when it is served as `video/mp4`, so store them with that content type.
+const STORED_CONTENT_TYPE: Record<string, string> = {
+  'video/quicktime': 'video/mp4',
+  'video/x-m4v': 'video/mp4',
+};
 const DOCUMENT_TYPES = [
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -38,7 +46,7 @@ export async function requestUploadUrl(
   contentType: string,
   fileSize: number,
   folder: UploadFolder,
-): Promise<{ uploadUrl: string; publicUrl: string; key: string; error: null } | { uploadUrl: null; publicUrl: null; key: null; error: string }> {
+): Promise<{ uploadUrl: string; publicUrl: string; key: string; contentType: string; error: null } | { uploadUrl: null; publicUrl: null; key: null; error: string }> {
   try {
     await requireAuth();
   } catch {
@@ -58,7 +66,8 @@ export async function requestUploadUrl(
     return { uploadUrl: null, publicUrl: null, key: null, error: `File too large (max ${config.sizeLabel})` };
   }
 
-  const ext = filename.split('.').pop() || 'bin';
+  const storedContentType = STORED_CONTENT_TYPE[contentType] ?? contentType;
+  const ext = (filename.split('.').pop() || 'bin').toLowerCase();
   const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`;
   const key = `${folder}/${uniqueName}`;
 
@@ -68,12 +77,12 @@ export async function requestUploadUrl(
   const command = new PutObjectCommand({
     Bucket: bucket,
     Key: key,
-    ContentType: contentType,
+    ContentType: storedContentType,
     ContentLength: fileSize,
   });
 
   const uploadUrl = await getSignedUrl(client, command, { expiresIn: 300 });
   const publicUrl = `${getR2PublicUrl()}/${key}`;
 
-  return { uploadUrl, publicUrl, key, error: null };
+  return { uploadUrl, publicUrl, key, contentType: storedContentType, error: null };
 }

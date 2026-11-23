@@ -11,11 +11,34 @@ import { sanitizeEmail, validateEmail, validatePassword } from '@/lib/validation
 
 const TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
 
+/**
+ * Turn a configured base URL into a clean origin. Adds https:// when the
+ * scheme is missing (e.g. "www.example.com"), since emailed links without a
+ * scheme are treated as relative and aren't clickable.
+ */
+function normaliseBaseUrl(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    return new URL(withScheme).origin;
+  } catch {
+    return null;
+  }
+}
+
 function getBaseUrl(): string {
   const explicit =
     process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_BASE_URL;
 
-  if (explicit) return explicit.replace(/\/+$/, '');
+  if (explicit) {
+    const normalised = normaliseBaseUrl(explicit);
+    if (normalised) return normalised;
+    console.warn(
+      `[passwordReset] APP_BASE_URL "${explicit}" is not a valid URL; using ${SITE_URL} for password reset links.`,
+    );
+    return SITE_URL;
+  }
 
   // Never send production users to a *.vercel.app deployment URL.
   if (process.env.VERCEL_ENV === 'production') {

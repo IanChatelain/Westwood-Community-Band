@@ -8,11 +8,30 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
+// Some browsers (e.g. Windows, some Android) leave File.type empty for .mov etc.
+const EXTENSION_TYPES: Record<string, string> = {
+  mov: 'video/quicktime',
+  m4v: 'video/x-m4v',
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  gif: 'image/gif',
+  webp: 'image/webp',
+};
+
+function resolveContentType(file: File): string {
+  if (file.type) return file.type;
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+  return EXTENSION_TYPES[ext] ?? 'application/octet-stream';
+}
+
 export async function uploadToR2(
   file: File,
   folder: UploadFolder,
 ): Promise<{ url: string; fileSize: string; error: null } | { url: null; fileSize: null; error: string }> {
-  const ticket = await requestUploadUrl(file.name, file.type, file.size, folder);
+  const ticket = await requestUploadUrl(file.name, resolveContentType(file), file.size, folder);
 
   if (ticket.error || !ticket.uploadUrl || !ticket.publicUrl) {
     return { url: null, fileSize: null, error: ticket.error ?? 'No upload URL returned' };
@@ -22,7 +41,7 @@ export async function uploadToR2(
     const response = await fetch(ticket.uploadUrl, {
       method: 'PUT',
       body: file,
-      headers: { 'Content-Type': file.type },
+      headers: { 'Content-Type': ticket.contentType },
     });
 
     if (!response.ok) {
@@ -35,6 +54,10 @@ export async function uploadToR2(
       error: null,
     };
   } catch {
-    return { url: null, fileSize: null, error: 'Network error during upload' };
+    return {
+      url: null,
+      fileSize: null,
+      error: 'Upload was blocked by the storage server. An admin needs to allow this website in the R2 bucket CORS settings (see docs/CLOUD_SETUP.md).',
+    };
   }
 }

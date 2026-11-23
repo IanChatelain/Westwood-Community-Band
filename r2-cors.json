@@ -1,11 +1,23 @@
 [
   {
     "AllowedOrigins": [
-      "https://your-vercel-app.vercel.app",
+      "https://westwoodcommunityband.ca",
+      "https://www.westwoodcommunityband.ca",
       "http://localhost:3000"
     ],
-    "AllowedMethods": ["GET", "PUT", "POST", "DELETE", "HEAD"],
-    "AllowedHeaders": ["*"],
-    "ExposeHeaders": ["ETag"]
+    "AllowedMethods": [
+      "GET",
+      "PUT",
+      "POST",
+      "DELETE",
+      "HEAD"
+    ],
+    "AllowedHeaders": [
+      "*"
+    ],
+    "ExposeHeaders": [
+      "ETag"
+    ],
+    "MaxAgeSeconds": 3600
   }
 ]

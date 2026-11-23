@@ -67,6 +67,12 @@ You have two options:
 - `R2_PUBLIC_URL` must be set in the **deployment** environment (e.g. Vercel) so that `next.config.ts` can add the correct `images.remotePatterns` at build time. If it’s missing at build time, no remote patterns are added and only same-origin images are optimized.
 - Also set it in `.env` for local dev if you use R2 in development.
 
+### 2.3 CORS (required for uploads)
+
+The admin uploads files straight from the browser to R2 using presigned URLs, so the bucket must allow the site's origin. Without this, every upload fails with "Upload was blocked by the storage server".
+
+In R2 → your bucket → **Settings** → **CORS Policy**, paste the contents of [`r2-cors.json`](../r2-cors.json). It allows `https://westwoodcommunityband.ca`, `https://www.westwoodcommunityband.ca` and `http://localhost:3000`. Add any other domain admins use (e.g. a `*.vercel.app` preview URL).
+
 ---
 
 ## 3. Deployment (e.g. Vercel)
