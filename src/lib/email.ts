@@ -57,6 +57,15 @@ export async function sendContactEmail(params: SendContactEmailParams): Promise<
   }
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export async function sendPasswordResetEmail(params: {
   to: string;
   resetUrl: string;
@@ -68,6 +77,7 @@ export async function sendPasswordResetEmail(params: {
   }
 
   const { to, resetUrl } = params;
+  const safeUrl = escapeHtml(resetUrl);
   const subject = 'Reset your Westwood Community Band admin password';
   const text = [
     'You requested to reset your admin password for the Westwood Community Band site.',
@@ -87,13 +97,13 @@ export async function sendPasswordResetEmail(params: {
       <p style="margin: 0 0 12px;">You requested to reset your admin password for the Westwood Community Band site.</p>
       <p style="margin: 0 0 12px;">If you did not make this request, you can safely ignore this email.</p>
       <p style="margin: 0 0 20px;">
-        <a href="${resetUrl}" style="display: inline-block; padding: 10px 18px; border-radius: 999px; background: #991b1b; color: #ffffff; text-decoration: none;">
+        <a href="${safeUrl}" style="display: inline-block; padding: 10px 18px; border-radius: 999px; background: #991b1b; color: #ffffff; text-decoration: none;">
           Reset password
         </a>
       </p>
       <p style="margin: 0 0 8px; font-size: 14px; color: #64748b;">Or copy and paste this URL into your browser:</p>
       <p style="margin: 0; font-size: 13px; color: #64748b;">
-        <a href="${resetUrl}" style="color: #991b1b; word-break: break-all;">${resetUrl}</a>
+        <a href="${safeUrl}" style="color: #991b1b; word-break: break-all;">${safeUrl}</a>
       </p>
       <p style="margin: 20px 0 0; font-size: 12px; color: #94a3b8;">This link will expire in 1 hour.</p>
     </div>
