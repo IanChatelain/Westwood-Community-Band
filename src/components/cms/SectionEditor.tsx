@@ -1251,7 +1251,7 @@ function GalleryMediaEditor({
           <input
             ref={videoInputRef}
             type="file"
-            accept="video/mp4,video/webm"
+            accept="video/mp4,video/webm,video/quicktime,.mov,.m4v"
             multiple
             className="hidden"
             onChange={(e) => {
@@ -1692,7 +1692,7 @@ function MediaHubItemsEditor({
     onChange(next);
   };
 
-  const acceptType = mediaType === 'audio' ? 'audio/*' : 'video/mp4,video/webm';
+  const acceptType = mediaType === 'audio' ? 'audio/*' : 'video/mp4,video/webm,video/quicktime,.mov,.m4v';
   const iconComp = mediaType === 'audio' ? <Music size={10} /> : <Video size={10} />;
   const typeLabel = mediaType === 'audio' ? 'Recording' : 'Video';
 

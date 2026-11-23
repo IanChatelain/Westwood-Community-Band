@@ -2,6 +2,14 @@ import { S3Client } from '@aws-sdk/client-s3';
 
 let _client: S3Client | null = null;
 
+// AWS SDK >= 3.729 adds a CRC32 checksum to requests by default. For presigned
+// PUT URLs that bakes in the checksum of an *empty* body, so R2 rejects every
+// real browser upload. Only send checksums when an operation requires them.
+const CHECKSUM_CONFIG = {
+  requestChecksumCalculation: 'WHEN_REQUIRED',
+  responseChecksumValidation: 'WHEN_REQUIRED',
+} as const;
+
 /** When set (e.g. http://127.0.0.1:9000 for MinIO), use this endpoint instead of Cloudflare R2. */
 function getS3Endpoint(): string | undefined {
   return process.env.S3_ENDPOINT || process.env.R2_LOCAL_ENDPOINT;
@@ -25,6 +33,7 @@ export function getR2Client(): S3Client {
       region: 'auto',
       endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
       credentials: { accessKeyId, secretAccessKey },
+      ...CHECKSUM_CONFIG,
     });
     return _client;
   }
@@ -38,6 +47,7 @@ export function getR2Client(): S3Client {
     endpoint,
     credentials: { accessKeyId, secretAccessKey },
     forcePathStyle: true,
+    ...CHECKSUM_CONFIG,
   });
   return _client;
 }
